@@ -1,0 +1,929 @@
+<meta charset="utf-8">
+<title>Seven Championship Pitwall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --paper:#F1F3F0; --surface:#FFFFFF; --surface-2:#E8ECE7; --sunk:#E2E8E3;
+  --ink:#111C18; --ink-2:#3B4C45; --ink-3:#54655E;
+  --line:#D3DAD5; --line-2:#BDC7C0;
+  --racing:#0F5738; --racing-ink:#0F5738; --racing-soft:#DCE9E1;
+  --band:#0F5738; --band-ink:#FFFFFF; --band-off:#5B6C65; --band-off-ink:#FFFFFF;
+  --tip-bg:#FFFFFF; --tip-ink:#3B4C45; --tip-strong:#111C18; --tip-line:#BDC7C0;
+  --flag:#E0AE00; --flag-soft:#F8ECC4; --flag-ink:#7A5E00;
+  --fl:#6B2FA0;
+  --alarm:#AE3220; --alarm-soft:#F6DED9;
+  --s1:#117A56; --s2:#2F5CD6; --s3:#D24118; --s4:#8A46C4; --s5:#A98400; --s6:#0089A8;
+  --grid:#DFE5E0;
+  --shadow:0 1px 2px rgba(17,28,24,.06), 0 8px 24px -12px rgba(17,28,24,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D1512; --surface:#16211D; --surface-2:#1D2925; --sunk:#111B17;
+    --ink:#E9EFEB; --ink-2:#AFBEB7; --ink-3:#8D9D96;
+    --line:#28352F; --line-2:#35453E;
+    --racing:#4FBF8B; --racing-ink:#7FD3AB; --racing-soft:#183026;
+    --band:#1E4535; --band-ink:#D6EBE0; --band-off:#2A3A34; --band-off-ink:#B4C3BC;
+  --tip-bg:#24312C; --tip-ink:#C6D3CD; --tip-strong:#FFFFFF; --tip-line:#3B4C45; --band-off:#2A3A34; --band-off-ink:#B4C3BC;
+    --tip-bg:#24312C; --tip-ink:#C6D3CD; --tip-strong:#FFFFFF; --tip-line:#3B4C45;
+    --flag:#E5B93B; --flag-soft:#38300F; --flag-ink:#F0CE68;
+  --fl:#C2A0EA;
+    --fl:#C2A0EA;
+    --alarm:#E4795E; --alarm-soft:#3A1E17;
+    --s1:#2A9C74; --s2:#6E8FE0; --s3:#E0603A; --s4:#A874D8; --s5:#B08F1C; --s6:#1FA4BE;
+    --grid:#243029;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0D1512; --surface:#16211D; --surface-2:#1D2925; --sunk:#111B17;
+  --ink:#E9EFEB; --ink-2:#AFBEB7; --ink-3:#8D9D96;
+  --line:#28352F; --line-2:#35453E;
+  --racing:#4FBF8B; --racing-ink:#7FD3AB; --racing-soft:#183026;
+  --band:#1E4535; --band-ink:#D6EBE0;
+  --flag:#E5B93B; --flag-soft:#38300F; --flag-ink:#F0CE68;
+  --alarm:#E4795E; --alarm-soft:#3A1E17;
+  --s1:#2A9C74; --s2:#6E8FE0; --s3:#E0603A; --s4:#A874D8; --s5:#B08F1C; --s6:#1FA4BE;
+  --grid:#243029;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.disp{font-family:"Barlow Condensed","Arial Narrow",Arial,sans-serif;font-weight:600;letter-spacing:.01em;text-wrap:balance}
+.mono,td.num,th.num{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+a{color:var(--racing-ink)}
+:focus-visible{outline:2px solid var(--racing); outline-offset:2px; border-radius:3px}
+
+.wrap{max-width:1360px;margin:0 auto;padding:0 clamp(14px,3vw,32px)}
+
+/* ---- masthead ---------------------------------------------------------- */
+.startline{height:6px;background:
+  repeating-linear-gradient(90deg,var(--racing) 0 14px,transparent 14px 28px);}
+header.mast{background:var(--surface);border-bottom:1px solid var(--line)}
+.mast-in{display:flex;flex-wrap:wrap;gap:18px 28px;align-items:flex-end;padding:22px 0 16px}
+.eyebrow{font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;letter-spacing:.16em;
+  text-transform:uppercase;font-size:13px;color:var(--racing-ink);margin:0 0 2px}
+h1{margin:0;font-size:clamp(30px,4.4vw,46px);line-height:.98;text-transform:uppercase}
+h1 em{font-style:normal;color:var(--racing-ink)}
+.mast-stats{display:flex;gap:26px;margin-left:auto;flex-wrap:wrap}
+.stat{min-width:88px}
+.stat .k{font-family:"Barlow Condensed",Arial,sans-serif;font-size:12px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink-3)}
+.stat .v{font-family:"IBM Plex Mono",monospace;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat .v small{font-size:13px;color:var(--ink-3);font-weight:400}
+
+nav.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);background:var(--surface)}
+nav.tabs button{
+  appearance:none;background:none;border:0;border-bottom:3px solid transparent;
+  font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;font-size:17px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);
+  padding:12px 16px 9px;cursor:pointer;white-space:nowrap}
+nav.tabs button:hover{color:var(--ink)}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--racing)}
+
+main{padding:26px 0 64px}
+.panel{display:none}
+.panel.on{display:block}
+.lede{color:var(--ink-2);max-width:66ch;margin:0 0 18px}
+h2{font-size:23px;margin:34px 0 10px;text-transform:uppercase;letter-spacing:.03em}
+h2:first-child{margin-top:0}
+.sub{font-size:13px;color:var(--ink-3);margin:-6px 0 14px}
+
+/* ---- tables ------------------------------------------------------------ */
+.scroller{overflow-x:auto;background:var(--surface);border:1px solid var(--line);
+  border-radius:4px;box-shadow:var(--shadow)}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+th,td{padding:5px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+thead th{background:var(--surface-2);position:sticky;top:0;z-index:3;
+  font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;font-size:12.5px;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+thead tr.band th{background:var(--band);color:var(--band-ink);text-align:center;font-size:11.5px;
+  letter-spacing:.1em;border-bottom:1px solid var(--band);top:0;z-index:4}
+thead tr.band th.future{background:var(--band-off);color:var(--band-off-ink)}
+thead tr.band th.stick1,thead tr.band th.stick2{background:var(--surface-2);color:var(--ink-2)}
+thead tr.cols th{top:26px;z-index:3}
+tbody tr:hover td{background:var(--surface-2)}
+td.num,th.num{text-align:center}
+
+/* sticky driver identity columns */
+.stick1{position:sticky;left:0;z-index:2;background:var(--surface);width:44px}
+.stick2{position:sticky;left:44px;z-index:2;background:var(--surface);min-width:150px}
+thead .stick1,thead .stick2{z-index:5;background:var(--surface-2)}
+tbody tr:hover .stick1,tbody tr:hover .stick2{background:var(--surface-2)}
+.stick2{border-right:1px solid var(--line-2)}
+thead .stick2{border-right:1px solid var(--line-2)}
+
+td.pt{text-align:center;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;
+  cursor:default}
+/* the championship grid is 21 rounds wide, so it gets its own tighter metrics */
+table.champ th,table.champ td{padding:5px 3px}
+table.champ .stick1{width:28px;padding-left:2px;padding-right:2px}
+table.champ .stick2{width:146px;min-width:146px;left:28px;padding-left:6px}
+table.champ td.pt,table.champ tr.cols th{width:27px;min-width:27px}
+table.champ td.tot,table.champ td.num{width:36px}
+table.champ .chip{font-size:10px;padding:0 4px;letter-spacing:.06em}
+table.champ .rowhead{gap:5px}
+table.champ .rowhead b{overflow:hidden;text-overflow:ellipsis}
+table.champ thead tr.cols th{font-size:11px;letter-spacing:.02em}
+td.pt.win{background:var(--flag-soft);color:var(--flag-ink);font-weight:600}
+td.pt.fl{text-decoration:underline;text-decoration-color:var(--fl);
+  text-decoration-thickness:2px;text-underline-offset:3px;font-weight:600}
+td.pt.pod{background:var(--racing-soft)}
+td.pt.pen{color:var(--alarm);font-weight:600;background:var(--alarm-soft)}
+td.pt.none{color:var(--ink-3)}
+td.pt.future{background:repeating-linear-gradient(135deg,transparent 0 5px,var(--sunk) 5px 10px)}
+td.tot{text-align:center;font-family:"IBM Plex Mono",monospace;font-weight:600;background:var(--sunk)}
+tr.guest td{color:var(--ink-3);font-style:italic}
+tr.guest .stick2{font-style:italic}
+.rowhead{display:flex;align-items:baseline;gap:7px}
+.rowhead b{font-weight:600}
+.chip{font-family:"Barlow Condensed",Arial,sans-serif;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;padding:1px 5px;border-radius:2px;border:1px solid var(--line-2);
+  color:var(--ink-3)}
+.chip.pro{border-color:var(--racing);color:var(--racing-ink)}
+
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;margin:12px 0 0;font-size:12.5px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:13px;height:13px;border-radius:2px;border:1px solid var(--line-2);display:inline-block}
+
+/* ---- chart ------------------------------------------------------------- */
+.chartbox{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+  box-shadow:var(--shadow);padding:16px 16px 8px;margin-top:14px}
+.chartbox svg{width:100%;height:auto;display:block;overflow:visible}
+.ax{font-family:"IBM Plex Mono",monospace;font-size:10px;fill:var(--ink-3)}
+.gl{stroke:var(--grid);stroke-width:1}
+.serieslab{font-family:"Barlow Condensed",Arial,sans-serif;font-size:12.5px;font-weight:600}
+.chart-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:6px;font-size:12.5px;color:var(--ink-2)}
+.chart-legend span{display:inline-flex;align-items:center;gap:7px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+/* ---- candles ----------------------------------------------------------- */
+.candlebox{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+  box-shadow:var(--shadow);padding:14px 6px 8px;overflow-x:auto}
+.candlebox svg{display:block}
+.candlebox text.xlab{font-family:"Barlow Condensed",Arial,sans-serif;font-size:12px;fill:var(--ink-2)}
+.candlebox text.xlab.out{fill:var(--ink-3)}
+.refline{stroke:var(--ink-3);stroke-width:1;stroke-dasharray:4 4}
+.reftext{font-family:"IBM Plex Mono",monospace;font-size:10px;fill:var(--ink-3)}
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin:0 0 16px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+  padding:11px 14px;box-shadow:var(--shadow)}
+.kpi .k{font-family:"Barlow Condensed",Arial,sans-serif;font-size:12px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink-3)}
+.kpi .v{font-family:"IBM Plex Mono",monospace;font-size:21px;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi .n{font-size:12.5px;color:var(--ink-2)}
+details.tv{margin-top:14px}
+details.tv summary{cursor:pointer;font-family:"Barlow Condensed",Arial,sans-serif;
+  font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);
+  padding:6px 0}
+details.tv summary:hover{color:var(--ink)}
+tr.outrow td{color:var(--ink-3)}
+
+/* ---- cards ------------------------------------------------------------- */
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(330px,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+  box-shadow:var(--shadow);overflow:hidden}
+.card.future{opacity:.9;border-style:dashed}
+.card-h{display:flex;align-items:baseline;gap:10px;padding:11px 14px;background:var(--band);color:var(--band-ink)}
+.card.future .card-h{background:var(--band-off);color:var(--band-off-ink)}
+.card-h .rnd{font-family:"IBM Plex Mono",monospace;font-size:12px;opacity:.85}
+.card-h h3{margin:0;font-size:19px;text-transform:uppercase;letter-spacing:.03em;color:inherit}
+.card-h .when{margin-left:auto;font-size:12.5px;opacity:.9;font-family:"IBM Plex Mono",monospace}
+.card-b{padding:10px 14px 14px}
+.ses{display:grid;grid-template-columns:auto 1fr auto;gap:3px 12px;font-size:13px;align-items:baseline}
+.ses .t{font-family:"IBM Plex Mono",monospace;color:var(--ink-2)}
+.ses .n{color:var(--ink)}
+.ses .r{color:var(--ink-3);font-family:"IBM Plex Mono",monospace;font-size:12px;text-align:right}
+.meta{margin-top:10px;font-size:12.5px;color:var(--ink-3);border-top:1px dotted var(--line-2);padding-top:8px}
+.meta a{color:var(--racing-ink)}
+
+/* ---- race picker ------------------------------------------------------- */
+.picker{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}
+.picker button{appearance:none;cursor:pointer;background:var(--surface);border:1px solid var(--line-2);
+  color:var(--ink-2);border-radius:3px;padding:5px 10px;font-size:13px;
+  font-family:"IBM Plex Mono",monospace}
+.picker button:hover{border-color:var(--racing);color:var(--ink)}
+.picker button[aria-pressed="true"]{background:var(--band);border-color:var(--band);color:var(--band-ink)}
+.racehead{display:flex;flex-wrap:wrap;gap:6px 22px;align-items:baseline;margin-bottom:10px}
+.racehead h3{margin:0;font-size:22px;text-transform:uppercase}
+.racehead .f{font-size:13px;color:var(--ink-2)}
+.racehead .f b{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
+.notes{margin:12px 0 0;padding:10px 13px;background:var(--surface-2);border-left:3px solid var(--flag);
+  font-size:12.5px;color:var(--ink-2);border-radius:0 3px 3px 0}
+.notes p{margin:0 0 4px}
+.notes p:last-child{margin:0}
+tr.dnf td{color:var(--ink-3)}
+tr.win td{background:var(--flag-soft)}
+tr.win:hover td{background:var(--flag-soft)}
+
+/* ---- rules ------------------------------------------------------------- */
+.cols2{display:grid;gap:26px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start}
+.prose p{margin:0 0 12px;color:var(--ink-2);max-width:62ch}
+.prose h3{margin:20px 0 6px;font-size:18px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink)}
+.prose h3:first-child{margin-top:0}
+.prose ul{margin:0 0 12px;padding-left:18px;color:var(--ink-2);max-width:62ch}
+.prose li{margin-bottom:5px}
+.reg{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--racing-ink);
+  background:var(--racing-soft);padding:1px 5px;border-radius:2px;
+  text-decoration:none;border-bottom:1px solid transparent;white-space:nowrap}
+a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var(--surface-2)}
+.doclink{display:inline-flex;align-items:baseline;gap:8px;margin:0 0 16px;
+  padding:9px 13px;background:var(--surface);border:1px solid var(--line);
+  border-left:3px solid var(--racing);border-radius:0 3px 3px 0;box-shadow:var(--shadow);
+  font-size:13.5px;text-decoration:none;color:var(--ink)}
+.doclink:hover{border-left-color:var(--flag)}
+.doclink b{font-weight:600}
+.doclink span{color:var(--ink-3);font-family:"IBM Plex Mono",monospace;font-size:12px}
+
+/* ---- tooltip ----------------------------------------------------------- */
+#tip{position:fixed;z-index:60;pointer-events:none;opacity:0;transition:opacity .09s;
+  background:var(--tip-bg);color:var(--tip-ink);border:1px solid var(--tip-line);
+  font-size:12.5px;line-height:1.45;
+  padding:7px 10px;border-radius:3px;max-width:280px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+#tip b{color:var(--tip-strong)}
+#tip .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+footer{border-top:1px solid var(--line);padding:18px 0 40px;color:var(--ink-3);font-size:12.5px}
+footer a{color:var(--racing-ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="startline"></div>
+<header class="mast">
+  <div class="wrap mast-in">
+    <div>
+      <p class="eyebrow">BARC · Season 2026 · 21 races, 7 rounds</p>
+      <h1>MOTUL Caterham<br><em>Seven Championship UK</em></h1>
+    </div>
+    <div class="mast-stats" id="mastStats"></div>
+  </div>
+  <nav class="tabs wrap" id="tabs" role="tablist"></nav>
+</header>
+
+<main class="wrap">
+  <section class="panel on" id="p-standings"></section>
+  <section class="panel" id="p-races"></section>
+  <section class="panel" id="p-calendar"></section>
+  <section class="panel" id="p-runin"></section>
+  <section class="panel" id="p-rules"></section>
+</main>
+
+<footer class="wrap">
+  <p>Results from <a href="https://www.tsl-timing.com/">TSL Timing</a> and
+  <a href="https://ser2026.racspa.be/">Spa Euro Race</a> (Alkamel Systems); calendar and judicial
+  decisions from <a href="https://www.barc.net/championship/caterham-seven-championship-uk/">BARC</a>;
+  points computed from the
+  <a href="https://caterhamcars.com/assets/Documents/Seven%20Championship%20Documents/2026%20Caterham%20Seven%20Championship%20UK%20Regulations%20-%20Published.pdf">2026 Championship Regulations</a>.
+  Provisional until declared final by the organisers.</p>
+</footer>
+
+<div id="tip" role="tooltip"></div>
+
+<script>
+const D = {"season":2026,"title":"Caterham Seven Championship UK","scale":25,"registrations":22,"roundsRun":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],"roundsTotal":21,"dropScores":3,"events":[{"key":"croft","name":"Croft","meeting":"BARC Speedfest North","dates":"2-3 May 2026","rounds":[1,2,3],"kind":"tsl","prefix":"croft","tsl_event":"261821","url":"https://www.barc.net/event/barc-race-meeting-croft-may-2-3/","source":"tsl"},{"key":"spa","name":"Spa-Francorchamps","meeting":"Spa Euro Race","dates":"29-31 May 2026","rounds":[4,5,6],"kind":"alkamel","prefix":"spa","tsl_event":null,"url":"https://www.barc.net/event/barc-race-meeting-spa-francorchamps-may-29-31/","source":"alkamel"},{"key":"oulton","name":"Oulton Park Island","meeting":"BARC NW Caterham Race Day","dates":"18 July 2026","rounds":[7,8,9],"kind":"tsl","prefix":"oulton","tsl_event":"262927","url":"https://www.barc.net/event/barc-north-western-centre-race-meeting-oulton-park-island-july-18/","source":"tsl"},{"key":"knockhill","name":"Knockhill","meeting":"BTCC Round 6 (TOCA)","dates":"8-9 August 2026","rounds":[10,11,12],"kind":"tsl","prefix":"knockhill","tsl_event":"263203","url":"https://www.barc.net/event/toca-race-meeting-knockhill-august-8-9/","source":"tsl"},{"key":"donington","name":"Donington Park GP","meeting":"BTCC Round 7 (TOCA)","dates":"22-23 August 2026","rounds":[13,14,15],"kind":"tsl","prefix":"donington","tsl_event":"263403","url":"https://www.barc.net/event/toca-race-meeting-donington-park-grand-prix-august-22-23/","source":"tsl"},{"key":"snetterton","name":"Snetterton 300","meeting":"BARC Speedfest East","dates":"12-13 September 2026","rounds":[16,17,18],"kind":"tsl","prefix":"snetterton","tsl_event":"263721","url":"https://www.barc.net/event/barc-race-meeting-snetterton-300-september-12-13/","source":null},{"key":"brands","name":"Brands Hatch GP","meeting":"BTCC Round 9 (TOCA)","dates":"10-11 October 2026","rounds":[19,20,21],"kind":"tsl","prefix":"brands","tsl_event":null,"url":"https://www.barc.net/event/toca-race-meeting-brands-hatch-grand-prix-october-10-11/","source":null}],"races":[{"round":1,"event":"croft","eventName":"Croft","raceInEvent":1,"date":"02/05/2026","laps":15,"miles":31.5,"weather":"Cloudy / Dry","start":"15:24","finish":"15:45","source":"TSL Timing","notes":["* Car 76 - still no working transponder. please fix for your next session or you may not be timed NCR 12.6.2.2 refers","* Cars 21 & 93 - 5 second penalty applied for exceeding track limits"],"fastest":{"no":"28","cls":"Pro Am","driver":"Harry Senior","lap":4,"time":"1:23.537"},"entries":[{"pos":1,"no":"28","driver":"Harry Senior","cls":"Pro Am","pic":1,"laps":15,"time":"21:11.759","best":"1:23.537","on":1,"grid":0,"status":"classified","pts":25,"fl":1,"pen":0,"total":26,"place":1,"guest":false},{"pos":2,"no":"1","driver":"Matt Armstrong","cls":"Pro Am","pic":2,"laps":15,"time":"21:12.534","best":"1:23.862","on":2,"grid":0,"status":"classified","pts":23,"fl":0,"pen":0,"total":23,"place":2,"guest":false},{"pos":3,"no":"23","driver":"Justin Armstrong","cls":"Am","pic":1,"laps":15,"time":"21:15.260","best":"1:23.872","on":6,"grid":3,"status":"classified","pts":22,"fl":0,"pen":0,"total":22,"place":3,"guest":false},{"pos":4,"no":"8","driver":"Chris Fraser","cls":"Am","pic":2,"laps":15,"time":"21:15.506","best":"1:24.112","on":5,"grid":1,"status":"classified","pts":21,"fl":0,"pen":0,"total":21,"place":4,"guest":false},{"pos":5,"no":"11","driver":"Taylor O'Flanagan","cls":"Pro Am","pic":3,"laps":15,"time":"21:15.983","best":"1:23.751","on":3,"grid":-2,"status":"classified","pts":20,"fl":0,"pen":0,"total":20,"place":5,"guest":false},{"pos":6,"no":"21","driver":"Charlie Lower","cls":"Pro Am","pic":4,"laps":15,"time":"21:17.369","best":"1:23.583","on":4,"grid":-2,"status":"classified","pts":19,"fl":0,"pen":0,"total":19,"place":6,"guest":false},{"pos":7,"no":"46","driver":"Steve Nuttall","cls":"Pro Am","pic":5,"laps":15,"time":"21:27.063","best":"1:24.749","on":7,"grid":0,"status":"classified","pts":18,"fl":0,"pen":0,"total":18,"place":7,"guest":false},{"pos":8,"no":"56","driver":"Craig Storey","cls":"Am","pic":3,"laps":15,"time":"21:27.409","best":"1:24.574","on":9,"grid":1,"status":"classified","pts":17,"fl":0,"pen":0,"total":17,"place":8,"guest":false},{"pos":9,"no":"62","driver":"Darren McCormack","cls":"Am","pic":4,"laps":15,"time":"21:27.906","best":"1:24.523","on":11,"grid":2,"status":"classified","pts":16,"fl":0,"pen":0,"total":16,"place":9,"guest":false},{"pos":10,"no":"10","driver":"Henry Heaton","cls":"Pro Am","pic":6,"laps":15,"time":"21:29.465","best":"1:24.456","on":19,"grid":9,"status":"classified","pts":15,"fl":0,"pen":0,"total":15,"place":10,"guest":false},{"pos":11,"no":"76","driver":"Monty Hinde","cls":"Am","pic":5,"laps":15,"time":"21:30.854","best":"1:24.913","on":10,"grid":-1,"status":"classified","pts":14,"fl":0,"pen":0,"total":14,"place":11,"guest":false},{"pos":12,"no":"6","driver":"Dale Head","cls":"Am","pic":6,"laps":15,"time":"21:31.452","best":"1:24.691","on":13,"grid":1,"status":"classified","pts":13,"fl":0,"pen":0,"total":13,"place":12,"guest":false},{"pos":13,"no":"93","driver":"Mike Evans","cls":"Am","pic":7,"laps":15,"time":"21:37.035","best":"1:24.832","on":15,"grid":2,"status":"classified","pts":12,"fl":0,"pen":0,"total":12,"place":13,"guest":false},{"pos":14,"no":"35","driver":"Mark Kendle","cls":"Am","pic":8,"laps":15,"time":"21:37.226","best":"1:25.345","on":16,"grid":2,"status":"classified","pts":11,"fl":0,"pen":0,"total":11,"place":14,"guest":false},{"pos":15,"no":"68","driver":"Chris Welch","cls":"Am","pic":9,"laps":15,"time":"22:22.831","best":"1:27.840","on":18,"grid":3,"status":"classified","pts":10,"fl":0,"pen":0,"total":10,"place":15,"guest":false},{"pos":null,"no":"78","driver":"Nick Highton","cls":"Pro Am","pic":null,"laps":9,"time":"12:57.491","best":"1:24.435","on":7,"grid":14,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":null,"no":"64","driver":"Tom Eden","cls":"Am","pic":null,"laps":8,"time":"12:02.255","best":"1:24.281","on":3,"grid":8,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":null,"no":"22","driver":"Gary Curtis","cls":"Am","pic":null,"laps":7,"time":"13:46.779","best":"1:25.808","on":3,"grid":12,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":null,"no":"25","driver":"Louis Darling","cls":"Pro Am","pic":null,"laps":5,"time":"7:20.963","best":"1:26.273","on":4,"grid":17,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false}]},{"round":2,"event":"croft","eventName":"Croft","raceInEvent":2,"date":"03/05/2026","laps":13,"miles":27.3,"weather":"Rain / Wet","start":"14:32","finish":"14:53","source":"TSL Timing","notes":[],"fastest":{"no":"28","cls":"Pro Am","driver":"Harry Senior","lap":12,"time":"1:35.974"},"entries":[{"pos":1,"no":"28","driver":"Harry Senior","cls":"Pro Am","pic":1,"laps":13,"time":"21:06.298","best":"1:35.974","on":1,"grid":0,"status":"classified","pts":25,"fl":1,"pen":0,"total":26,"place":1,"guest":false},{"pos":2,"no":"1","driver":"Matt Armstrong","cls":"Pro Am","pic":2,"laps":13,"time":"21:23.379","best":"1:36.744","on":2,"grid":0,"status":"classified","pts":23,"fl":0,"pen":0,"total":23,"place":2,"guest":false},{"pos":3,"no":"11","driver":"Taylor O'Flanagan","cls":"Pro Am","pic":3,"laps":13,"time":"21:24.517","best":"1:36.525","on":5,"grid":2,"status":"classified","pts":22,"fl":0,"pen":0,"total":22,"place":3,"guest":false},{"pos":4,"no":"8","driver":"Chris Fraser","cls":"Am","pic":1,"laps":13,"time":"21:27.895","best":"1:36.992","on":4,"grid":0,"status":"classified","pts":21,"fl":0,"pen":0,"total":21,"place":4,"guest":false},{"pos":5,"no":"46","driver":"Steve Nuttall","cls":"Pro Am","pic":4,"laps":13,"time":"21:37.294","best":"1:37.562","on":7,"grid":2,"status":"classified","pts":20,"fl":0,"pen":-9,"total":11,"place":5,"guest":false},{"pos":6,"no":"10","driver":"Henry Heaton","cls":"Pro Am","pic":5,"laps":13,"time":"21:37.672","best":"1:37.877","on":10,"grid":4,"status":"classified","pts":19,"fl":0,"pen":0,"total":19,"place":6,"guest":false},{"pos":7,"no":"64","driver":"Tom Eden","cls":"Am","pic":2,"laps":13,"time":"21:37.988","best":"1:37.245","on":17,"grid":10,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":8,"no":"56","driver":"Craig Storey","cls":"Am","pic":3,"laps":13,"time":"21:39.040","best":"1:37.788","on":8,"grid":0,"status":"classified","pts":18,"fl":0,"pen":0,"total":18,"place":7,"guest":false},{"pos":9,"no":"23","driver":"Justin Armstrong","cls":"Am","pic":4,"laps":13,"time":"21:40.343","best":"1:37.015","on":3,"grid":-6,"status":"classified","pts":17,"fl":0,"pen":0,"total":17,"place":8,"guest":false},{"pos":10,"no":"78","driver":"Nick Highton","cls":"Pro Am","pic":6,"laps":13,"time":"21:43.605","best":"1:37.188","on":16,"grid":6,"status":"classified","pts":16,"fl":0,"pen":0,"total":16,"place":9,"guest":false},{"pos":11,"no":"21","driver":"Charlie Lower","cls":"Pro Am","pic":7,"laps":13,"time":"21:49.375","best":"1:38.204","on":6,"grid":-5,"status":"classified","pts":15,"fl":0,"pen":0,"total":15,"place":10,"guest":false},{"pos":12,"no":"6","driver":"Dale Head","cls":"Am","pic":5,"laps":13,"time":"21:50.420","best":"1:37.669","on":12,"grid":0,"status":"classified","pts":14,"fl":0,"pen":0,"total":14,"place":11,"guest":false},{"pos":13,"no":"25","driver":"Louis Darling","cls":"Pro Am","pic":8,"laps":13,"time":"21:55.078","best":"1:38.307","on":19,"grid":6,"status":"classified","pts":13,"fl":0,"pen":-9,"total":4,"place":12,"guest":false},{"pos":14,"no":"62","driver":"Darren McCormack","cls":"Am","pic":6,"laps":13,"time":"21:57.510","best":"1:37.792","on":9,"grid":-5,"status":"classified","pts":12,"fl":0,"pen":0,"total":12,"place":13,"guest":false},{"pos":15,"no":"76","driver":"Monty Hinde","cls":"Am","pic":7,"laps":13,"time":"22:00.541","best":"1:38.580","on":11,"grid":-4,"status":"classified","pts":11,"fl":0,"pen":0,"total":11,"place":14,"guest":false},{"pos":16,"no":"35","driver":"Mark Kendle","cls":"Am","pic":8,"laps":13,"time":"22:21.171","best":"1:38.987","on":14,"grid":-2,"status":"classified","pts":10,"fl":0,"pen":0,"total":10,"place":15,"guest":false},{"pos":17,"no":"22","driver":"Gary Curtis","cls":"Am","pic":9,"laps":12,"time":"21:20.710","best":"1:42.569","on":18,"grid":1,"status":"classified","pts":9,"fl":0,"pen":0,"total":9,"place":16,"guest":false},{"pos":18,"no":"68","driver":"Chris Welch","cls":"Am","pic":10,"laps":12,"time":"22:19.272","best":"1:47.444","on":15,"grid":-3,"status":"classified","pts":8,"fl":0,"pen":0,"total":8,"place":17,"guest":false},{"pos":null,"no":"93","driver":"Mike Evans","cls":"Am","pic":null,"laps":12,"time":"20:27.126","best":"1:39.005","on":11,"grid":13,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false}]},{"round":3,"event":"croft","eventName":"Croft","raceInEvent":3,"date":"03/05/2026","laps":12,"miles":25.2,"weather":"Rain / Wet","start":"17:58","finish":"18:19","source":"TSL Timing","notes":["* Car 64 - 7 second time penalty applied - Clerk's Decision"],"fastest":{"no":"1","cls":"Pro Am","driver":"Matt Armstrong","lap":9,"time":"1:35.475"},"entries":[{"pos":1,"no":"11","driver":"Taylor O'Flanagan","cls":"Pro Am","pic":1,"laps":12,"time":"21:04.373","best":"1:35.521","on":3,"grid":2,"status":"classified","pts":25,"fl":0,"pen":0,"total":25,"place":1,"guest":false},{"pos":2,"no":"1","driver":"Matt Armstrong","cls":"Pro Am","pic":2,"laps":12,"time":"21:06.045","best":"1:35.475","on":2,"grid":0,"status":"classified","pts":23,"fl":1,"pen":0,"total":24,"place":2,"guest":false},{"pos":3,"no":"28","driver":"Harry Senior","cls":"Pro Am","pic":3,"laps":12,"time":"21:06.140","best":"1:35.536","on":1,"grid":-2,"status":"classified","pts":22,"fl":0,"pen":0,"total":22,"place":3,"guest":false},{"pos":4,"no":"8","driver":"Chris Fraser","cls":"Am","pic":1,"laps":12,"time":"21:10.598","best":"1:36.508","on":4,"grid":0,"status":"classified","pts":21,"fl":0,"pen":0,"total":21,"place":4,"guest":false},{"pos":5,"no":"46","driver":"Steve Nuttall","cls":"Pro Am","pic":4,"laps":12,"time":"21:14.415","best":"1:37.224","on":8,"grid":3,"status":"classified","pts":20,"fl":0,"pen":0,"total":20,"place":5,"guest":false},{"pos":6,"no":"21","driver":"Charlie Lower","cls":"Pro Am","pic":5,"laps":12,"time":"21:14.500","best":"1:36.425","on":11,"grid":5,"status":"classified","pts":19,"fl":0,"pen":0,"total":19,"place":6,"guest":false},{"pos":7,"no":"10","driver":"Henry Heaton","cls":"Pro Am","pic":6,"laps":12,"time":"21:16.073","best":"1:37.242","on":5,"grid":-2,"status":"classified","pts":18,"fl":0,"pen":0,"total":18,"place":7,"guest":false},{"pos":8,"no":"25","driver":"Louis Darling","cls":"Pro Am","pic":7,"laps":12,"time":"21:18.507","best":"1:37.210","on":16,"grid":8,"status":"classified","pts":17,"fl":0,"pen":0,"total":17,"place":8,"guest":false},{"pos":9,"no":"78","driver":"Nick Highton","cls":"Pro Am","pic":8,"laps":12,"time":"21:20.114","best":"1:37.415","on":10,"grid":1,"status":"classified","pts":16,"fl":0,"pen":0,"total":16,"place":9,"guest":false},{"pos":10,"no":"62","driver":"Darren McCormack","cls":"Am","pic":2,"laps":12,"time":"21:20.365","best":"1:37.128","on":13,"grid":3,"status":"classified","pts":15,"fl":0,"pen":0,"total":15,"place":10,"guest":false},{"pos":11,"no":"56","driver":"Craig Storey","cls":"Am","pic":3,"laps":12,"time":"21:20.366","best":"1:36.764","on":7,"grid":-4,"status":"classified","pts":14,"fl":0,"pen":0,"total":14,"place":11,"guest":false},{"pos":12,"no":"23","driver":"Justin Armstrong","cls":"Am","pic":4,"laps":12,"time":"21:24.521","best":"1:37.060","on":9,"grid":-3,"status":"classified","pts":13,"fl":0,"pen":0,"total":13,"place":12,"guest":false},{"pos":13,"no":"64","driver":"Tom Eden","cls":"Am","pic":5,"laps":12,"time":"21:24.788","best":"1:37.080","on":6,"grid":-7,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":14,"no":"35","driver":"Mark Kendle","cls":"Am","pic":6,"laps":12,"time":"21:28.940","best":"1:37.958","on":15,"grid":1,"status":"classified","pts":12,"fl":0,"pen":0,"total":12,"place":13,"guest":false},{"pos":15,"no":"22","driver":"Gary Curtis","cls":"Am","pic":7,"laps":12,"time":"21:40.251","best":"1:40.514","on":17,"grid":2,"status":"classified","pts":11,"fl":0,"pen":0,"total":11,"place":14,"guest":false},{"pos":16,"no":"6","driver":"Dale Head","cls":"Am","pic":8,"laps":9,"time":"21:35.662","best":"1:37.402","on":12,"grid":-4,"status":"classified","pts":10,"fl":0,"pen":0,"total":10,"place":15,"guest":false},{"pos":null,"no":"68","driver":"Chris Welch","cls":"Am","pic":null,"laps":8,"time":"15:21.555","best":"1:44.653","on":2,"grid":18,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":null,"no":"76","driver":"Monty Hinde","cls":"Am","pic":null,"laps":14,"time":null,"best":null,"on":null,"grid":null,"status":"NS","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":null,"no":"93","driver":"Mike Evans","cls":"Am","pic":null,"laps":null,"time":null,"best":null,"on":null,"grid":null,"status":"NS","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false}]},{"round":4,"event":"spa","eventName":"Spa-Francorchamps","raceInEvent":1,"date":"30/05/2026","laps":null,"miles":null,"weather":null,"start":null,"finish":null,"source":"Alkamel Systems","notes":["CARS 4, 5, 10, 15, 16, 17, 21, 22, 23, 25, 27, 29, 35, 36, 44, 46, 56, 62, 66, 67, 68, 70, 76, 78, 93, 95, 111, 117, 122 AND 125- SOME","CARS 23 AND 25 - TIME PENALTY OF 5 SECONDS - TRACK LIMITS","CAR 78 - PENALTY OF 2 POSITIONS IN THE RACE - STEWARDS DECISION Nº2"],"fastest":{"no":"78","cls":null,"driver":"Nick Highton","lap":4,"time":"2:37.778"},"entries":[{"pos":1,"no":"28","driver":"Harry Senior","cls":null,"pic":null,"laps":8,"time":"21:11.765","best":"2:38.214","on":6,"grid":null,"status":"classified","pts":25,"fl":0,"pen":0,"total":25,"place":1,"guest":false},{"pos":2,"no":"11","driver":"Taylor O'Flanagan","cls":null,"pic":null,"laps":8,"time":"21:19.683","best":"2:38.603","on":7,"grid":null,"status":"classified","pts":23,"fl":0,"pen":0,"total":23,"place":2,"guest":false},{"pos":3,"no":"21","driver":"Charlie Lower","cls":null,"pic":null,"laps":8,"time":"21:23.512","best":"2:39.430","on":6,"grid":null,"status":"classified","pts":22,"fl":0,"pen":0,"total":22,"place":3,"guest":false},{"pos":4,"no":"17","driver":"Mark Farmer","cls":null,"pic":null,"laps":8,"time":"21:24.030","best":"2:39.807","on":4,"grid":null,"status":"classified","pts":21,"fl":0,"pen":0,"total":21,"place":4,"guest":false},{"pos":5,"no":"46","driver":"Steve Nuttall","cls":null,"pic":null,"laps":8,"time":"21:24.552","best":"2:38.884","on":6,"grid":null,"status":"classified","pts":20,"fl":0,"pen":0,"total":20,"place":5,"guest":false},{"pos":6,"no":"25","driver":"Louis Darling","cls":null,"pic":null,"laps":8,"time":"21:24.746","best":"2:37.901","on":4,"grid":null,"status":"classified","pts":19,"fl":0,"pen":0,"total":19,"place":6,"guest":false},{"pos":7,"no":"8","driver":"Chris Fraser","cls":null,"pic":null,"laps":8,"time":"21:25.003","best":"2:39.383","on":8,"grid":null,"status":"classified","pts":18,"fl":0,"pen":0,"total":18,"place":7,"guest":false},{"pos":8,"no":"76","driver":"Monty Hinde","cls":null,"pic":null,"laps":8,"time":"21:25.869","best":"2:38.438","on":4,"grid":null,"status":"classified","pts":17,"fl":0,"pen":0,"total":17,"place":8,"guest":false},{"pos":9,"no":"44","driver":"Timothy Dickens","cls":null,"pic":null,"laps":8,"time":"21:26.434","best":"2:39.167","on":8,"grid":null,"status":"classified","pts":16,"fl":0,"pen":0,"total":16,"place":9,"guest":false},{"pos":10,"no":"78","driver":"Nick Highton","cls":null,"pic":null,"laps":8,"time":"21:25.457","best":"2:37.778","on":4,"grid":null,"status":"classified","pts":15,"fl":1,"pen":-6,"total":10,"place":10,"guest":false},{"pos":11,"no":"10","driver":"Henry Heaton","cls":null,"pic":null,"laps":8,"time":"21:28.882","best":"2:39.863","on":4,"grid":null,"status":"classified","pts":14,"fl":0,"pen":0,"total":14,"place":11,"guest":false},{"pos":12,"no":"23","driver":"Justin Armstrong","cls":null,"pic":null,"laps":8,"time":"21:29.032","best":"2:39.901","on":6,"grid":null,"status":"classified","pts":13,"fl":0,"pen":0,"total":13,"place":12,"guest":false},{"pos":13,"no":"62","driver":"Darren McCormack","cls":null,"pic":null,"laps":8,"time":"21:30.469","best":"2:41.330","on":8,"grid":null,"status":"classified","pts":12,"fl":0,"pen":0,"total":12,"place":13,"guest":false},{"pos":14,"no":"56","driver":"Craig Storey","cls":null,"pic":null,"laps":8,"time":"21:44.594","best":"2:40.137","on":7,"grid":null,"status":"classified","pts":11,"fl":0,"pen":0,"total":11,"place":14,"guest":false},{"pos":15,"no":"35","driver":"Mark Kendle","cls":null,"pic":null,"laps":8,"time":"23:19.362","best":"2:54.766","on":6,"grid":null,"status":"classified","pts":10,"fl":0,"pen":0,"total":10,"place":15,"guest":false},{"pos":16,"no":"22","driver":"Gary Curtis","cls":null,"pic":null,"laps":8,"time":"23:33.790","best":"2:56.286","on":2,"grid":null,"status":"classified","pts":9,"fl":0,"pen":0,"total":9,"place":16,"guest":false},{"pos":18,"no":"1","driver":"Matt Armstrong","cls":null,"pic":null,"laps":7,"time":"18:33.205","best":"2:38.204","on":6,"grid":null,"status":"NC","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":19,"no":"68","driver":"Chris Welch","cls":null,"pic":null,"laps":7,"time":"20:34.058","best":"2:56.188","on":7,"grid":null,"status":"NC","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":20,"no":"93","driver":"Mike Evans","cls":null,"pic":null,"laps":4,"time":"10:43.209","best":"2:41.697","on":2,"grid":null,"status":"NC","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":21,"no":"15","driver":"Nick Sampson","cls":null,"pic":null,"laps":4,"time":"11:15.684","best":"2:49.453","on":2,"grid":null,"status":"NC","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":22,"no":"66","driver":"Jake Swann","cls":null,"pic":null,"laps":null,"time":null,"best":null,"on":null,"grid":null,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false}]},{"round":5,"event":"spa","eventName":"Spa-Francorchamps","raceInEvent":2,"date":"31/05/2026","laps":null,"miles":null,"weather":null,"start":null,"finish":null,"source":"Alkamel Systems","notes":["CARS 1, 4, 5, 8, 10, 15, 16, 23, 25, 35, 44, 49, 56, 62, 68, 70, 76, 78, 93, 95, 111, 117 AND 122 - SOME LAPTIMES DELETED DUE TO","CAR 117 - TIME PENALTY OF 10 SECONDS - JUMP START","CARS 1, 68 AND 95 - TIME PENALTY OF 5 SECONDS - TRACK LIMITS","CAR 1 - DROP OF 4 GRID POSITIONS FOR RACE 3 - STEWARDS DECISION Nº1"],"fastest":{"no":"1","cls":null,"driver":"Matt Armstrong","lap":6,"time":"2:35.833"},"entries":[{"pos":1,"no":"11","driver":"Taylor O'Flanagan","cls":null,"pic":null,"laps":7,"time":"20:53.130","best":"2:37.697","on":6,"grid":null,"status":"classified","pts":25,"fl":0,"pen":0,"total":25,"place":1,"guest":false},{"pos":2,"no":"21","driver":"Charlie Lower","cls":null,"pic":null,"laps":7,"time":"20:53.367","best":"2:37.717","on":5,"grid":null,"status":"classified","pts":23,"fl":0,"pen":0,"total":23,"place":2,"guest":false},{"pos":3,"no":"28","driver":"Harry Senior","cls":null,"pic":null,"laps":7,"time":"20:53.485","best":"2:36.764","on":5,"grid":null,"status":"classified","pts":22,"fl":0,"pen":0,"total":22,"place":3,"guest":false},{"pos":4,"no":"46","driver":"Steve Nuttall","cls":null,"pic":null,"laps":7,"time":"20:54.195","best":"2:37.782","on":6,"grid":null,"status":"classified","pts":21,"fl":0,"pen":0,"total":21,"place":4,"guest":false},{"pos":5,"no":"78","driver":"Nick Highton","cls":null,"pic":null,"laps":7,"time":"20:54.475","best":"3:04.409","on":4,"grid":null,"status":"classified","pts":20,"fl":0,"pen":0,"total":20,"place":5,"guest":false},{"pos":6,"no":"23","driver":"Justin Armstrong","cls":null,"pic":null,"laps":7,"time":"20:54.563","best":"2:40.369","on":7,"grid":null,"status":"classified","pts":19,"fl":0,"pen":0,"total":19,"place":6,"guest":false},{"pos":7,"no":"10","driver":"Henry Heaton","cls":null,"pic":null,"laps":7,"time":"20:54.965","best":"2:37.725","on":5,"grid":null,"status":"classified","pts":18,"fl":0,"pen":0,"total":18,"place":7,"guest":false},{"pos":8,"no":"76","driver":"Monty Hinde","cls":null,"pic":null,"laps":7,"time":"20:55.652","best":"2:37.702","on":6,"grid":null,"status":"classified","pts":17,"fl":0,"pen":0,"total":17,"place":8,"guest":false},{"pos":9,"no":"1","driver":"Matt Armstrong","cls":null,"pic":null,"laps":7,"time":"21:01.371","best":"2:35.833","on":6,"grid":null,"status":"classified","pts":16,"fl":0,"pen":-6,"total":10,"place":9,"guest":false},{"pos":10,"no":"56","driver":"Craig Storey","cls":null,"pic":null,"laps":7,"time":"21:01.983","best":"2:37.959","on":5,"grid":null,"status":"classified","pts":15,"fl":0,"pen":0,"total":15,"place":10,"guest":false},{"pos":11,"no":"66","driver":"Jake Swann","cls":null,"pic":null,"laps":7,"time":"21:02.223","best":"2:36.733","on":5,"grid":null,"status":"classified","pts":14,"fl":1,"pen":0,"total":15,"place":11,"guest":false},{"pos":12,"no":"35","driver":"Mark Kendle","cls":null,"pic":null,"laps":7,"time":"21:07.895","best":"2:39.667","on":6,"grid":null,"status":"classified","pts":13,"fl":0,"pen":0,"total":13,"place":12,"guest":false},{"pos":13,"no":"62","driver":"Darren McCormack","cls":null,"pic":null,"laps":7,"time":"21:10.952","best":"2:37.580","on":5,"grid":null,"status":"classified","pts":12,"fl":0,"pen":0,"total":12,"place":13,"guest":false},{"pos":14,"no":"17","driver":"Mark Farmer","cls":null,"pic":null,"laps":7,"time":"21:13.132","best":"2:41.591","on":7,"grid":null,"status":"classified","pts":11,"fl":0,"pen":0,"total":11,"place":14,"guest":false},{"pos":15,"no":"22","driver":"Gary Curtis","cls":null,"pic":null,"laps":7,"time":"21:28.417","best":"2:44.007","on":5,"grid":null,"status":"classified","pts":10,"fl":0,"pen":0,"total":10,"place":15,"guest":false},{"pos":16,"no":"68","driver":"Chris Welch","cls":null,"pic":null,"laps":7,"time":"21:29.032","best":"2:45.999","on":7,"grid":null,"status":"classified","pts":9,"fl":0,"pen":0,"total":9,"place":16,"guest":false},{"pos":17,"no":"93","driver":"Mike Evans","cls":null,"pic":null,"laps":6,"time":"18:20.808","best":"2:37.243","on":5,"grid":null,"status":"NC","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":18,"no":"15","driver":"Nick Sampson","cls":null,"pic":null,"laps":6,"time":"18:21.750","best":"2:37.403","on":5,"grid":null,"status":"NC","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":19,"no":"44","driver":"Timothy Dickens","cls":null,"pic":null,"laps":5,"time":"15:42.359","best":"3:06.711","on":4,"grid":null,"status":"NC","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":20,"no":"8","driver":"Chris Fraser","cls":null,"pic":null,"laps":4,"time":"12:58.827","best":"3:05.263","on":4,"grid":null,"status":"NC","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":21,"no":"25","driver":"Louis Darling","cls":null,"pic":null,"laps":1,"time":"2:43.179","best":null,"on":null,"grid":null,"status":"NC","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false}]},{"round":6,"event":"spa","eventName":"Spa-Francorchamps","raceInEvent":3,"date":"31/05/2026","laps":null,"miles":null,"weather":null,"start":null,"finish":null,"source":"Alkamel Systems","notes":["CARS 4, 8, 10, 11, 12, 15, 16, 21, 22, 23, 25, 27, 28, 35, 36, 46, 49, 56, 62, 66, 68, 78, 88, 93, 95, 96, 111, 117, 122, 125 AND 176 -","CARS 23, 25, 49, 68 & 176 - TIME PENALTY OF 5 SECONDS - TRACK LIMITS","CARS 49 & 68 - TIME PENALTY OF 10 SECONDS - TRACK LIMITS"],"fastest":{"no":"1","cls":null,"driver":"Matt Armstrong","lap":7,"time":"2:37.241"},"entries":[{"pos":1,"no":"11","driver":"Taylor O'Flanagan","cls":null,"pic":null,"laps":7,"time":"20:04.765","best":"2:37.728","on":7,"grid":null,"status":"classified","pts":25,"fl":0,"pen":0,"total":25,"place":1,"guest":false},{"pos":2,"no":"78","driver":"Nick Highton","cls":null,"pic":null,"laps":7,"time":"20:05.327","best":"2:37.764","on":7,"grid":null,"status":"classified","pts":23,"fl":0,"pen":0,"total":23,"place":2,"guest":false},{"pos":3,"no":"1","driver":"Matt Armstrong","cls":null,"pic":null,"laps":7,"time":"20:05.899","best":"2:37.241","on":7,"grid":null,"status":"classified","pts":22,"fl":1,"pen":0,"total":23,"place":3,"guest":false},{"pos":4,"no":"66","driver":"Jake Swann","cls":null,"pic":null,"laps":7,"time":"20:06.966","best":"2:37.988","on":7,"grid":null,"status":"classified","pts":21,"fl":0,"pen":0,"total":21,"place":4,"guest":false},{"pos":5,"no":"21","driver":"Charlie Lower","cls":null,"pic":null,"laps":7,"time":"20:07.354","best":"2:38.527","on":5,"grid":null,"status":"classified","pts":20,"fl":0,"pen":0,"total":20,"place":5,"guest":false},{"pos":6,"no":"10","driver":"Henry Heaton","cls":null,"pic":null,"laps":7,"time":"20:07.784","best":"2:38.084","on":7,"grid":null,"status":"classified","pts":19,"fl":0,"pen":0,"total":19,"place":6,"guest":false},{"pos":7,"no":"46","driver":"Steve Nuttall","cls":null,"pic":null,"laps":7,"time":"20:08.157","best":"2:37.991","on":7,"grid":null,"status":"classified","pts":18,"fl":0,"pen":0,"total":18,"place":7,"guest":false},{"pos":8,"no":"23","driver":"Justin Armstrong","cls":null,"pic":null,"laps":7,"time":"20:10.058","best":"2:37.624","on":5,"grid":null,"status":"classified","pts":17,"fl":0,"pen":0,"total":17,"place":8,"guest":false},{"pos":9,"no":"17","driver":"Mark Farmer","cls":null,"pic":null,"laps":7,"time":"20:10.405","best":"2:38.961","on":5,"grid":null,"status":"classified","pts":16,"fl":0,"pen":0,"total":16,"place":9,"guest":false},{"pos":10,"no":"56","driver":"Craig Storey","cls":null,"pic":null,"laps":7,"time":"20:10.586","best":"2:38.292","on":5,"grid":null,"status":"classified","pts":15,"fl":0,"pen":0,"total":15,"place":10,"guest":false},{"pos":11,"no":"62","driver":"Darren McCormack","cls":null,"pic":null,"laps":7,"time":"20:11.128","best":"2:37.439","on":4,"grid":null,"status":"classified","pts":14,"fl":0,"pen":0,"total":14,"place":11,"guest":false},{"pos":12,"no":"93","driver":"Mike Evans","cls":null,"pic":null,"laps":7,"time":"20:11.274","best":"2:38.250","on":5,"grid":null,"status":"classified","pts":13,"fl":0,"pen":0,"total":13,"place":12,"guest":false},{"pos":13,"no":"76","driver":"Monty Hinde","cls":null,"pic":null,"laps":7,"time":"20:11.507","best":"2:37.431","on":7,"grid":null,"status":"classified","pts":12,"fl":0,"pen":0,"total":12,"place":13,"guest":false},{"pos":14,"no":"35","driver":"Mark Kendle","cls":null,"pic":null,"laps":7,"time":"20:11.536","best":"2:37.780","on":4,"grid":null,"status":"classified","pts":11,"fl":0,"pen":0,"total":11,"place":14,"guest":false},{"pos":15,"no":"15","driver":"Nick Sampson","cls":null,"pic":null,"laps":7,"time":"20:11.580","best":"2:38.035","on":5,"grid":null,"status":"classified","pts":10,"fl":0,"pen":0,"total":10,"place":15,"guest":false},{"pos":16,"no":"22","driver":"Gary Curtis","cls":null,"pic":null,"laps":7,"time":"20:29.047","best":"2:41.563","on":5,"grid":null,"status":"classified","pts":9,"fl":0,"pen":0,"total":9,"place":16,"guest":false},{"pos":17,"no":"28","driver":"Harry Senior","cls":null,"pic":null,"laps":7,"time":"20:34.459","best":"2:37.610","on":4,"grid":null,"status":"classified","pts":8,"fl":0,"pen":0,"total":8,"place":17,"guest":false},{"pos":18,"no":"68","driver":"Chris Welch","cls":null,"pic":null,"laps":7,"time":"20:40.907","best":"2:41.714","on":7,"grid":null,"status":"classified","pts":7,"fl":0,"pen":0,"total":7,"place":18,"guest":false},{"pos":19,"no":"25","driver":"Louis Darling","cls":null,"pic":null,"laps":5,"time":"14:55.014","best":"2:39.351","on":4,"grid":null,"status":"NC","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":20,"no":"44","driver":"Timothy Dickens","cls":null,"pic":null,"laps":null,"time":null,"best":null,"on":null,"grid":null,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":21,"no":"8","driver":"Chris Fraser","cls":null,"pic":null,"laps":null,"time":null,"best":null,"on":null,"grid":null,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false}]},{"round":7,"event":"oulton","eventName":"Oulton Park Island","raceInEvent":1,"date":"18/07/2026","laps":14,"miles":31.16,"weather":"Bright / Dry","start":"11:45","finish":"12:06","source":"TSL Timing","notes":["Cars 6, 10, 22 & 68 - 5 second penalty - Exceeding Track Limits."],"fastest":{"no":"11","cls":"Pro Am","driver":"Taylor O'Flanagan","lap":11,"time":"1:27.106"},"entries":[{"pos":1,"no":"1","driver":"Matt Armstrong","cls":"Pro Am","pic":1,"laps":14,"time":"20:38.505","best":"1:27.462","on":1,"grid":0,"status":"classified","pts":25,"fl":0,"pen":0,"total":25,"place":1,"guest":false},{"pos":2,"no":"11","driver":"Taylor O'Flanagan","cls":"Pro Am","pic":2,"laps":14,"time":"20:38.649","best":"1:27.106","on":2,"grid":0,"status":"classified","pts":23,"fl":1,"pen":0,"total":24,"place":2,"guest":false},{"pos":3,"no":"23","driver":"Justin Armstrong","cls":"Am","pic":1,"laps":14,"time":"20:44.415","best":"1:27.648","on":4,"grid":1,"status":"classified","pts":22,"fl":0,"pen":0,"total":22,"place":3,"guest":false},{"pos":4,"no":"21","driver":"Charlie Lower","cls":"Pro Am","pic":3,"laps":14,"time":"20:47.228","best":"1:27.726","on":8,"grid":4,"status":"classified","pts":21,"fl":0,"pen":0,"total":21,"place":4,"guest":false},{"pos":5,"no":"28","driver":"Harry Senior","cls":"Pro Am","pic":4,"laps":14,"time":"20:47.969","best":"1:27.581","on":5,"grid":0,"status":"classified","pts":20,"fl":0,"pen":0,"total":20,"place":5,"guest":false},{"pos":6,"no":"46","driver":"Steve Nuttall","cls":"Pro Am","pic":5,"laps":14,"time":"20:50.296","best":"1:28.019","on":7,"grid":1,"status":"classified","pts":19,"fl":0,"pen":0,"total":19,"place":6,"guest":false},{"pos":7,"no":"78","driver":"Nick Highton","cls":"Pro Am","pic":6,"laps":14,"time":"20:56.131","best":"1:28.239","on":15,"grid":8,"status":"classified","pts":18,"fl":0,"pen":0,"total":18,"place":7,"guest":false},{"pos":8,"no":"76","driver":"Monty Hinde","cls":"Am","pic":2,"laps":14,"time":"20:56.685","best":"1:28.119","on":6,"grid":-2,"status":"classified","pts":17,"fl":0,"pen":0,"total":17,"place":8,"guest":false},{"pos":9,"no":"64","driver":"Tom Eden","cls":"Am","pic":3,"laps":14,"time":"20:57.940","best":"1:28.119","on":14,"grid":5,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":10,"no":"56","driver":"Craig Storey","cls":"Am","pic":4,"laps":14,"time":"20:58.255","best":"1:27.996","on":9,"grid":-1,"status":"classified","pts":16,"fl":0,"pen":0,"total":16,"place":9,"guest":false},{"pos":11,"no":"62","driver":"Darren McCormack","cls":"Am","pic":5,"laps":14,"time":"20:58.775","best":"1:28.427","on":16,"grid":5,"status":"classified","pts":15,"fl":0,"pen":0,"total":15,"place":10,"guest":false},{"pos":12,"no":"10","driver":"Henry Heaton","cls":"Pro Am","pic":7,"laps":14,"time":"21:01.063","best":"1:28.430","on":11,"grid":-1,"status":"classified","pts":14,"fl":0,"pen":0,"total":14,"place":11,"guest":false},{"pos":13,"no":"6","driver":"Dale Head","cls":"Am","pic":6,"laps":14,"time":"21:02.597","best":"1:28.538","on":10,"grid":-3,"status":"classified","pts":13,"fl":0,"pen":0,"total":13,"place":12,"guest":false},{"pos":14,"no":"35","driver":"Mark Kendle","cls":"Am","pic":7,"laps":14,"time":"21:17.085","best":"1:29.907","on":18,"grid":4,"status":"classified","pts":12,"fl":0,"pen":0,"total":12,"place":13,"guest":false},{"pos":15,"no":"22","driver":"Gary Curtis","cls":"Am","pic":8,"laps":14,"time":"21:22.691","best":"1:29.811","on":17,"grid":2,"status":"classified","pts":11,"fl":0,"pen":0,"total":11,"place":14,"guest":false},{"pos":16,"no":"68","driver":"Chris Welch","cls":"Am","pic":9,"laps":14,"time":"21:37.871","best":"1:31.152","on":19,"grid":3,"status":"classified","pts":10,"fl":0,"pen":0,"total":10,"place":15,"guest":false},{"pos":null,"no":"93","driver":"Mike Evans","cls":"Am","pic":null,"laps":14,"time":"22:23.033","best":"1:28.950","on":3,"grid":13,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":null,"no":"25","driver":"Louis Darling","cls":"Pro Am","pic":null,"laps":7,"time":"10:39.160","best":"1:28.630","on":3,"grid":3,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":null,"no":"17","driver":"Mark Farmer","cls":"Am","pic":null,"laps":1,"time":"3:08.893","best":null,"on":null,"grid":null,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false}]},{"round":8,"event":"oulton","eventName":"Oulton Park Island","raceInEvent":2,"date":"18/07/2026","laps":12,"miles":26.71,"weather":"Bright / Dry","start":"15:00","finish":"15:20","source":"TSL Timing","notes":["*Cars 21 & 78 - 5 second penalty - Exceeding track limits."],"fastest":{"no":"21","cls":"Pro Am","driver":"Charlie Lower","lap":3,"time":"1:28.309"},"entries":[{"pos":1,"no":"11","driver":"Taylor O'Flanagan","cls":"Pro Am","pic":1,"laps":12,"time":"20:07.246","best":"1:28.815","on":2,"grid":1,"status":"classified","pts":25,"fl":0,"pen":0,"total":25,"place":1,"guest":false},{"pos":2,"no":"1","driver":"Matt Armstrong","cls":"Pro Am","pic":2,"laps":12,"time":"20:07.379","best":"1:28.360","on":1,"grid":-1,"status":"classified","pts":23,"fl":0,"pen":0,"total":23,"place":2,"guest":false},{"pos":3,"no":"23","driver":"Justin Armstrong","cls":"Am","pic":1,"laps":12,"time":"20:07.760","best":"1:28.348","on":3,"grid":0,"status":"classified","pts":22,"fl":0,"pen":0,"total":22,"place":3,"guest":false},{"pos":4,"no":"28","driver":"Harry Senior","cls":"Pro Am","pic":3,"laps":12,"time":"20:08.574","best":"1:28.573","on":5,"grid":1,"status":"classified","pts":21,"fl":0,"pen":0,"total":21,"place":4,"guest":false},{"pos":5,"no":"46","driver":"Steve Nuttall","cls":"Pro Am","pic":4,"laps":12,"time":"20:08.737","best":"1:28.441","on":6,"grid":1,"status":"classified","pts":20,"fl":0,"pen":0,"total":20,"place":5,"guest":false},{"pos":6,"no":"76","driver":"Monty Hinde","cls":"Am","pic":2,"laps":12,"time":"20:09.844","best":"1:28.611","on":8,"grid":2,"status":"classified","pts":19,"fl":0,"pen":0,"total":19,"place":6,"guest":false},{"pos":7,"no":"10","driver":"Henry Heaton","cls":"Pro Am","pic":5,"laps":12,"time":"20:10.685","best":"1:28.759","on":12,"grid":5,"status":"classified","pts":18,"fl":0,"pen":0,"total":18,"place":7,"guest":false},{"pos":8,"no":"56","driver":"Craig Storey","cls":"Am","pic":3,"laps":12,"time":"20:10.833","best":"1:28.371","on":10,"grid":2,"status":"classified","pts":17,"fl":0,"pen":0,"total":17,"place":8,"guest":false},{"pos":9,"no":"21","driver":"Charlie Lower","cls":"Pro Am","pic":6,"laps":12,"time":"20:12.516","best":"1:28.309","on":4,"grid":-5,"status":"classified","pts":16,"fl":1,"pen":0,"total":17,"place":9,"guest":false},{"pos":10,"no":"6","driver":"Dale Head","cls":"Am","pic":4,"laps":12,"time":"20:12.956","best":"1:28.600","on":13,"grid":3,"status":"classified","pts":15,"fl":0,"pen":0,"total":15,"place":10,"guest":false},{"pos":11,"no":"78","driver":"Nick Highton","cls":"Pro Am","pic":7,"laps":12,"time":"20:14.665","best":"1:28.544","on":7,"grid":-4,"status":"classified","pts":14,"fl":0,"pen":0,"total":14,"place":11,"guest":false},{"pos":12,"no":"62","driver":"Darren McCormack","cls":"Am","pic":5,"laps":12,"time":"20:16.648","best":"1:28.813","on":11,"grid":-1,"status":"classified","pts":13,"fl":0,"pen":0,"total":13,"place":12,"guest":false},{"pos":13,"no":"17","driver":"Mark Farmer","cls":"Am","pic":6,"laps":12,"time":"20:21.350","best":"1:29.536","on":19,"grid":6,"status":"classified","pts":12,"fl":0,"pen":0,"total":12,"place":13,"guest":false},{"pos":14,"no":"35","driver":"Mark Kendle","cls":"Am","pic":7,"laps":12,"time":"20:22.475","best":"1:29.957","on":14,"grid":0,"status":"classified","pts":11,"fl":0,"pen":0,"total":11,"place":14,"guest":false},{"pos":15,"no":"22","driver":"Gary Curtis","cls":"Am","pic":8,"laps":12,"time":"20:26.071","best":"1:30.497","on":15,"grid":0,"status":"classified","pts":10,"fl":0,"pen":0,"total":10,"place":15,"guest":false},{"pos":16,"no":"68","driver":"Chris Welch","cls":"Am","pic":9,"laps":12,"time":"20:32.522","best":"1:30.998","on":16,"grid":0,"status":"classified","pts":9,"fl":0,"pen":0,"total":9,"place":16,"guest":false},{"pos":17,"no":"64","driver":"Tom Eden","cls":"Am","pic":10,"laps":12,"time":"21:11.629","best":"1:28.663","on":9,"grid":-8,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":null,"no":"25","driver":"Louis Darling","cls":"Pro Am","pic":null,"laps":9,"time":"15:53.904","best":"1:29.433","on":2,"grid":18,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":null,"no":"93","driver":"Mike Evans","cls":"Am","pic":null,"laps":4,"time":"10:47.462","best":"1:30.122","on":2,"grid":17,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false}]},{"round":9,"event":"oulton","eventName":"Oulton Park Island","raceInEvent":3,"date":"18/07/2026","laps":12,"miles":26.71,"weather":"Bright / Dry","start":"17:11","finish":"17:31","source":"TSL Timing","notes":["*Car 17 - 5 second penalty - Exceeding track limits."],"fastest":{"no":"11","cls":"Pro Am","driver":"Taylor O'Flanagan","lap":12,"time":"1:28.016"},"entries":[{"pos":1,"no":"1","driver":"Matt Armstrong","cls":"Pro Am","pic":1,"laps":12,"time":"20:32.421","best":"1:28.156","on":2,"grid":1,"status":"classified","pts":25,"fl":0,"pen":0,"total":25,"place":1,"guest":false},{"pos":2,"no":"23","driver":"Justin Armstrong","cls":"Am","pic":1,"laps":12,"time":"20:32.695","best":"1:28.020","on":3,"grid":1,"status":"classified","pts":23,"fl":0,"pen":0,"total":23,"place":2,"guest":false},{"pos":3,"no":"11","driver":"Taylor O'Flanagan","cls":"Pro Am","pic":2,"laps":12,"time":"20:32.883","best":"1:28.016","on":1,"grid":-2,"status":"classified","pts":22,"fl":1,"pen":0,"total":23,"place":3,"guest":false},{"pos":4,"no":"46","driver":"Steve Nuttall","cls":"Pro Am","pic":3,"laps":12,"time":"20:42.469","best":"1:28.655","on":5,"grid":1,"status":"classified","pts":21,"fl":0,"pen":0,"total":21,"place":4,"guest":false},{"pos":5,"no":"28","driver":"Harry Senior","cls":"Pro Am","pic":4,"laps":12,"time":"20:42.588","best":"1:28.565","on":4,"grid":-1,"status":"classified","pts":20,"fl":0,"pen":0,"total":20,"place":5,"guest":false},{"pos":6,"no":"56","driver":"Craig Storey","cls":"Am","pic":2,"laps":12,"time":"20:42.799","best":"1:28.616","on":8,"grid":2,"status":"classified","pts":19,"fl":0,"pen":0,"total":19,"place":6,"guest":false},{"pos":7,"no":"78","driver":"Nick Highton","cls":"Pro Am","pic":5,"laps":12,"time":"20:46.834","best":"1:29.134","on":11,"grid":4,"status":"classified","pts":18,"fl":0,"pen":0,"total":18,"place":7,"guest":false},{"pos":8,"no":"64","driver":"Tom Eden","cls":"Am","pic":3,"laps":12,"time":"20:46.991","best":"1:28.580","on":17,"grid":9,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":9,"no":"76","driver":"Monty Hinde","cls":"Am","pic":4,"laps":12,"time":"20:47.099","best":"1:29.079","on":6,"grid":-3,"status":"classified","pts":17,"fl":0,"pen":0,"total":17,"place":8,"guest":false},{"pos":10,"no":"10","driver":"Henry Heaton","cls":"Pro Am","pic":6,"laps":12,"time":"20:47.127","best":"1:28.961","on":7,"grid":-3,"status":"classified","pts":16,"fl":0,"pen":0,"total":16,"place":9,"guest":false},{"pos":11,"no":"62","driver":"Darren McCormack","cls":"Am","pic":5,"laps":12,"time":"20:52.053","best":"1:29.715","on":12,"grid":1,"status":"classified","pts":15,"fl":0,"pen":0,"total":15,"place":10,"guest":false},{"pos":12,"no":"17","driver":"Mark Farmer","cls":"Am","pic":6,"laps":12,"time":"20:54.816","best":"1:29.497","on":13,"grid":1,"status":"classified","pts":14,"fl":0,"pen":0,"total":14,"place":11,"guest":false},{"pos":13,"no":"35","driver":"Mark Kendle","cls":"Am","pic":7,"laps":12,"time":"20:55.651","best":"1:30.059","on":14,"grid":1,"status":"classified","pts":13,"fl":0,"pen":0,"total":13,"place":12,"guest":false},{"pos":14,"no":"93","driver":"Mike Evans","cls":"Am","pic":8,"laps":12,"time":"21:08.432","best":"1:29.158","on":19,"grid":5,"status":"classified","pts":12,"fl":0,"pen":0,"total":12,"place":13,"guest":false},{"pos":15,"no":"22","driver":"Gary Curtis","cls":"Am","pic":9,"laps":12,"time":"21:08.479","best":"1:31.622","on":15,"grid":0,"status":"classified","pts":11,"fl":0,"pen":0,"total":11,"place":14,"guest":false},{"pos":16,"no":"68","driver":"Chris Welch","cls":"Am","pic":10,"laps":12,"time":"21:08.995","best":"1:31.426","on":16,"grid":0,"status":"classified","pts":10,"fl":0,"pen":0,"total":10,"place":15,"guest":false},{"pos":null,"no":"21","driver":"Charlie Lower","cls":"Pro Am","pic":null,"laps":9,"time":"16:12.830","best":"1:28.530","on":6,"grid":9,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":null,"no":"6","driver":"Dale Head","cls":"Am","pic":null,"laps":0,"time":null,"best":null,"on":null,"grid":null,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":null,"no":"25","driver":"Louis Darling","cls":"Pro Am","pic":null,"laps":18,"time":null,"best":null,"on":null,"grid":null,"status":"NS","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false}]},{"round":10,"event":"knockhill","eventName":"Knockhill","raceInEvent":1,"date":"08/08/2026","laps":23,"miles":29.14,"weather":"Cloudy / Damp","start":"16:39","finish":"16:59","source":"TSL Timing","notes":["Cars 78, 62, 93, 6 - 5 second time penalty applied for exceeding track limits","Car 78, 93 - 10 second time penalty applied for exceeding track limits"],"fastest":{"no":"28","cls":"Pro Am","driver":"Harry Senior","lap":15,"time":"52.451"},"entries":[{"pos":1,"no":"1","driver":"Matt Armstrong","cls":"Pro Am","pic":1,"laps":23,"time":"20:30.701","best":"52.501","on":1,"grid":0,"status":"classified","pts":25,"fl":0,"pen":0,"total":25,"place":1,"guest":false},{"pos":2,"no":"28","driver":"Harry Senior","cls":"Pro Am","pic":2,"laps":23,"time":"20:31.125","best":"52.451","on":2,"grid":0,"status":"classified","pts":23,"fl":1,"pen":0,"total":24,"place":2,"guest":false},{"pos":3,"no":"11","driver":"Taylor O'Flanagan","cls":"Pro Am","pic":3,"laps":23,"time":"20:38.374","best":"52.641","on":3,"grid":0,"status":"classified","pts":22,"fl":0,"pen":0,"total":22,"place":3,"guest":false},{"pos":4,"no":"23","driver":"Justin Armstrong","cls":"Pro Am","pic":4,"laps":23,"time":"20:42.666","best":"52.770","on":4,"grid":0,"status":"classified","pts":21,"fl":0,"pen":0,"total":21,"place":4,"guest":false},{"pos":5,"no":"46","driver":"Steve Nuttall","cls":"Pro Am","pic":5,"laps":23,"time":"20:54.877","best":"53.140","on":5,"grid":0,"status":"classified","pts":20,"fl":0,"pen":0,"total":20,"place":5,"guest":false},{"pos":6,"no":"21","driver":"Charlie Lower","cls":"Pro Am","pic":6,"laps":23,"time":"20:59.735","best":"53.085","on":12,"grid":6,"status":"classified","pts":19,"fl":0,"pen":0,"total":19,"place":6,"guest":false},{"pos":7,"no":"56","driver":"Craig Storey","cls":"Am","pic":1,"laps":23,"time":"21:02.999","best":"53.117","on":11,"grid":4,"status":"classified","pts":18,"fl":0,"pen":0,"total":18,"place":7,"guest":false},{"pos":8,"no":"51","driver":"Harrison Cavers","cls":"Am","pic":2,"laps":23,"time":"21:03.833","best":"53.368","on":13,"grid":5,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":9,"no":"76","driver":"Monty Hinde","cls":"Am","pic":3,"laps":23,"time":"21:04.298","best":"53.328","on":10,"grid":1,"status":"classified","pts":17,"fl":0,"pen":0,"total":17,"place":8,"guest":false},{"pos":10,"no":"6","driver":"Dale Head","cls":"Am","pic":4,"laps":23,"time":"21:07.346","best":"53.454","on":6,"grid":-4,"status":"classified","pts":16,"fl":0,"pen":0,"total":16,"place":9,"guest":false},{"pos":11,"no":"62","driver":"Darren McCormack","cls":"Am","pic":5,"laps":23,"time":"21:07.805","best":"53.394","on":8,"grid":-3,"status":"classified","pts":15,"fl":0,"pen":0,"total":15,"place":10,"guest":false},{"pos":12,"no":"78","driver":"Nick Highton","cls":"Pro Am","pic":7,"laps":23,"time":"21:08.082","best":"53.189","on":7,"grid":-5,"status":"classified","pts":14,"fl":0,"pen":0,"total":14,"place":11,"guest":false},{"pos":13,"no":"93","driver":"Mike Evans","cls":"Am","pic":6,"laps":23,"time":"21:24.552","best":"53.446","on":9,"grid":-4,"status":"classified","pts":13,"fl":0,"pen":0,"total":13,"place":12,"guest":false}]},{"round":11,"event":"knockhill","eventName":"Knockhill","raceInEvent":2,"date":"09/08/2026","laps":21,"miles":26.6,"weather":"Cloudy / Wet","start":"10:13","finish":"10:33","source":"TSL Timing","notes":["Car 23 - 10 second time penalty applied for false start"],"fastest":{"no":"11","cls":"Pro Am","driver":"Taylor O'Flanagan","lap":6,"time":"56.905"},"entries":[{"pos":1,"no":"1","driver":"Matt Armstrong","cls":"Pro Am","pic":1,"laps":21,"time":"20:12.860","best":"57.059","on":1,"grid":0,"status":"classified","pts":25,"fl":0,"pen":0,"total":25,"place":1,"guest":false},{"pos":2,"no":"11","driver":"Taylor O'Flanagan","cls":"Pro Am","pic":2,"laps":21,"time":"20:12.996","best":"56.905","on":3,"grid":1,"status":"classified","pts":23,"fl":1,"pen":0,"total":24,"place":2,"guest":false},{"pos":3,"no":"28","driver":"Harry Senior","cls":"Pro Am","pic":3,"laps":21,"time":"20:15.046","best":"56.977","on":2,"grid":-1,"status":"classified","pts":22,"fl":0,"pen":0,"total":22,"place":3,"guest":false},{"pos":4,"no":"21","driver":"Charlie Lower","cls":"Pro Am","pic":4,"laps":21,"time":"20:25.206","best":"57.733","on":6,"grid":2,"status":"classified","pts":21,"fl":0,"pen":0,"total":21,"place":4,"guest":false},{"pos":5,"no":"6","driver":"Dale Head","cls":"Am","pic":1,"laps":21,"time":"20:31.266","best":"57.822","on":10,"grid":5,"status":"classified","pts":20,"fl":0,"pen":0,"total":20,"place":5,"guest":false},{"pos":6,"no":"78","driver":"Nick Highton","cls":"Pro Am","pic":5,"laps":21,"time":"20:33.429","best":"57.754","on":12,"grid":6,"status":"classified","pts":19,"fl":0,"pen":0,"total":19,"place":6,"guest":false},{"pos":7,"no":"51","driver":"Harrison Cavers","cls":"Am","pic":2,"laps":21,"time":"20:34.797","best":"57.921","on":8,"grid":1,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":8,"no":"23","driver":"Justin Armstrong","cls":"Pro Am","pic":6,"laps":21,"time":"20:40.276","best":"57.689","on":4,"grid":-4,"status":"classified","pts":18,"fl":0,"pen":0,"total":18,"place":7,"guest":false},{"pos":9,"no":"62","driver":"Darren McCormack","cls":"Am","pic":3,"laps":21,"time":"20:53.414","best":"58.970","on":11,"grid":2,"status":"classified","pts":17,"fl":0,"pen":0,"total":17,"place":8,"guest":false},{"pos":10,"no":"56","driver":"Craig Storey","cls":"Am","pic":4,"laps":21,"time":"20:54.251","best":"58.303","on":7,"grid":-3,"status":"classified","pts":16,"fl":0,"pen":0,"total":16,"place":9,"guest":false},{"pos":11,"no":"46","driver":"Steve Nuttall","cls":"Pro Am","pic":7,"laps":21,"time":"20:54.749","best":"57.990","on":5,"grid":-6,"status":"classified","pts":15,"fl":0,"pen":0,"total":15,"place":10,"guest":false},{"pos":12,"no":"76","driver":"Monty Hinde","cls":"Am","pic":5,"laps":21,"time":"21:04.168","best":"57.765","on":9,"grid":-3,"status":"classified","pts":14,"fl":0,"pen":0,"total":14,"place":11,"guest":false},{"pos":13,"no":"93","driver":"Mike Evans","cls":"Am","pic":6,"laps":21,"time":"21:07.224","best":"58.378","on":13,"grid":0,"status":"classified","pts":13,"fl":0,"pen":0,"total":13,"place":12,"guest":false}]},{"round":12,"event":"knockhill","eventName":"Knockhill","raceInEvent":3,"date":"09/08/2026","laps":23,"miles":29.14,"weather":"Cloudy / Dry","start":"16:15","finish":"16:35","source":"TSL Timing","notes":["Car 46 - 10 second time penalty applied for false start"],"fastest":{"no":"28","cls":"Pro Am","driver":"Harry Senior","lap":6,"time":"52.403"},"entries":[{"pos":1,"no":"1","driver":"Matt Armstrong","cls":"Pro Am","pic":1,"laps":23,"time":"20:18.207","best":"52.423","on":1,"grid":0,"status":"classified","pts":25,"fl":0,"pen":-6,"total":19,"place":1,"guest":false},{"pos":2,"no":"28","driver":"Harry Senior","cls":"Pro Am","pic":2,"laps":23,"time":"20:24.441","best":"52.403","on":3,"grid":1,"status":"classified","pts":23,"fl":1,"pen":0,"total":24,"place":2,"guest":false},{"pos":3,"no":"11","driver":"Taylor O'Flanagan","cls":"Pro Am","pic":3,"laps":23,"time":"20:30.726","best":"52.774","on":2,"grid":-1,"status":"classified","pts":22,"fl":0,"pen":0,"total":22,"place":3,"guest":false},{"pos":4,"no":"21","driver":"Charlie Lower","cls":"Pro Am","pic":4,"laps":23,"time":"20:33.415","best":"52.821","on":4,"grid":0,"status":"classified","pts":21,"fl":0,"pen":0,"total":21,"place":4,"guest":false},{"pos":5,"no":"78","driver":"Nick Highton","cls":"Pro Am","pic":5,"laps":23,"time":"20:33.437","best":"52.807","on":6,"grid":1,"status":"classified","pts":20,"fl":0,"pen":0,"total":20,"place":5,"guest":false},{"pos":6,"no":"23","driver":"Justin Armstrong","cls":"Pro Am","pic":6,"laps":23,"time":"20:33.808","best":"52.860","on":8,"grid":2,"status":"classified","pts":19,"fl":0,"pen":0,"total":19,"place":6,"guest":false},{"pos":7,"no":"6","driver":"Dale Head","cls":"Am","pic":1,"laps":23,"time":"20:42.072","best":"53.085","on":5,"grid":-2,"status":"classified","pts":18,"fl":0,"pen":0,"total":18,"place":7,"guest":false},{"pos":8,"no":"76","driver":"Monty Hinde","cls":"Am","pic":2,"laps":23,"time":"20:42.679","best":"53.419","on":12,"grid":4,"status":"classified","pts":17,"fl":0,"pen":0,"total":17,"place":8,"guest":false},{"pos":9,"no":"56","driver":"Craig Storey","cls":"Am","pic":3,"laps":23,"time":"20:43.982","best":"53.410","on":10,"grid":1,"status":"classified","pts":16,"fl":0,"pen":0,"total":16,"place":9,"guest":false},{"pos":10,"no":"46","driver":"Steve Nuttall","cls":"Pro Am","pic":7,"laps":23,"time":"20:46.005","best":"52.970","on":11,"grid":1,"status":"classified","pts":15,"fl":0,"pen":0,"total":15,"place":10,"guest":false},{"pos":11,"no":"93","driver":"Mike Evans","cls":"Am","pic":4,"laps":23,"time":"20:54.460","best":"53.666","on":13,"grid":2,"status":"classified","pts":14,"fl":0,"pen":0,"total":14,"place":11,"guest":false},{"pos":12,"no":"62","driver":"Darren McCormack","cls":"Am","pic":5,"laps":23,"time":"20:57.685","best":"53.933","on":9,"grid":-3,"status":"classified","pts":13,"fl":0,"pen":0,"total":13,"place":12,"guest":false},{"pos":null,"no":"51","driver":"Harrison Cavers","cls":"Am","pic":null,"laps":17,"time":"15:36.678","best":"53.798","on":3,"grid":7,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true}]},{"round":13,"event":"donington","eventName":"Donington Park GP","raceInEvent":1,"date":"22/08/2026","laps":12,"miles":29.84,"weather":"Cloudy / Dry","start":"17:00","finish":"17:21","source":"TSL Timing","notes":["*Car 46 - 10 second time penalty, false start.","*Car 23 - Disqualified from Results - Ch. 2, App. 3, Art. 1.16"],"fastest":{"no":"2","cls":"Pro Am","driver":"Aaron Head","lap":5,"time":"1:36.978"},"entries":[{"pos":1,"no":"2","driver":"Aaron Head","cls":"Pro Am","pic":1,"laps":12,"time":"21:27.148","best":"1:36.978","on":8,"grid":7,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":2,"no":"21","driver":"Charlie Lower","cls":"Pro Am","pic":2,"laps":12,"time":"21:27.429","best":"1:37.235","on":5,"grid":3,"status":"classified","pts":25,"fl":0,"pen":-6,"total":19,"place":1,"guest":false},{"pos":3,"no":"43","driver":"Stephen Lyall","cls":"Pro Am","pic":3,"laps":12,"time":"21:27.847","best":"1:37.017","on":7,"grid":4,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":4,"no":"1","driver":"Matt Armstrong","cls":"Pro Am","pic":4,"laps":12,"time":"21:28.187","best":"1:37.173","on":3,"grid":-1,"status":"classified","pts":23,"fl":1,"pen":0,"total":24,"place":2,"guest":false},{"pos":5,"no":"9","driver":"Harry Cook","cls":"Pro Am","pic":5,"laps":12,"time":"21:28.449","best":"1:37.366","on":4,"grid":-1,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":6,"no":"28","driver":"Harry Senior","cls":"Pro Am","pic":6,"laps":12,"time":"21:29.125","best":"1:37.431","on":6,"grid":0,"status":"classified","pts":22,"fl":0,"pen":0,"total":22,"place":3,"guest":false},{"pos":7,"no":"11","driver":"Taylor O'Flanagan","cls":"Pro Am","pic":7,"laps":12,"time":"21:34.710","best":"1:37.595","on":1,"grid":-6,"status":"classified","pts":21,"fl":0,"pen":0,"total":21,"place":4,"guest":false},{"pos":8,"no":"25","driver":"Louis Darling","cls":"Pro Am","pic":8,"laps":12,"time":"21:36.222","best":"1:37.290","on":11,"grid":3,"status":"classified","pts":20,"fl":0,"pen":0,"total":20,"place":5,"guest":false},{"pos":9,"no":"93","driver":"Mike Evans","cls":"Am","pic":1,"laps":12,"time":"21:36.696","best":"1:37.372","on":14,"grid":5,"status":"classified","pts":19,"fl":0,"pen":0,"total":19,"place":6,"guest":false},{"pos":10,"no":"6","driver":"Dale Head","cls":"Am","pic":2,"laps":12,"time":"21:39.416","best":"1:37.740","on":12,"grid":2,"status":"classified","pts":18,"fl":0,"pen":0,"total":18,"place":7,"guest":false},{"pos":11,"no":"76","driver":"Monty Hinde","cls":"Am","pic":3,"laps":12,"time":"21:39.417","best":"1:37.687","on":13,"grid":2,"status":"classified","pts":17,"fl":0,"pen":0,"total":17,"place":8,"guest":false},{"pos":12,"no":"64","driver":"Tom Eden","cls":"Am","pic":4,"laps":12,"time":"21:40.134","best":"1:37.371","on":16,"grid":4,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":13,"no":"51","driver":"Harrison Cavers","cls":"Am","pic":5,"laps":12,"time":"21:40.495","best":"1:37.898","on":18,"grid":5,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":14,"no":"62","driver":"Darren McCormack","cls":"Am","pic":6,"laps":12,"time":"21:42.840","best":"1:38.237","on":17,"grid":3,"status":"classified","pts":16,"fl":0,"pen":0,"total":16,"place":9,"guest":false},{"pos":15,"no":"46","driver":"Steve Nuttall","cls":"Pro Am","pic":9,"laps":12,"time":"21:45.892","best":"1:37.414","on":9,"grid":-6,"status":"classified","pts":15,"fl":0,"pen":0,"total":15,"place":10,"guest":false},{"pos":16,"no":"22","driver":"Gary Curtis","cls":"Am","pic":7,"laps":12,"time":"21:47.497","best":"1:39.250","on":19,"grid":3,"status":"classified","pts":14,"fl":0,"pen":-6,"total":8,"place":11,"guest":false},{"pos":17,"no":"68","driver":"Chris Welch","cls":"Am","pic":8,"laps":12,"time":"21:50.411","best":"1:39.252","on":20,"grid":3,"status":"classified","pts":13,"fl":0,"pen":0,"total":13,"place":12,"guest":false},{"pos":null,"no":"56","driver":"Craig Storey","cls":"Am","pic":null,"laps":0,"time":null,"best":null,"on":null,"grid":null,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":null,"no":"78","driver":"Nick Highton","cls":"Pro Am","pic":null,"laps":0,"time":null,"best":null,"on":null,"grid":null,"status":"DNF","pts":0,"fl":0,"pen":-6,"total":-6,"place":null,"guest":false},{"pos":null,"no":"23","driver":"Justin Armstrong","cls":"Pro Am","pic":null,"laps":2,"time":null,"best":null,"on":null,"grid":null,"status":"DQ","pts":0,"fl":0,"pen":-12,"total":-12,"place":null,"guest":false}]},{"round":14,"event":"donington","eventName":"Donington Park GP","raceInEvent":2,"date":"23/08/2026","laps":11,"miles":27.36,"weather":"Bright / Dry","start":"12:38","finish":"12:58","source":"TSL Timing","notes":[],"fastest":{"no":"56","cls":"Am","driver":"Craig Storey","lap":9,"time":"1:37.157"},"entries":[{"pos":1,"no":"2","driver":"Aaron Head","cls":"Pro Am","pic":1,"laps":11,"time":"20:35.174","best":"1:37.451","on":1,"grid":0,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":2,"no":"1","driver":"Matt Armstrong","cls":"Pro Am","pic":2,"laps":11,"time":"20:35.611","best":"1:37.390","on":4,"grid":2,"status":"classified","pts":25,"fl":0,"pen":0,"total":25,"place":1,"guest":false},{"pos":3,"no":"21","driver":"Charlie Lower","cls":"Pro Am","pic":3,"laps":11,"time":"20:36.050","best":"1:37.583","on":2,"grid":-1,"status":"classified","pts":23,"fl":0,"pen":0,"total":23,"place":2,"guest":false},{"pos":4,"no":"9","driver":"Harry Cook","cls":"Pro Am","pic":4,"laps":11,"time":"20:36.435","best":"1:37.565","on":5,"grid":1,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":5,"no":"25","driver":"Louis Darling","cls":"Pro Am","pic":5,"laps":11,"time":"20:37.021","best":"1:37.530","on":8,"grid":3,"status":"classified","pts":22,"fl":0,"pen":0,"total":22,"place":3,"guest":false},{"pos":6,"no":"11","driver":"Taylor O'Flanagan","cls":"Pro Am","pic":6,"laps":11,"time":"20:37.105","best":"1:37.762","on":7,"grid":1,"status":"classified","pts":21,"fl":0,"pen":0,"total":21,"place":4,"guest":false},{"pos":7,"no":"28","driver":"Harry Senior","cls":"Pro Am","pic":7,"laps":11,"time":"20:37.320","best":"1:37.745","on":6,"grid":-1,"status":"classified","pts":20,"fl":0,"pen":0,"total":20,"place":5,"guest":false},{"pos":8,"no":"64","driver":"Tom Eden","cls":"Am","pic":1,"laps":11,"time":"20:37.749","best":"1:37.753","on":12,"grid":4,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":9,"no":"43","driver":"Stephen Lyall","cls":"Pro Am","pic":8,"laps":11,"time":"20:37.822","best":"1:37.645","on":3,"grid":-6,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":10,"no":"78","driver":"Nick Highton","cls":"Pro Am","pic":9,"laps":11,"time":"20:39.112","best":"1:37.937","on":19,"grid":9,"status":"classified","pts":19,"fl":0,"pen":0,"total":19,"place":6,"guest":false},{"pos":11,"no":"51","driver":"Harrison Cavers","cls":"Am","pic":2,"laps":11,"time":"20:39.615","best":"1:38.079","on":13,"grid":2,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":12,"no":"56","driver":"Craig Storey","cls":"Am","pic":3,"laps":11,"time":"20:40.158","best":"1:37.157","on":18,"grid":6,"status":"classified","pts":18,"fl":1,"pen":0,"total":19,"place":7,"guest":false},{"pos":13,"no":"23","driver":"Justin Armstrong","cls":"Pro Am","pic":10,"laps":11,"time":"20:40.637","best":"1:37.566","on":20,"grid":7,"status":"classified","pts":17,"fl":0,"pen":0,"total":17,"place":8,"guest":false},{"pos":14,"no":"76","driver":"Monty Hinde","cls":"Am","pic":4,"laps":11,"time":"20:40.709","best":"1:37.746","on":11,"grid":-3,"status":"classified","pts":16,"fl":0,"pen":0,"total":16,"place":9,"guest":false},{"pos":15,"no":"62","driver":"Darren McCormack","cls":"Am","pic":5,"laps":11,"time":"20:40.720","best":"1:38.065","on":14,"grid":-1,"status":"classified","pts":15,"fl":0,"pen":0,"total":15,"place":10,"guest":false},{"pos":16,"no":"68","driver":"Chris Welch","cls":"Am","pic":6,"laps":11,"time":"20:46.599","best":"1:39.749","on":17,"grid":1,"status":"classified","pts":14,"fl":0,"pen":0,"total":14,"place":11,"guest":false},{"pos":null,"no":"22","driver":"Gary Curtis","cls":"Am","pic":null,"laps":6,"time":"20:47.398","best":"1:39.890","on":5,"grid":16,"status":"NC","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":null,"no":"6","driver":"Dale Head","cls":"Am","pic":null,"laps":3,"time":"5:01.519","best":"1:38.065","on":2,"grid":10,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":null,"no":"93","driver":"Mike Evans","cls":"Am","pic":null,"laps":3,"time":"5:01.861","best":"1:38.511","on":2,"grid":9,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":null,"no":"46","driver":"Steve Nuttall","cls":"Pro Am","pic":null,"laps":3,"time":"5:02.142","best":"1:37.903","on":2,"grid":15,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false}]},{"round":15,"event":"donington","eventName":"Donington Park GP","raceInEvent":3,"date":"23/08/2026","laps":12,"miles":29.84,"weather":"Bright / Dry","start":"16:51","finish":"17:12","source":"TSL Timing","notes":[],"fastest":{"no":"28","cls":"Pro Am","driver":"Harry Senior","lap":9,"time":"1:36.445"},"entries":[{"pos":1,"no":"2","driver":"Aaron Head","cls":"Pro Am","pic":1,"laps":12,"time":"21:00.642","best":"1:36.921","on":1,"grid":0,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":2,"no":"1","driver":"Matt Armstrong","cls":"Pro Am","pic":2,"laps":12,"time":"21:01.509","best":"1:36.982","on":2,"grid":0,"status":"classified","pts":25,"fl":0,"pen":-9,"total":16,"place":1,"guest":false},{"pos":3,"no":"23","driver":"Justin Armstrong","cls":"Pro Am","pic":3,"laps":12,"time":"21:03.079","best":"1:36.993","on":13,"grid":10,"status":"classified","pts":23,"fl":0,"pen":0,"total":23,"place":2,"guest":false},{"pos":4,"no":"46","driver":"Steve Nuttall","cls":"Pro Am","pic":4,"laps":12,"time":"21:05.043","best":"1:37.074","on":20,"grid":16,"status":"classified","pts":22,"fl":0,"pen":0,"total":22,"place":3,"guest":false},{"pos":5,"no":"64","driver":"Tom Eden","cls":"Am","pic":1,"laps":12,"time":"21:05.290","best":"1:37.039","on":8,"grid":3,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":6,"no":"28","driver":"Harry Senior","cls":"Pro Am","pic":5,"laps":12,"time":"21:07.006","best":"1:36.445","on":7,"grid":1,"status":"classified","pts":21,"fl":1,"pen":0,"total":22,"place":4,"guest":false},{"pos":7,"no":"56","driver":"Craig Storey","cls":"Am","pic":2,"laps":12,"time":"21:07.440","best":"1:37.386","on":12,"grid":5,"status":"classified","pts":20,"fl":0,"pen":0,"total":20,"place":5,"guest":false},{"pos":8,"no":"9","driver":"Harry Cook","cls":"Pro Am","pic":6,"laps":12,"time":"21:07.969","best":"1:37.186","on":4,"grid":-4,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":9,"no":"76","driver":"Monty Hinde","cls":"Am","pic":3,"laps":12,"time":"21:08.807","best":"1:37.291","on":14,"grid":5,"status":"classified","pts":19,"fl":0,"pen":0,"total":19,"place":6,"guest":false},{"pos":10,"no":"78","driver":"Nick Highton","cls":"Pro Am","pic":7,"laps":12,"time":"21:09.297","best":"1:37.924","on":10,"grid":0,"status":"classified","pts":18,"fl":0,"pen":0,"total":18,"place":7,"guest":false},{"pos":11,"no":"6","driver":"Dale Head","cls":"Am","pic":4,"laps":12,"time":"21:14.851","best":"1:38.230","on":18,"grid":7,"status":"classified","pts":17,"fl":0,"pen":0,"total":17,"place":8,"guest":false},{"pos":12,"no":"62","driver":"Darren McCormack","cls":"Am","pic":5,"laps":12,"time":"21:14.963","best":"1:38.053","on":15,"grid":3,"status":"classified","pts":16,"fl":0,"pen":0,"total":16,"place":9,"guest":false},{"pos":13,"no":"51","driver":"Harrison Cavers","cls":"Am","pic":6,"laps":12,"time":"21:15.583","best":"1:37.791","on":11,"grid":-2,"status":"classified","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":14,"no":"22","driver":"Gary Curtis","cls":"Am","pic":7,"laps":12,"time":"21:17.459","best":"1:39.226","on":17,"grid":3,"status":"classified","pts":15,"fl":0,"pen":0,"total":15,"place":10,"guest":false},{"pos":15,"no":"68","driver":"Chris Welch","cls":"Am","pic":8,"laps":12,"time":"21:38.690","best":"1:40.051","on":16,"grid":1,"status":"classified","pts":14,"fl":0,"pen":0,"total":14,"place":11,"guest":false},{"pos":16,"no":"11","driver":"Taylor O'Flanagan","cls":"Pro Am","pic":8,"laps":12,"time":"22:18.788","best":"1:36.563","on":6,"grid":-10,"status":"classified","pts":13,"fl":0,"pen":0,"total":13,"place":12,"guest":false},{"pos":17,"no":"25","driver":"Louis Darling","cls":"Pro Am","pic":9,"laps":11,"time":"21:15.213","best":"1:37.178","on":5,"grid":-12,"status":"classified","pts":12,"fl":0,"pen":0,"total":12,"place":13,"guest":false},{"pos":null,"no":"21","driver":"Charlie Lower","cls":"Pro Am","pic":null,"laps":11,"time":"19:25.177","best":"1:37.218","on":9,"grid":3,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false},{"pos":null,"no":"43","driver":"Stephen Lyall","cls":"Pro Am","pic":null,"laps":4,"time":"6:35.023","best":"1:37.203","on":4,"grid":9,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":true},{"pos":null,"no":"93","driver":"Mike Evans","cls":"Am","pic":null,"laps":0,"time":null,"best":null,"on":null,"grid":null,"status":"DNF","pts":0,"fl":0,"pen":0,"total":0,"place":null,"guest":false}]}],"qualifying":[{"event":"croft","eventName":"Croft","date":"02/05/2026","entries":[{"pos":1,"no":"28","cls":"Pro Am","driver":"Harry Senior","time":"1:22.369"},{"pos":2,"no":"1","cls":"Pro Am","driver":"Matt Armstrong","time":"1:22.491"},{"pos":3,"no":"11","cls":"Pro Am","driver":"Taylor O'Flanagan","time":"1:22.629"},{"pos":4,"no":"21","cls":"Pro Am","driver":"Charlie Lower","time":"1:22.772"},{"pos":5,"no":"8","cls":"Am","driver":"Chris Fraser","time":"1:22.909"},{"pos":6,"no":"23","cls":"Am","driver":"Justin Armstrong","time":"1:23.165"},{"pos":7,"no":"46","cls":"Pro Am","driver":"Steve Nuttall","time":"1:23.359"},{"pos":8,"no":"64","cls":"Am","driver":"Tom Eden","time":"1:23.384"},{"pos":9,"no":"56","cls":"Am","driver":"Craig Storey","time":"1:23.460"},{"pos":10,"no":"76","cls":"Am","driver":"Monty Hinde","time":"1:23.764"},{"pos":11,"no":"62","cls":"Am","driver":"Darren McCormack","time":"1:23.857"},{"pos":12,"no":"22","cls":"Am","driver":"Gary Curtis","time":"1:24.090"},{"pos":13,"no":"6","cls":"Am","driver":"Dale Head","time":"1:24.261"},{"pos":14,"no":"78","cls":"Pro Am","driver":"Nick Highton","time":"1:24.286"},{"pos":15,"no":"93","cls":"Am","driver":"Mike Evans","time":"1:24.389"},{"pos":16,"no":"35","cls":"Am","driver":"Mark Kendle","time":"1:25.032"},{"pos":17,"no":"25","cls":"Pro Am","driver":"Louis Darling","time":"1:26.008"},{"pos":18,"no":"68","cls":"Am","driver":"Chris Welch","time":"1:26.898"},{"pos":19,"no":"10","cls":"Pro Am","driver":"Henry Heaton","time":null}]},{"event":"spa","eventName":"Spa-Francorchamps","date":"29/05/2026","entries":[{"pos":1,"no":"21","cls":null,"driver":"Charlie Lower","time":null},{"pos":2,"no":"28","cls":null,"driver":"Harry Senior","time":null},{"pos":3,"no":"11","cls":null,"driver":"Taylor O'Flanagan","time":null},{"pos":4,"no":"23","cls":null,"driver":"Justin Armstrong","time":null},{"pos":5,"no":"1","cls":null,"driver":"Matt Armstrong","time":null},{"pos":6,"no":"8","cls":null,"driver":"Chris Fraser","time":null},{"pos":7,"no":"93","cls":null,"driver":"Mike Evans","time":null},{"pos":8,"no":"44","cls":null,"driver":"Timothy Dickens","time":null},{"pos":9,"no":"78","cls":null,"driver":"Nick Highton","time":null},{"pos":10,"no":"10","cls":null,"driver":"Henry Heaton","time":null},{"pos":11,"no":"76","cls":null,"driver":"Monty Hinde","time":null},{"pos":12,"no":"17","cls":null,"driver":"Mark Farmer","time":null},{"pos":13,"no":"56","cls":null,"driver":"Craig Storey","time":null},{"pos":14,"no":"15","cls":null,"driver":"Nick Sampson","time":null},{"pos":15,"no":"46","cls":null,"driver":"Steve Nuttall","time":null},{"pos":16,"no":"35","cls":null,"driver":"Mark Kendle","time":null},{"pos":17,"no":"62","cls":null,"driver":"Darren McCormack","time":null},{"pos":18,"no":"25","cls":null,"driver":"Louis Darling","time":null},{"pos":19,"no":"66","cls":null,"driver":"Jake Swann","time":null},{"pos":20,"no":"68","cls":null,"driver":"Chris Welch","time":null},{"pos":21,"no":"22","cls":null,"driver":"Gary Curtis","time":null}]},{"event":"oulton","eventName":"Oulton Park Island","date":"18/07/2026","entries":[{"pos":1,"no":"1","cls":"Pro Am","driver":"Matt Armstrong","time":"1:26.745"},{"pos":2,"no":"11","cls":"Pro Am","driver":"Taylor O'Flanagan","time":"1:27.150"},{"pos":3,"no":"25","cls":"Pro Am","driver":"Louis Darling","time":"1:27.430"},{"pos":4,"no":"23","cls":"Am","driver":"Justin Armstrong","time":"1:27.463"},{"pos":5,"no":"28","cls":"Pro Am","driver":"Harry Senior","time":"1:27.555"},{"pos":6,"no":"76","cls":"Am","driver":"Monty Hinde","time":"1:27.642"},{"pos":7,"no":"46","cls":"Pro Am","driver":"Steve Nuttall","time":"1:27.647"},{"pos":8,"no":"21","cls":"Pro Am","driver":"Charlie Lower","time":"1:27.766"},{"pos":9,"no":"56","cls":"Am","driver":"Craig Storey","time":"1:27.789"},{"pos":10,"no":"6","cls":"Am","driver":"Dale Head","time":"1:27.925"},{"pos":11,"no":"10","cls":"Pro Am","driver":"Henry Heaton","time":"1:27.993"},{"pos":12,"no":"17","cls":"Am","driver":"Mark Farmer","time":"1:28.238"},{"pos":13,"no":"93","cls":"Am","driver":"Mike Evans","time":"1:28.295"},{"pos":14,"no":"64","cls":"Am","driver":"Tom Eden","time":"1:28.431"},{"pos":15,"no":"78","cls":"Pro Am","driver":"Nick Highton","time":"1:28.453"},{"pos":16,"no":"62","cls":"Am","driver":"Darren McCormack","time":"1:28.579"},{"pos":17,"no":"22","cls":"Am","driver":"Gary Curtis","time":"1:29.963"},{"pos":18,"no":"35","cls":"Am","driver":"Mark Kendle","time":"1:30.573"},{"pos":19,"no":"68","cls":"Am","driver":"Chris Welch","time":"1:31.644"}]},{"event":"knockhill","eventName":"Knockhill","date":"08/08/2026","entries":[{"pos":1,"no":"1","cls":"Pro Am","driver":"Matt Armstrong","time":"51.825"},{"pos":2,"no":"28","cls":"Pro Am","driver":"Harry Senior","time":"52.122"},{"pos":3,"no":"11","cls":"Pro Am","driver":"Taylor O'Flanagan","time":"52.314"},{"pos":4,"no":"23","cls":"Pro Am","driver":"Justin Armstrong","time":"52.411"},{"pos":5,"no":"46","cls":"Pro Am","driver":"Steve Nuttall","time":"52.772"},{"pos":6,"no":"6","cls":"Am","driver":"Dale Head","time":"52.854"},{"pos":7,"no":"78","cls":"Pro Am","driver":"Nick Highton","time":"52.872"},{"pos":8,"no":"62","cls":"Am","driver":"Darren McCormack","time":"52.947"},{"pos":9,"no":"93","cls":"Am","driver":"Mike Evans","time":"52.975"},{"pos":10,"no":"76","cls":"Am","driver":"Monty Hinde","time":"53.016"},{"pos":11,"no":"56","cls":"Am","driver":"Craig Storey","time":"53.092"},{"pos":12,"no":"21","cls":"Pro Am","driver":"Charlie Lower","time":"53.221"},{"pos":13,"no":"51","cls":"Am","driver":"Harrison Cavers","time":"53.291"}]},{"event":"donington","eventName":"Donington Park GP","date":"22/08/2026","entries":[{"pos":1,"no":"11","cls":"Pro Am","driver":"Taylor O'Flanagan","time":"1:36.145"},{"pos":2,"no":"23","cls":"Pro Am","driver":"Justin Armstrong","time":"1:36.190"},{"pos":3,"no":"1","cls":"Pro Am","driver":"Matt Armstrong","time":"1:36.229"},{"pos":4,"no":"9","cls":"Pro Am","driver":"Harry Cook","time":"1:36.385"},{"pos":5,"no":"21","cls":"Pro Am","driver":"Charlie Lower","time":"1:36.390"},{"pos":6,"no":"28","cls":"Pro Am","driver":"Harry Senior","time":"1:36.572"},{"pos":7,"no":"43","cls":"Pro Am","driver":"Stephen Lyall","time":"1:36.744"},{"pos":8,"no":"2","cls":"Pro Am","driver":"Aaron Head","time":"1:36.764"},{"pos":9,"no":"46","cls":"Pro Am","driver":"Steve Nuttall","time":"1:36.904"},{"pos":10,"no":"56","cls":"Am","driver":"Craig Storey","time":"1:37.343"},{"pos":11,"no":"25","cls":"Pro Am","driver":"Louis Darling","time":"1:37.373"},{"pos":12,"no":"6","cls":"Am","driver":"Dale Head","time":"1:37.463"},{"pos":13,"no":"76","cls":"Am","driver":"Monty Hinde","time":"1:37.546"},{"pos":14,"no":"93","cls":"Am","driver":"Mike Evans","time":"1:37.560"},{"pos":15,"no":"78","cls":"Pro Am","driver":"Nick Highton","time":"1:37.749"},{"pos":16,"no":"64","cls":"Am","driver":"Tom Eden","time":"1:37.819"},{"pos":17,"no":"62","cls":"Am","driver":"Darren McCormack","time":"1:37.978"},{"pos":18,"no":"51","cls":"Am","driver":"Harrison Cavers","time":"1:38.470"},{"pos":19,"no":"22","cls":"Am","driver":"Gary Curtis","time":"1:38.886"},{"pos":20,"no":"68","cls":"Am","driver":"Chris Welch","time":"1:40.693"}]}],"table":[{"driver":"Taylor O'Flanagan","no":"11","cls":"Pro Am","starts":15,"events":["croft","spa","oulton","knockhill","donington"],"registered":true,"rounds":{"1":{"pos":5,"scoring_place":5,"race_points":20,"fl":0,"penalty":0,"score":20,"total":20,"status":"classified","best":"1:23.751","grid":-2},"2":{"pos":3,"scoring_place":3,"race_points":22,"fl":0,"penalty":0,"score":22,"total":22,"status":"classified","best":"1:36.525","grid":2},"3":{"pos":1,"scoring_place":1,"race_points":25,"fl":0,"penalty":0,"score":25,"total":25,"status":"classified","best":"1:35.521","grid":2},"4":{"pos":2,"scoring_place":2,"race_points":23,"fl":0,"penalty":0,"score":23,"total":23,"status":"classified","best":"2:38.603","grid":null},"5":{"pos":1,"scoring_place":1,"race_points":25,"fl":0,"penalty":0,"score":25,"total":25,"status":"classified","best":"2:37.697","grid":null},"6":{"pos":1,"scoring_place":1,"race_points":25,"fl":0,"penalty":0,"score":25,"total":25,"status":"classified","best":"2:37.728","grid":null},"7":{"pos":2,"scoring_place":2,"race_points":23,"fl":1,"penalty":0,"score":24,"total":24,"status":"classified","best":"1:27.106","grid":0},"8":{"pos":1,"scoring_place":1,"race_points":25,"fl":0,"penalty":0,"score":25,"total":25,"status":"classified","best":"1:28.815","grid":1},"9":{"pos":3,"scoring_place":3,"race_points":22,"fl":1,"penalty":0,"score":23,"total":23,"status":"classified","best":"1:28.016","grid":-2},"10":{"pos":3,"scoring_place":3,"race_points":22,"fl":0,"penalty":0,"score":22,"total":22,"status":"classified","best":"52.641","grid":0},"11":{"pos":2,"scoring_place":2,"race_points":23,"fl":1,"penalty":0,"score":24,"total":24,"status":"classified","best":"56.905","grid":1},"12":{"pos":3,"scoring_place":3,"race_points":22,"fl":0,"penalty":0,"score":22,"total":22,"status":"classified","best":"52.774","grid":-1},"13":{"pos":7,"scoring_place":4,"race_points":21,"fl":0,"penalty":0,"score":21,"total":21,"status":"classified","best":"1:37.595","grid":-6},"14":{"pos":6,"scoring_place":4,"race_points":21,"fl":0,"penalty":0,"score":21,"total":21,"status":"classified","best":"1:37.762","grid":1},"15":{"pos":16,"scoring_place":12,"race_points":13,"fl":0,"penalty":0,"score":13,"total":13,"status":"classified","best":"1:36.563","grid":-10}},"gross":335,"dropped":[13,20,21],"net":281,"wins":4,"podiums":11,"fastest_laps":3,"penalty_points":0,"pos":1},{"driver":"Harry Senior","no":"28","cls":"Pro Am","starts":15,"events":["croft","spa","oulton","knockhill","donington"],"registered":true,"rounds":{"1":{"pos":1,"scoring_place":1,"race_points":25,"fl":1,"penalty":0,"score":26,"total":26,"status":"classified","best":"1:23.537","grid":0},"2":{"pos":1,"scoring_place":1,"race_points":25,"fl":1,"penalty":0,"score":26,"total":26,"status":"classified","best":"1:35.974","grid":0},"3":{"pos":3,"scoring_place":3,"race_points":22,"fl":0,"penalty":0,"score":22,"total":22,"status":"classified","best":"1:35.536","grid":-2},"4":{"pos":1,"scoring_place":1,"race_points":25,"fl":0,"penalty":0,"score":25,"total":25,"status":"classified","best":"2:38.214","grid":null},"5":{"pos":3,"scoring_place":3,"race_points":22,"fl":0,"penalty":0,"score":22,"total":22,"status":"classified","best":"2:36.764","grid":null},"6":{"pos":17,"scoring_place":17,"race_points":8,"fl":0,"penalty":0,"score":8,"total":8,"status":"classified","best":"2:37.610","grid":null},"7":{"pos":5,"scoring_place":5,"race_points":20,"fl":0,"penalty":0,"score":20,"total":20,"status":"classified","best":"1:27.581","grid":0},"8":{"pos":4,"scoring_place":4,"race_points":21,"fl":0,"penalty":0,"score":21,"total":21,"status":"classified","best":"1:28.573","grid":1},"9":{"pos":5,"scoring_place":5,"race_points":20,"fl":0,"penalty":0,"score":20,"total":20,"status":"classified","best":"1:28.565","grid":-1},"10":{"pos":2,"scoring_place":2,"race_points":23,"fl":1,"penalty":0,"score":24,"total":24,"status":"classified","best":"52.451","grid":0},"11":{"pos":3,"scoring_place":3,"race_points":22,"fl":0,"penalty":0,"score":22,"total":22,"status":"classified","best":"56.977","grid":-1},"12":{"pos":2,"scoring_place":2,"race_points":23,"fl":1,"penalty":0,"score":24,"total":24,"status":"classified","best":"52.403","grid":1},"13":{"pos":6,"scoring_place":3,"race_points":22,"fl":0,"penalty":0,"score":22,"total":22,"status":"classified","best":"1:37.431","grid":0},"14":{"pos":7,"scoring_place":5,"race_points":20,"fl":0,"penalty":0,"score":20,"total":20,"status":"classified","best":"1:37.745","grid":-1},"15":{"pos":6,"scoring_place":4,"race_points":21,"fl":1,"penalty":0,"score":22,"total":22,"status":"classified","best":"1:36.445","grid":1}},"gross":324,"dropped":[8,20,20],"net":276,"wins":3,"podiums":9,"fastest_laps":5,"penalty_points":0,"pos":2},{"driver":"Matt Armstrong","no":"1","cls":"Pro Am","starts":15,"events":["croft","spa","oulton","knockhill","donington"],"registered":true,"rounds":{"1":{"pos":2,"scoring_place":2,"race_points":23,"fl":0,"penalty":0,"score":23,"total":23,"status":"classified","best":"1:23.862","grid":0},"2":{"pos":2,"scoring_place":2,"race_points":23,"fl":0,"penalty":0,"score":23,"total":23,"status":"classified","best":"1:36.744","grid":0},"3":{"pos":2,"scoring_place":2,"race_points":23,"fl":1,"penalty":0,"score":24,"total":24,"status":"classified","best":"1:35.475","grid":0},"4":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"NC","best":"2:38.204","grid":null},"5":{"pos":9,"scoring_place":9,"race_points":16,"fl":0,"penalty":-6,"score":16,"total":10,"status":"classified","best":"2:35.833","grid":null},"6":{"pos":3,"scoring_place":3,"race_points":22,"fl":1,"penalty":0,"score":23,"total":23,"status":"classified","best":"2:37.241","grid":null},"7":{"pos":1,"scoring_place":1,"race_points":25,"fl":0,"penalty":0,"score":25,"total":25,"status":"classified","best":"1:27.462","grid":0},"8":{"pos":2,"scoring_place":2,"race_points":23,"fl":0,"penalty":0,"score":23,"total":23,"status":"classified","best":"1:28.360","grid":-1},"9":{"pos":1,"scoring_place":1,"race_points":25,"fl":0,"penalty":0,"score":25,"total":25,"status":"classified","best":"1:28.156","grid":1},"10":{"pos":1,"scoring_place":1,"race_points":25,"fl":0,"penalty":0,"score":25,"total":25,"status":"classified","best":"52.501","grid":0},"11":{"pos":1,"scoring_place":1,"race_points":25,"fl":0,"penalty":0,"score":25,"total":25,"status":"classified","best":"57.059","grid":0},"12":{"pos":1,"scoring_place":1,"race_points":25,"fl":0,"penalty":-6,"score":25,"total":19,"status":"classified","best":"52.423","grid":0},"13":{"pos":4,"scoring_place":2,"race_points":23,"fl":1,"penalty":0,"score":24,"total":24,"status":"classified","best":"1:37.173","grid":-1},"14":{"pos":2,"scoring_place":1,"race_points":25,"fl":0,"penalty":0,"score":25,"total":25,"status":"classified","best":"1:37.390","grid":2},"15":{"pos":2,"scoring_place":1,"race_points":25,"fl":0,"penalty":-9,"score":25,"total":16,"status":"classified","best":"1:36.982","grid":0}},"gross":310,"dropped":[0,16,23],"net":271,"wins":7,"podiums":13,"fastest_laps":3,"penalty_points":-21,"pos":3},{"driver":"Charlie Lower","no":"21","cls":"Pro Am","starts":15,"events":["croft","spa","oulton","knockhill","donington"],"registered":true,"rounds":{"1":{"pos":6,"scoring_place":6,"race_points":19,"fl":0,"penalty":0,"score":19,"total":19,"status":"classified","best":"1:23.583","grid":-2},"2":{"pos":11,"scoring_place":10,"race_points":15,"fl":0,"penalty":0,"score":15,"total":15,"status":"classified","best":"1:38.204","grid":-5},"3":{"pos":6,"scoring_place":6,"race_points":19,"fl":0,"penalty":0,"score":19,"total":19,"status":"classified","best":"1:36.425","grid":5},"4":{"pos":3,"scoring_place":3,"race_points":22,"fl":0,"penalty":0,"score":22,"total":22,"status":"classified","best":"2:39.430","grid":null},"5":{"pos":2,"scoring_place":2,"race_points":23,"fl":0,"penalty":0,"score":23,"total":23,"status":"classified","best":"2:37.717","grid":null},"6":{"pos":5,"scoring_place":5,"race_points":20,"fl":0,"penalty":0,"score":20,"total":20,"status":"classified","best":"2:38.527","grid":null},"7":{"pos":4,"scoring_place":4,"race_points":21,"fl":0,"penalty":0,"score":21,"total":21,"status":"classified","best":"1:27.726","grid":4},"8":{"pos":9,"scoring_place":9,"race_points":16,"fl":1,"penalty":0,"score":17,"total":17,"status":"classified","best":"1:28.309","grid":-5},"9":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"1:28.530","grid":9},"10":{"pos":6,"scoring_place":6,"race_points":19,"fl":0,"penalty":0,"score":19,"total":19,"status":"classified","best":"53.085","grid":6},"11":{"pos":4,"scoring_place":4,"race_points":21,"fl":0,"penalty":0,"score":21,"total":21,"status":"classified","best":"57.733","grid":2},"12":{"pos":4,"scoring_place":4,"race_points":21,"fl":0,"penalty":0,"score":21,"total":21,"status":"classified","best":"52.821","grid":0},"13":{"pos":2,"scoring_place":1,"race_points":25,"fl":0,"penalty":-6,"score":25,"total":19,"status":"classified","best":"1:37.235","grid":3},"14":{"pos":3,"scoring_place":2,"race_points":23,"fl":0,"penalty":0,"score":23,"total":23,"status":"classified","best":"1:37.583","grid":-1},"15":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"1:37.218","grid":3}},"gross":259,"dropped":[0,0,15],"net":244,"wins":1,"podiums":4,"fastest_laps":1,"penalty_points":-6,"pos":4},{"driver":"Steve Nuttall","no":"46","cls":"Pro Am","starts":15,"events":["croft","spa","oulton","knockhill","donington"],"registered":true,"rounds":{"1":{"pos":7,"scoring_place":7,"race_points":18,"fl":0,"penalty":0,"score":18,"total":18,"status":"classified","best":"1:24.749","grid":0},"2":{"pos":5,"scoring_place":5,"race_points":20,"fl":0,"penalty":-9,"score":20,"total":11,"status":"classified","best":"1:37.562","grid":2},"3":{"pos":5,"scoring_place":5,"race_points":20,"fl":0,"penalty":0,"score":20,"total":20,"status":"classified","best":"1:37.224","grid":3},"4":{"pos":5,"scoring_place":5,"race_points":20,"fl":0,"penalty":0,"score":20,"total":20,"status":"classified","best":"2:38.884","grid":null},"5":{"pos":4,"scoring_place":4,"race_points":21,"fl":0,"penalty":0,"score":21,"total":21,"status":"classified","best":"2:37.782","grid":null},"6":{"pos":7,"scoring_place":7,"race_points":18,"fl":0,"penalty":0,"score":18,"total":18,"status":"classified","best":"2:37.991","grid":null},"7":{"pos":6,"scoring_place":6,"race_points":19,"fl":0,"penalty":0,"score":19,"total":19,"status":"classified","best":"1:28.019","grid":1},"8":{"pos":5,"scoring_place":5,"race_points":20,"fl":0,"penalty":0,"score":20,"total":20,"status":"classified","best":"1:28.441","grid":1},"9":{"pos":4,"scoring_place":4,"race_points":21,"fl":0,"penalty":0,"score":21,"total":21,"status":"classified","best":"1:28.655","grid":1},"10":{"pos":5,"scoring_place":5,"race_points":20,"fl":0,"penalty":0,"score":20,"total":20,"status":"classified","best":"53.140","grid":0},"11":{"pos":11,"scoring_place":10,"race_points":15,"fl":0,"penalty":0,"score":15,"total":15,"status":"classified","best":"57.990","grid":-6},"12":{"pos":10,"scoring_place":10,"race_points":15,"fl":0,"penalty":0,"score":15,"total":15,"status":"classified","best":"52.970","grid":1},"13":{"pos":15,"scoring_place":10,"race_points":15,"fl":0,"penalty":0,"score":15,"total":15,"status":"classified","best":"1:37.414","grid":-6},"14":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"1:37.903","grid":15},"15":{"pos":4,"scoring_place":3,"race_points":22,"fl":0,"penalty":0,"score":22,"total":22,"status":"classified","best":"1:37.074","grid":16}},"gross":255,"dropped":[0,15,15],"net":225,"wins":0,"podiums":1,"fastest_laps":0,"penalty_points":-9,"pos":5},{"driver":"Justin Armstrong","no":"23","cls":"Pro Am","starts":15,"events":["croft","spa","oulton","knockhill","donington"],"registered":true,"rounds":{"1":{"pos":3,"scoring_place":3,"race_points":22,"fl":0,"penalty":0,"score":22,"total":22,"status":"classified","best":"1:23.872","grid":3},"2":{"pos":9,"scoring_place":8,"race_points":17,"fl":0,"penalty":0,"score":17,"total":17,"status":"classified","best":"1:37.015","grid":-6},"3":{"pos":12,"scoring_place":12,"race_points":13,"fl":0,"penalty":0,"score":13,"total":13,"status":"classified","best":"1:37.060","grid":-3},"4":{"pos":12,"scoring_place":12,"race_points":13,"fl":0,"penalty":0,"score":13,"total":13,"status":"classified","best":"2:39.901","grid":null},"5":{"pos":6,"scoring_place":6,"race_points":19,"fl":0,"penalty":0,"score":19,"total":19,"status":"classified","best":"2:40.369","grid":null},"6":{"pos":8,"scoring_place":8,"race_points":17,"fl":0,"penalty":0,"score":17,"total":17,"status":"classified","best":"2:37.624","grid":null},"7":{"pos":3,"scoring_place":3,"race_points":22,"fl":0,"penalty":0,"score":22,"total":22,"status":"classified","best":"1:27.648","grid":1},"8":{"pos":3,"scoring_place":3,"race_points":22,"fl":0,"penalty":0,"score":22,"total":22,"status":"classified","best":"1:28.348","grid":0},"9":{"pos":2,"scoring_place":2,"race_points":23,"fl":0,"penalty":0,"score":23,"total":23,"status":"classified","best":"1:28.020","grid":1},"10":{"pos":4,"scoring_place":4,"race_points":21,"fl":0,"penalty":0,"score":21,"total":21,"status":"classified","best":"52.770","grid":0},"11":{"pos":8,"scoring_place":7,"race_points":18,"fl":0,"penalty":0,"score":18,"total":18,"status":"classified","best":"57.689","grid":-4},"12":{"pos":6,"scoring_place":6,"race_points":19,"fl":0,"penalty":0,"score":19,"total":19,"status":"classified","best":"52.860","grid":2},"13":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":-12,"total":-12,"status":"DQ","best":null,"grid":null},"14":{"pos":13,"scoring_place":8,"race_points":17,"fl":0,"penalty":0,"score":17,"total":17,"status":"classified","best":"1:37.566","grid":7},"15":{"pos":3,"scoring_place":2,"race_points":23,"fl":0,"penalty":0,"score":23,"total":23,"status":"classified","best":"1:36.993","grid":10}},"gross":254,"dropped":[0,13,13],"net":228,"wins":0,"podiums":5,"fastest_laps":0,"penalty_points":-12,"pos":6},{"driver":"Craig Storey","no":"56","cls":"Am","starts":15,"events":["croft","spa","oulton","knockhill","donington"],"registered":true,"rounds":{"1":{"pos":8,"scoring_place":8,"race_points":17,"fl":0,"penalty":0,"score":17,"total":17,"status":"classified","best":"1:24.574","grid":1},"2":{"pos":8,"scoring_place":7,"race_points":18,"fl":0,"penalty":0,"score":18,"total":18,"status":"classified","best":"1:37.788","grid":0},"3":{"pos":11,"scoring_place":11,"race_points":14,"fl":0,"penalty":0,"score":14,"total":14,"status":"classified","best":"1:36.764","grid":-4},"4":{"pos":14,"scoring_place":14,"race_points":11,"fl":0,"penalty":0,"score":11,"total":11,"status":"classified","best":"2:40.137","grid":null},"5":{"pos":10,"scoring_place":10,"race_points":15,"fl":0,"penalty":0,"score":15,"total":15,"status":"classified","best":"2:37.959","grid":null},"6":{"pos":10,"scoring_place":10,"race_points":15,"fl":0,"penalty":0,"score":15,"total":15,"status":"classified","best":"2:38.292","grid":null},"7":{"pos":10,"scoring_place":9,"race_points":16,"fl":0,"penalty":0,"score":16,"total":16,"status":"classified","best":"1:27.996","grid":-1},"8":{"pos":8,"scoring_place":8,"race_points":17,"fl":0,"penalty":0,"score":17,"total":17,"status":"classified","best":"1:28.371","grid":2},"9":{"pos":6,"scoring_place":6,"race_points":19,"fl":0,"penalty":0,"score":19,"total":19,"status":"classified","best":"1:28.616","grid":2},"10":{"pos":7,"scoring_place":7,"race_points":18,"fl":0,"penalty":0,"score":18,"total":18,"status":"classified","best":"53.117","grid":4},"11":{"pos":10,"scoring_place":9,"race_points":16,"fl":0,"penalty":0,"score":16,"total":16,"status":"classified","best":"58.303","grid":-3},"12":{"pos":9,"scoring_place":9,"race_points":16,"fl":0,"penalty":0,"score":16,"total":16,"status":"classified","best":"53.410","grid":1},"13":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":null,"grid":null},"14":{"pos":12,"scoring_place":7,"race_points":18,"fl":1,"penalty":0,"score":19,"total":19,"status":"classified","best":"1:37.157","grid":6},"15":{"pos":7,"scoring_place":5,"race_points":20,"fl":0,"penalty":0,"score":20,"total":20,"status":"classified","best":"1:37.386","grid":5}},"gross":231,"dropped":[0,11,14],"net":206,"wins":0,"podiums":0,"fastest_laps":1,"penalty_points":0,"pos":7},{"driver":"Monty Hinde","no":"76","cls":"Am","starts":15,"events":["croft","spa","oulton","knockhill","donington"],"registered":true,"rounds":{"1":{"pos":11,"scoring_place":11,"race_points":14,"fl":0,"penalty":0,"score":14,"total":14,"status":"classified","best":"1:24.913","grid":-1},"2":{"pos":15,"scoring_place":14,"race_points":11,"fl":0,"penalty":0,"score":11,"total":11,"status":"classified","best":"1:38.580","grid":-4},"3":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"NS","best":null,"grid":null},"4":{"pos":8,"scoring_place":8,"race_points":17,"fl":0,"penalty":0,"score":17,"total":17,"status":"classified","best":"2:38.438","grid":null},"5":{"pos":8,"scoring_place":8,"race_points":17,"fl":0,"penalty":0,"score":17,"total":17,"status":"classified","best":"2:37.702","grid":null},"6":{"pos":13,"scoring_place":13,"race_points":12,"fl":0,"penalty":0,"score":12,"total":12,"status":"classified","best":"2:37.431","grid":null},"7":{"pos":8,"scoring_place":8,"race_points":17,"fl":0,"penalty":0,"score":17,"total":17,"status":"classified","best":"1:28.119","grid":-2},"8":{"pos":6,"scoring_place":6,"race_points":19,"fl":0,"penalty":0,"score":19,"total":19,"status":"classified","best":"1:28.611","grid":2},"9":{"pos":9,"scoring_place":8,"race_points":17,"fl":0,"penalty":0,"score":17,"total":17,"status":"classified","best":"1:29.079","grid":-3},"10":{"pos":9,"scoring_place":8,"race_points":17,"fl":0,"penalty":0,"score":17,"total":17,"status":"classified","best":"53.328","grid":1},"11":{"pos":12,"scoring_place":11,"race_points":14,"fl":0,"penalty":0,"score":14,"total":14,"status":"classified","best":"57.765","grid":-3},"12":{"pos":8,"scoring_place":8,"race_points":17,"fl":0,"penalty":0,"score":17,"total":17,"status":"classified","best":"53.419","grid":4},"13":{"pos":11,"scoring_place":8,"race_points":17,"fl":0,"penalty":0,"score":17,"total":17,"status":"classified","best":"1:37.687","grid":2},"14":{"pos":14,"scoring_place":9,"race_points":16,"fl":0,"penalty":0,"score":16,"total":16,"status":"classified","best":"1:37.746","grid":-3},"15":{"pos":9,"scoring_place":6,"race_points":19,"fl":0,"penalty":0,"score":19,"total":19,"status":"classified","best":"1:37.291","grid":5}},"gross":224,"dropped":[0,11,12],"net":201,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":0,"pos":8},{"driver":"Nick Highton","no":"78","cls":"Pro Am","starts":15,"events":["croft","spa","oulton","knockhill","donington"],"registered":true,"rounds":{"1":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"1:24.435","grid":14},"2":{"pos":10,"scoring_place":9,"race_points":16,"fl":0,"penalty":0,"score":16,"total":16,"status":"classified","best":"1:37.188","grid":6},"3":{"pos":9,"scoring_place":9,"race_points":16,"fl":0,"penalty":0,"score":16,"total":16,"status":"classified","best":"1:37.415","grid":1},"4":{"pos":10,"scoring_place":10,"race_points":15,"fl":1,"penalty":-6,"score":16,"total":10,"status":"classified","best":"2:37.778","grid":null},"5":{"pos":5,"scoring_place":5,"race_points":20,"fl":0,"penalty":0,"score":20,"total":20,"status":"classified","best":"3:04.409","grid":null},"6":{"pos":2,"scoring_place":2,"race_points":23,"fl":0,"penalty":0,"score":23,"total":23,"status":"classified","best":"2:37.764","grid":null},"7":{"pos":7,"scoring_place":7,"race_points":18,"fl":0,"penalty":0,"score":18,"total":18,"status":"classified","best":"1:28.239","grid":8},"8":{"pos":11,"scoring_place":11,"race_points":14,"fl":0,"penalty":0,"score":14,"total":14,"status":"classified","best":"1:28.544","grid":-4},"9":{"pos":7,"scoring_place":7,"race_points":18,"fl":0,"penalty":0,"score":18,"total":18,"status":"classified","best":"1:29.134","grid":4},"10":{"pos":12,"scoring_place":11,"race_points":14,"fl":0,"penalty":0,"score":14,"total":14,"status":"classified","best":"53.189","grid":-5},"11":{"pos":6,"scoring_place":6,"race_points":19,"fl":0,"penalty":0,"score":19,"total":19,"status":"classified","best":"57.754","grid":6},"12":{"pos":5,"scoring_place":5,"race_points":20,"fl":0,"penalty":0,"score":20,"total":20,"status":"classified","best":"52.807","grid":1},"13":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":-6,"total":-6,"status":"DNF","best":null,"grid":null},"14":{"pos":10,"scoring_place":6,"race_points":19,"fl":0,"penalty":0,"score":19,"total":19,"status":"classified","best":"1:37.937","grid":9},"15":{"pos":10,"scoring_place":7,"race_points":18,"fl":0,"penalty":0,"score":18,"total":18,"status":"classified","best":"1:37.924","grid":0}},"gross":219,"dropped":[0,0,14],"net":205,"wins":0,"podiums":1,"fastest_laps":1,"penalty_points":-12,"pos":9},{"driver":"Darren McCormack","no":"62","cls":"Am","starts":15,"events":["croft","spa","oulton","knockhill","donington"],"registered":true,"rounds":{"1":{"pos":9,"scoring_place":9,"race_points":16,"fl":0,"penalty":0,"score":16,"total":16,"status":"classified","best":"1:24.523","grid":2},"2":{"pos":14,"scoring_place":13,"race_points":12,"fl":0,"penalty":0,"score":12,"total":12,"status":"classified","best":"1:37.792","grid":-5},"3":{"pos":10,"scoring_place":10,"race_points":15,"fl":0,"penalty":0,"score":15,"total":15,"status":"classified","best":"1:37.128","grid":3},"4":{"pos":13,"scoring_place":13,"race_points":12,"fl":0,"penalty":0,"score":12,"total":12,"status":"classified","best":"2:41.330","grid":null},"5":{"pos":13,"scoring_place":13,"race_points":12,"fl":0,"penalty":0,"score":12,"total":12,"status":"classified","best":"2:37.580","grid":null},"6":{"pos":11,"scoring_place":11,"race_points":14,"fl":0,"penalty":0,"score":14,"total":14,"status":"classified","best":"2:37.439","grid":null},"7":{"pos":11,"scoring_place":10,"race_points":15,"fl":0,"penalty":0,"score":15,"total":15,"status":"classified","best":"1:28.427","grid":5},"8":{"pos":12,"scoring_place":12,"race_points":13,"fl":0,"penalty":0,"score":13,"total":13,"status":"classified","best":"1:28.813","grid":-1},"9":{"pos":11,"scoring_place":10,"race_points":15,"fl":0,"penalty":0,"score":15,"total":15,"status":"classified","best":"1:29.715","grid":1},"10":{"pos":11,"scoring_place":10,"race_points":15,"fl":0,"penalty":0,"score":15,"total":15,"status":"classified","best":"53.394","grid":-3},"11":{"pos":9,"scoring_place":8,"race_points":17,"fl":0,"penalty":0,"score":17,"total":17,"status":"classified","best":"58.970","grid":2},"12":{"pos":12,"scoring_place":12,"race_points":13,"fl":0,"penalty":0,"score":13,"total":13,"status":"classified","best":"53.933","grid":-3},"13":{"pos":14,"scoring_place":9,"race_points":16,"fl":0,"penalty":0,"score":16,"total":16,"status":"classified","best":"1:38.237","grid":3},"14":{"pos":15,"scoring_place":10,"race_points":15,"fl":0,"penalty":0,"score":15,"total":15,"status":"classified","best":"1:38.065","grid":-1},"15":{"pos":12,"scoring_place":9,"race_points":16,"fl":0,"penalty":0,"score":16,"total":16,"status":"classified","best":"1:38.053","grid":3}},"gross":216,"dropped":[12,12,12],"net":180,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":0,"pos":10},{"driver":"Dale Head","no":"6","cls":"Am","starts":12,"events":["croft","oulton","knockhill","donington"],"registered":true,"rounds":{"1":{"pos":12,"scoring_place":12,"race_points":13,"fl":0,"penalty":0,"score":13,"total":13,"status":"classified","best":"1:24.691","grid":1},"2":{"pos":12,"scoring_place":11,"race_points":14,"fl":0,"penalty":0,"score":14,"total":14,"status":"classified","best":"1:37.669","grid":0},"3":{"pos":16,"scoring_place":15,"race_points":10,"fl":0,"penalty":0,"score":10,"total":10,"status":"classified","best":"1:37.402","grid":-4},"7":{"pos":13,"scoring_place":12,"race_points":13,"fl":0,"penalty":0,"score":13,"total":13,"status":"classified","best":"1:28.538","grid":-3},"8":{"pos":10,"scoring_place":10,"race_points":15,"fl":0,"penalty":0,"score":15,"total":15,"status":"classified","best":"1:28.600","grid":3},"9":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":null,"grid":null},"10":{"pos":10,"scoring_place":9,"race_points":16,"fl":0,"penalty":0,"score":16,"total":16,"status":"classified","best":"53.454","grid":-4},"11":{"pos":5,"scoring_place":5,"race_points":20,"fl":0,"penalty":0,"score":20,"total":20,"status":"classified","best":"57.822","grid":5},"12":{"pos":7,"scoring_place":7,"race_points":18,"fl":0,"penalty":0,"score":18,"total":18,"status":"classified","best":"53.085","grid":-2},"13":{"pos":10,"scoring_place":7,"race_points":18,"fl":0,"penalty":0,"score":18,"total":18,"status":"classified","best":"1:37.740","grid":2},"14":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"1:38.065","grid":10},"15":{"pos":11,"scoring_place":8,"race_points":17,"fl":0,"penalty":0,"score":17,"total":17,"status":"classified","best":"1:38.230","grid":7}},"gross":154,"dropped":[0,0,0],"net":154,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":0,"pos":11},{"driver":"Henry Heaton","no":"10","cls":"Pro Am","starts":9,"events":["croft","spa","oulton"],"registered":true,"rounds":{"1":{"pos":10,"scoring_place":10,"race_points":15,"fl":0,"penalty":0,"score":15,"total":15,"status":"classified","best":"1:24.456","grid":9},"2":{"pos":6,"scoring_place":6,"race_points":19,"fl":0,"penalty":0,"score":19,"total":19,"status":"classified","best":"1:37.877","grid":4},"3":{"pos":7,"scoring_place":7,"race_points":18,"fl":0,"penalty":0,"score":18,"total":18,"status":"classified","best":"1:37.242","grid":-2},"4":{"pos":11,"scoring_place":11,"race_points":14,"fl":0,"penalty":0,"score":14,"total":14,"status":"classified","best":"2:39.863","grid":null},"5":{"pos":7,"scoring_place":7,"race_points":18,"fl":0,"penalty":0,"score":18,"total":18,"status":"classified","best":"2:37.725","grid":null},"6":{"pos":6,"scoring_place":6,"race_points":19,"fl":0,"penalty":0,"score":19,"total":19,"status":"classified","best":"2:38.084","grid":null},"7":{"pos":12,"scoring_place":11,"race_points":14,"fl":0,"penalty":0,"score":14,"total":14,"status":"classified","best":"1:28.430","grid":-1},"8":{"pos":7,"scoring_place":7,"race_points":18,"fl":0,"penalty":0,"score":18,"total":18,"status":"classified","best":"1:28.759","grid":5},"9":{"pos":10,"scoring_place":9,"race_points":16,"fl":0,"penalty":0,"score":16,"total":16,"status":"classified","best":"1:28.961","grid":-3}},"gross":151,"dropped":[0,0,0],"net":151,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":0,"pos":12},{"driver":"Chris Welch","no":"68","cls":"Am","starts":12,"events":["croft","spa","oulton","donington"],"registered":true,"rounds":{"1":{"pos":15,"scoring_place":15,"race_points":10,"fl":0,"penalty":0,"score":10,"total":10,"status":"classified","best":"1:27.840","grid":3},"2":{"pos":18,"scoring_place":17,"race_points":8,"fl":0,"penalty":0,"score":8,"total":8,"status":"classified","best":"1:47.444","grid":-3},"3":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"1:44.653","grid":18},"4":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"NC","best":"2:56.188","grid":null},"5":{"pos":16,"scoring_place":16,"race_points":9,"fl":0,"penalty":0,"score":9,"total":9,"status":"classified","best":"2:45.999","grid":null},"6":{"pos":18,"scoring_place":18,"race_points":7,"fl":0,"penalty":0,"score":7,"total":7,"status":"classified","best":"2:41.714","grid":null},"7":{"pos":16,"scoring_place":15,"race_points":10,"fl":0,"penalty":0,"score":10,"total":10,"status":"classified","best":"1:31.152","grid":3},"8":{"pos":16,"scoring_place":16,"race_points":9,"fl":0,"penalty":0,"score":9,"total":9,"status":"classified","best":"1:30.998","grid":0},"9":{"pos":16,"scoring_place":15,"race_points":10,"fl":0,"penalty":0,"score":10,"total":10,"status":"classified","best":"1:31.426","grid":0},"13":{"pos":17,"scoring_place":12,"race_points":13,"fl":0,"penalty":0,"score":13,"total":13,"status":"classified","best":"1:39.252","grid":3},"14":{"pos":16,"scoring_place":11,"race_points":14,"fl":0,"penalty":0,"score":14,"total":14,"status":"classified","best":"1:39.749","grid":1},"15":{"pos":15,"scoring_place":11,"race_points":14,"fl":0,"penalty":0,"score":14,"total":14,"status":"classified","best":"1:40.051","grid":1}},"gross":104,"dropped":[0,0,0],"net":104,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":0,"pos":13},{"driver":"Gary Curtis","no":"22","cls":"Am","starts":12,"events":["croft","spa","oulton","donington"],"registered":true,"rounds":{"1":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"1:25.808","grid":12},"2":{"pos":17,"scoring_place":16,"race_points":9,"fl":0,"penalty":0,"score":9,"total":9,"status":"classified","best":"1:42.569","grid":1},"3":{"pos":15,"scoring_place":14,"race_points":11,"fl":0,"penalty":0,"score":11,"total":11,"status":"classified","best":"1:40.514","grid":2},"4":{"pos":16,"scoring_place":16,"race_points":9,"fl":0,"penalty":0,"score":9,"total":9,"status":"classified","best":"2:56.286","grid":null},"5":{"pos":15,"scoring_place":15,"race_points":10,"fl":0,"penalty":0,"score":10,"total":10,"status":"classified","best":"2:44.007","grid":null},"6":{"pos":16,"scoring_place":16,"race_points":9,"fl":0,"penalty":0,"score":9,"total":9,"status":"classified","best":"2:41.563","grid":null},"7":{"pos":15,"scoring_place":14,"race_points":11,"fl":0,"penalty":0,"score":11,"total":11,"status":"classified","best":"1:29.811","grid":2},"8":{"pos":15,"scoring_place":15,"race_points":10,"fl":0,"penalty":0,"score":10,"total":10,"status":"classified","best":"1:30.497","grid":0},"9":{"pos":15,"scoring_place":14,"race_points":11,"fl":0,"penalty":0,"score":11,"total":11,"status":"classified","best":"1:31.622","grid":0},"13":{"pos":16,"scoring_place":11,"race_points":14,"fl":0,"penalty":-6,"score":14,"total":8,"status":"classified","best":"1:39.250","grid":3},"14":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"NC","best":"1:39.890","grid":16},"15":{"pos":14,"scoring_place":10,"race_points":15,"fl":0,"penalty":0,"score":15,"total":15,"status":"classified","best":"1:39.226","grid":3}},"gross":103,"dropped":[0,0,0],"net":103,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":-6,"pos":14},{"driver":"Mark Kendle","no":"35","cls":"Am","starts":9,"events":["croft","spa","oulton"],"registered":true,"rounds":{"1":{"pos":14,"scoring_place":14,"race_points":11,"fl":0,"penalty":0,"score":11,"total":11,"status":"classified","best":"1:25.345","grid":2},"2":{"pos":16,"scoring_place":15,"race_points":10,"fl":0,"penalty":0,"score":10,"total":10,"status":"classified","best":"1:38.987","grid":-2},"3":{"pos":14,"scoring_place":13,"race_points":12,"fl":0,"penalty":0,"score":12,"total":12,"status":"classified","best":"1:37.958","grid":1},"4":{"pos":15,"scoring_place":15,"race_points":10,"fl":0,"penalty":0,"score":10,"total":10,"status":"classified","best":"2:54.766","grid":null},"5":{"pos":12,"scoring_place":12,"race_points":13,"fl":0,"penalty":0,"score":13,"total":13,"status":"classified","best":"2:39.667","grid":null},"6":{"pos":14,"scoring_place":14,"race_points":11,"fl":0,"penalty":0,"score":11,"total":11,"status":"classified","best":"2:37.780","grid":null},"7":{"pos":14,"scoring_place":13,"race_points":12,"fl":0,"penalty":0,"score":12,"total":12,"status":"classified","best":"1:29.907","grid":4},"8":{"pos":14,"scoring_place":14,"race_points":11,"fl":0,"penalty":0,"score":11,"total":11,"status":"classified","best":"1:29.957","grid":0},"9":{"pos":13,"scoring_place":12,"race_points":13,"fl":0,"penalty":0,"score":13,"total":13,"status":"classified","best":"1:30.059","grid":1}},"gross":103,"dropped":[0,0,0],"net":103,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":0,"pos":14},{"driver":"Mike Evans","no":"93","cls":"Am","starts":15,"events":["croft","spa","oulton","knockhill","donington"],"registered":true,"rounds":{"1":{"pos":13,"scoring_place":13,"race_points":12,"fl":0,"penalty":0,"score":12,"total":12,"status":"classified","best":"1:24.832","grid":2},"2":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"1:39.005","grid":13},"3":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"NS","best":null,"grid":null},"4":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"NC","best":"2:41.697","grid":null},"5":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"NC","best":"2:37.243","grid":null},"6":{"pos":12,"scoring_place":12,"race_points":13,"fl":0,"penalty":0,"score":13,"total":13,"status":"classified","best":"2:38.250","grid":null},"7":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"1:28.950","grid":13},"8":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"1:30.122","grid":17},"9":{"pos":14,"scoring_place":13,"race_points":12,"fl":0,"penalty":0,"score":12,"total":12,"status":"classified","best":"1:29.158","grid":5},"10":{"pos":13,"scoring_place":12,"race_points":13,"fl":0,"penalty":0,"score":13,"total":13,"status":"classified","best":"53.446","grid":-4},"11":{"pos":13,"scoring_place":12,"race_points":13,"fl":0,"penalty":0,"score":13,"total":13,"status":"classified","best":"58.378","grid":0},"12":{"pos":11,"scoring_place":11,"race_points":14,"fl":0,"penalty":0,"score":14,"total":14,"status":"classified","best":"53.666","grid":2},"13":{"pos":9,"scoring_place":6,"race_points":19,"fl":0,"penalty":0,"score":19,"total":19,"status":"classified","best":"1:37.372","grid":5},"14":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"1:38.511","grid":9},"15":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":null,"grid":null}},"gross":96,"dropped":[0,0,0],"net":96,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":0,"pos":16},{"driver":"Louis Darling","no":"25","cls":"Pro Am","starts":12,"events":["croft","spa","oulton","donington"],"registered":true,"rounds":{"1":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"1:26.273","grid":17},"2":{"pos":13,"scoring_place":12,"race_points":13,"fl":0,"penalty":-9,"score":13,"total":4,"status":"classified","best":"1:38.307","grid":6},"3":{"pos":8,"scoring_place":8,"race_points":17,"fl":0,"penalty":0,"score":17,"total":17,"status":"classified","best":"1:37.210","grid":8},"4":{"pos":6,"scoring_place":6,"race_points":19,"fl":0,"penalty":0,"score":19,"total":19,"status":"classified","best":"2:37.901","grid":null},"5":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"NC","best":null,"grid":null},"6":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"NC","best":"2:39.351","grid":null},"7":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"1:28.630","grid":3},"8":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"1:29.433","grid":18},"9":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"NS","best":null,"grid":null},"13":{"pos":8,"scoring_place":5,"race_points":20,"fl":0,"penalty":0,"score":20,"total":20,"status":"classified","best":"1:37.290","grid":3},"14":{"pos":5,"scoring_place":3,"race_points":22,"fl":0,"penalty":0,"score":22,"total":22,"status":"classified","best":"1:37.530","grid":3},"15":{"pos":17,"scoring_place":13,"race_points":12,"fl":0,"penalty":0,"score":12,"total":12,"status":"classified","best":"1:37.178","grid":-12}},"gross":94,"dropped":[0,0,0],"net":94,"wins":0,"podiums":1,"fastest_laps":0,"penalty_points":-9,"pos":17},{"driver":"Chris Fraser","no":"8","cls":"Am","starts":6,"events":["croft","spa"],"registered":true,"rounds":{"1":{"pos":4,"scoring_place":4,"race_points":21,"fl":0,"penalty":0,"score":21,"total":21,"status":"classified","best":"1:24.112","grid":1},"2":{"pos":4,"scoring_place":4,"race_points":21,"fl":0,"penalty":0,"score":21,"total":21,"status":"classified","best":"1:36.992","grid":0},"3":{"pos":4,"scoring_place":4,"race_points":21,"fl":0,"penalty":0,"score":21,"total":21,"status":"classified","best":"1:36.508","grid":0},"4":{"pos":7,"scoring_place":7,"race_points":18,"fl":0,"penalty":0,"score":18,"total":18,"status":"classified","best":"2:39.383","grid":null},"5":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"NC","best":"3:05.263","grid":null},"6":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":null,"grid":null}},"gross":81,"dropped":[0,0,0],"net":81,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":0,"pos":18},{"driver":"Mark Farmer","no":"17","cls":"Am","starts":6,"events":["spa","oulton"],"registered":true,"rounds":{"4":{"pos":4,"scoring_place":4,"race_points":21,"fl":0,"penalty":0,"score":21,"total":21,"status":"classified","best":"2:39.807","grid":null},"5":{"pos":14,"scoring_place":14,"race_points":11,"fl":0,"penalty":0,"score":11,"total":11,"status":"classified","best":"2:41.591","grid":null},"6":{"pos":9,"scoring_place":9,"race_points":16,"fl":0,"penalty":0,"score":16,"total":16,"status":"classified","best":"2:38.961","grid":null},"7":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":null,"grid":null},"8":{"pos":13,"scoring_place":13,"race_points":12,"fl":0,"penalty":0,"score":12,"total":12,"status":"classified","best":"1:29.536","grid":6},"9":{"pos":12,"scoring_place":11,"race_points":14,"fl":0,"penalty":0,"score":14,"total":14,"status":"classified","best":"1:29.497","grid":1}},"gross":74,"dropped":[0,0,0],"net":74,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":0,"pos":19},{"driver":"Jake Swann","no":"66","cls":null,"starts":3,"events":["spa"],"registered":true,"rounds":{"4":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":null,"grid":null},"5":{"pos":11,"scoring_place":11,"race_points":14,"fl":1,"penalty":0,"score":15,"total":15,"status":"classified","best":"2:36.733","grid":null},"6":{"pos":4,"scoring_place":4,"race_points":21,"fl":0,"penalty":0,"score":21,"total":21,"status":"classified","best":"2:37.988","grid":null}},"gross":36,"dropped":[0,0,0],"net":36,"wins":0,"podiums":0,"fastest_laps":1,"penalty_points":0,"pos":20},{"driver":"Timothy Dickens","no":"44","cls":null,"starts":3,"events":["spa"],"registered":true,"rounds":{"4":{"pos":9,"scoring_place":9,"race_points":16,"fl":0,"penalty":0,"score":16,"total":16,"status":"classified","best":"2:39.167","grid":null},"5":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"NC","best":"3:06.711","grid":null},"6":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":null,"grid":null}},"gross":16,"dropped":[0,0,0],"net":16,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":0,"pos":21},{"driver":"Nick Sampson","no":"15","cls":null,"starts":3,"events":["spa"],"registered":true,"rounds":{"4":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"NC","best":"2:49.453","grid":null},"5":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"NC","best":"2:37.403","grid":null},"6":{"pos":15,"scoring_place":15,"race_points":10,"fl":0,"penalty":0,"score":10,"total":10,"status":"classified","best":"2:38.035","grid":null}},"gross":10,"dropped":[0,0,0],"net":10,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":0,"pos":22},{"driver":"Aaron Head","no":"2","cls":"Pro Am","starts":3,"events":["donington"],"registered":false,"rounds":{"13":{"pos":1,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:36.978","grid":7},"14":{"pos":1,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:37.451","grid":0},"15":{"pos":1,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:36.921","grid":0}},"gross":0,"dropped":[0,0,0],"net":0,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":0,"pos":null},{"driver":"Harrison Cavers","no":"51","cls":"Am","starts":6,"events":["knockhill","donington"],"registered":false,"rounds":{"10":{"pos":8,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"53.368","grid":5},"11":{"pos":7,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"57.921","grid":1},"12":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"53.798","grid":7},"13":{"pos":13,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:37.898","grid":5},"14":{"pos":11,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:38.079","grid":2},"15":{"pos":13,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:37.791","grid":-2}},"gross":0,"dropped":[0,0,0],"net":0,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":0,"pos":null},{"driver":"Harry Cook","no":"9","cls":"Pro Am","starts":3,"events":["donington"],"registered":false,"rounds":{"13":{"pos":5,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:37.366","grid":-1},"14":{"pos":4,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:37.565","grid":1},"15":{"pos":8,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:37.186","grid":-4}},"gross":0,"dropped":[0,0,0],"net":0,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":0,"pos":null},{"driver":"Stephen Lyall","no":"43","cls":"Pro Am","starts":3,"events":["donington"],"registered":false,"rounds":{"13":{"pos":3,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:37.017","grid":4},"14":{"pos":9,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:37.645","grid":-6},"15":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"1:37.203","grid":9}},"gross":0,"dropped":[0,0,0],"net":0,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":0,"pos":null},{"driver":"Tom Eden","no":"64","cls":"Am","starts":9,"events":["croft","oulton","donington"],"registered":false,"rounds":{"1":{"pos":null,"scoring_place":null,"race_points":0,"fl":0,"score":0,"penalty":0,"total":0,"status":"DNF","best":"1:24.281","grid":8},"2":{"pos":7,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:37.245","grid":10},"3":{"pos":13,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:37.080","grid":-7},"7":{"pos":9,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:28.119","grid":5},"8":{"pos":17,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:28.663","grid":-8},"9":{"pos":8,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:28.580","grid":9},"13":{"pos":12,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:37.371","grid":4},"14":{"pos":8,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:37.753","grid":4},"15":{"pos":5,"scoring_place":null,"race_points":0,"fl":0,"penalty":0,"score":0,"total":0,"status":"classified","best":"1:37.039","grid":3}},"gross":0,"dropped":[0,0,0],"net":0,"wins":0,"podiums":0,"fastest_laps":0,"penalty_points":0,"pos":null}],"timings":{"croft":{"scheduled":[{"day":null,"start":"10:55","end":"11:15","activity":"Qualifying"},{"day":null,"start":"15:20","end":"15:40","activity":"Race 4"},{"day":null,"start":"13:45","end":"14:05","activity":"Race 11"},{"day":null,"start":"17:10","end":"17:30","activity":"Race 17"}],"actual":[{"round":null,"race_in_event":0,"date":"02/05/2026","start":"10:48","finish":"11:08","weather":"Cloudy / Dry","laps":null,"miles":null},{"round":1,"race_in_event":1,"date":"02/05/2026","start":"15:24","finish":"15:45","weather":"Cloudy / Dry","laps":15,"miles":31.5},{"round":2,"race_in_event":2,"date":"03/05/2026","start":"14:32","finish":"14:53","weather":"Rain / Wet","laps":13,"miles":27.3},{"round":3,"race_in_event":3,"date":"03/05/2026","start":"17:58","finish":"18:19","weather":"Rain / Wet","laps":12,"miles":25.2}]},"spa":{"scheduled":[{"day":"FRIDAY","start":"11:51","end":"12:16","activity":"FP1"},{"day":"FRIDAY","start":"14:10","end":"14:35","activity":"FP2"},{"day":"FRIDAY","start":"16:45","end":"17:05","activity":"Q"},{"day":"SATURDAY","start":"15:11","end":"15:35","activity":"R1"},{"day":"SUNDAY","start":"13:31","end":"13:55","activity":"R2"},{"day":"SUNDAY","start":"17:21","end":"17:45","activity":"R3"}],"actual":[{"round":null,"race_in_event":0,"date":"29/05/2026","start":null,"finish":null,"weather":null,"laps":null,"miles":null},{"round":4,"race_in_event":1,"date":"30/05/2026","start":null,"finish":null,"weather":null,"laps":null,"miles":null},{"round":5,"race_in_event":2,"date":"31/05/2026","start":null,"finish":null,"weather":null,"laps":null,"miles":null},{"round":6,"race_in_event":3,"date":"31/05/2026","start":null,"finish":null,"weather":null,"laps":null,"miles":null}]},"oulton":{"scheduled":[{"day":null,"start":"09:30","end":"09:50","activity":"Qualifying"},{"day":null,"start":"11:45","end":"12:05","activity":"Race 3"},{"day":null,"start":"14:50","end":"15:10","activity":"Race 7"},{"day":null,"start":"17:10","end":"17:30","activity":"Race 11"}],"actual":[{"round":null,"race_in_event":0,"date":"18/07/2026","start":"09:35","finish":"09:55","weather":"Bright / Dry","laps":null,"miles":null},{"round":7,"race_in_event":1,"date":"18/07/2026","start":"11:45","finish":"12:06","weather":"Bright / Dry","laps":14,"miles":31.16},{"round":8,"race_in_event":2,"date":"18/07/2026","start":"15:00","finish":"15:20","weather":"Bright / Dry","laps":12,"miles":26.71},{"round":9,"race_in_event":3,"date":"18/07/2026","start":"17:11","finish":"17:31","weather":"Bright / Dry","laps":12,"miles":26.71}]},"knockhill":{"scheduled":[{"day":"Saturday, August 8","start":"10:00","end":"10:20","activity":"Qualifying"},{"day":"Saturday, August 8","start":"16:10","end":null,"activity":"Race"},{"day":"Sunday, August 9","start":"10:20","end":null,"activity":"Race"},{"day":"Sunday, August 9","start":"16:05","end":null,"activity":"Race"}],"actual":[{"round":null,"race_in_event":0,"date":"08/08/2026","start":"09:55","finish":"10:15","weather":"Cloudy / Dry","laps":null,"miles":null},{"round":10,"race_in_event":1,"date":"08/08/2026","start":"16:39","finish":"16:59","weather":"Cloudy / Damp","laps":23,"miles":29.14},{"round":11,"race_in_event":2,"date":"09/08/2026","start":"10:13","finish":"10:33","weather":"Cloudy / Wet","laps":21,"miles":26.6},{"round":12,"race_in_event":3,"date":"09/08/2026","start":"16:15","finish":"16:35","weather":"Cloudy / Dry","laps":23,"miles":29.14}]},"donington":{"scheduled":[{"day":"Saturday, August 22","start":"12:30","end":"12:50","activity":"Qualifying"},{"day":"Saturday, August 22","start":"16:50","end":null,"activity":"Race"},{"day":"Sunday, August 23","start":"12:25","end":null,"activity":"Race"},{"day":"Sunday, August 23","start":"16:40","end":null,"activity":"Race"}],"actual":[{"round":null,"race_in_event":0,"date":"22/08/2026","start":"12:46","finish":"13:06","weather":"Cloudy / Dry","laps":null,"miles":null},{"round":13,"race_in_event":1,"date":"22/08/2026","start":"17:00","finish":"17:21","weather":"Cloudy / Dry","laps":12,"miles":29.84},{"round":14,"race_in_event":2,"date":"23/08/2026","start":"12:38","finish":"12:58","weather":"Bright / Dry","laps":11,"miles":27.36},{"round":15,"race_in_event":3,"date":"23/08/2026","start":"16:51","finish":"17:12","weather":"Bright / Dry","laps":12,"miles":29.84}]},"snetterton":{"scheduled":[{"day":null,"start":"10:15","end":"10:35","activity":"Qualifying"},{"day":null,"start":"15:10","end":"15:30","activity":"Race 4"},{"day":null,"start":"10:55","end":"11:15","activity":"Race 13"},{"day":null,"start":"16:10","end":"16:30","activity":"Race 21"}],"actual":[]},"brands":{"scheduled":[{"day":"Saturday, October 10","start":"09:40","end":"10:00","activity":"Qualifying"},{"day":"Saturday, October 10","start":"12:55","end":null,"activity":"Race"},{"day":"Saturday, October 10","start":"17:45","end":null,"activity":"Race"},{"day":"Sunday, October 11","start":"13:15","end":null,"activity":"Race"}],"actual":[]}},"penalties":[{"round":2,"driver":"Steve Nuttall","licence_points":3,"deduction":9,"reason":"Causing a collision (cars 21 & 46), Croft race 11","source":"https://www.barc.net/wp-content/uploads/2026/05/Seven-UK-Race-11-No-46-Steve-Nuttall.pdf"},{"round":2,"driver":"Louis Darling","licence_points":3,"deduction":9,"reason":"Causing a collision (cars 25 & 93), Croft race 11","source":"https://www.barc.net/wp-content/uploads/2026/05/Seven-UK-Race-11-No-25-Louis-Darling.pdf"},{"round":4,"driver":"Nick Highton","licence_points":2,"deduction":6,"reason":"2-position race penalty, Spa race 1 (Stewards' decision no.2). Overseas round - notional licence points per reg 4.2.3","source":"https://ser2026.racspa.be/docs/Caterham310-StewDecision2.pdf"},{"round":5,"driver":"Matt Armstrong","licence_points":2,"deduction":6,"reason":"Causing a collision with cars 11 & 28, Spa race 1; 4-place grid penalty for race 2 plus fine (Stewards' decision no.1). Overseas round - notional licence points per reg 4.2.3","source":"https://ser2026.racspa.be/docs/Caterham310-StewDecision1.pdf"},{"round":12,"driver":"Matt Armstrong","licence_points":2,"deduction":6,"reason":"Causing a collision with car 11, Knockhill round 12 - written warning, upheld on review at Donington","source":"https://www.barc.net/wp-content/uploads/2026/08/Caterham-Seven-Round-12-No-1-Matthew-Armstrong.pdf"},{"round":13,"driver":"Charlie Lower","licence_points":2,"deduction":6,"reason":"Causing a collision with car 23 under the safety car, Donington round 13","source":"https://www.barc.net/wp-content/uploads/2026/08/Caterham-Seven-Round-13-No-21-Charlie-Lower.pdf"},{"round":13,"driver":"Gary Curtis","licence_points":2,"deduction":6,"reason":"Clerk of the Course decision, Donington round 13","source":"https://www.barc.net/wp-content/uploads/2026/08/Caterham-Seven-Round-13-No-22-Gary-Curtis.pdf"},{"round":13,"driver":"Nick Highton","licence_points":2,"deduction":6,"reason":"Clerk of the Course decision, Donington round 13. The sheet says the championship deduction is 'to be determined by Caterham'; reg 4.2.3 gives 3 x 2 licence points","source":"https://www.barc.net/wp-content/uploads/2026/08/Caterham-Seven-Round-13-No-78-Nicholas-Highton.pdf","provisional":true},{"round":13,"driver":"Justin Armstrong","licence_points":4,"deduction":12,"reason":"Disqualified from the results of Donington round 13, plus 4 licence points","source":"https://www.barc.net/wp-content/uploads/2026/08/Caterham-Seven-Round-13-No-23-Justin-Armstrong.pdf"},{"round":15,"driver":"Matt Armstrong","licence_points":3,"deduction":9,"reason":"Clerk of the Course decision, Donington round 15","source":"https://www.barc.net/wp-content/uploads/2026/08/Caterham-Seven-Round-15-No-1-Matt-Armstrong.pdf"}],"guests":["Tom Eden","Harrison Cavers","Aaron Head","Harry Cook","Stephen Lyall"]};
+
+/* ------------------------------------------------------------------ util */
+const $ = (s, r = document) => r.querySelector(s);
+const el = (t, c, txt) => { const e = document.createElement(t); if (c) e.className = c;
+  if (txt != null) e.textContent = txt; return e; };
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, m =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+const SERIES = ['--s1', '--s2', '--s3', '--s4', '--s5', '--s6'];
+const REGS_URL = 'https://caterhamcars.com/assets/Documents/Seven%20Championship%20Documents/'
+  + '2026%20Caterham%20Seven%20Championship%20UK%20Regulations%20-%20Published.pdf';
+// page in that PDF for each article cited on this page
+const REG_PAGE = { '1.3.5': 4, '1.3.6': 4, '1.5': 4, '1.6.1': 5, '1.6.2': 6,
+                   '1.6.3': 6, '1.6.4': 6, '1.6.5': 7, '1.7.3': 7, '4.2.3': 15 };
+const regHref = n => REGS_URL + (REG_PAGE[n] ? `#page=${REG_PAGE[n]}` : '');
+
+/** Turn every `<span class="reg">1.6.1</span>` into a link to that article. */
+function linkRegs(root) {
+  root.querySelectorAll('span.reg').forEach(el => {
+    const n = el.textContent.trim();
+    const a = document.createElement('a');
+    a.className = 'reg';
+    a.href = regHref(n);
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.title = `2026 Championship Regulations, regulation ${n}`
+      + (REG_PAGE[n] ? ` (page ${REG_PAGE[n]})` : '');
+    a.textContent = n;
+    el.replaceWith(a);
+  });
+}
+const runSet = new Set(D.roundsRun);
+const scoring = D.table.filter(t => t.registered);
+const eventOf = {}; D.events.forEach(e => e.rounds.forEach(r => eventOf[r] = e));
+const raceOf = {}; D.races.forEach(r => raceOf[r.round] = r);
+
+/* ------------------------------------------------------------- tooltip */
+const tip = $('#tip');
+function showTip(html, x, y) {
+  tip.innerHTML = html; tip.style.opacity = 1;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = Math.min(Math.max(8, x - w / 2), innerWidth - w - 8) + 'px';
+  tip.style.top = (y - h - 12 < 8 ? y + 18 : y - h - 12) + 'px';
+}
+const hideTip = () => { tip.style.opacity = 0; };
+document.addEventListener('mouseover', e => {
+  const t = e.target.closest('[data-tip]');
+  if (t) { const r = t.getBoundingClientRect(); showTip(t.dataset.tip, r.left + r.width / 2, r.top); }
+});
+document.addEventListener('mouseout', e => { if (e.target.closest('[data-tip]')) hideTip(); });
+addEventListener('scroll', hideTip, true);
+
+/* ----------------------------------------------------------- masthead */
+(function mast() {
+  const leader = scoring[0];
+  const done = D.roundsRun.length, next = D.events.find(e => !e.source);
+  const cells = [
+    ['Races run', `${done}<small>/${D.roundsTotal}</small>`],
+    ['Championship leader', `${esc(leader.driver.split(' ').pop().toUpperCase())} <small>#${leader.no}</small>`],
+    ['Leading total', `${leader.gross}<small> pts</small>`],
+    ['Registered', `${D.registrations}<small> drivers</small>`],
+    ['Next round', next ? `<small>${esc(next.name)}</small>` : '<small>Season complete</small>'],
+  ];
+  $('#mastStats').innerHTML = cells.map(([k, v]) =>
+    `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+})();
+
+/* --------------------------------------------------------------- tabs */
+const TABS = [['standings', 'Standings'], ['races', 'Races'],
+              ['runin', 'Title run-in'], ['calendar', 'Calendar & timings'],
+              ['rules', 'How points work']];
+const tabsEl = $('#tabs');
+TABS.forEach(([id, label], i) => {
+  const b = el('button', null, label);
+  b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', i === 0);
+  b.setAttribute('aria-controls', 'p-' + id);
+  b.onclick = () => {
+    [...tabsEl.children].forEach(x => x.setAttribute('aria-selected', x === b));
+    TABS.forEach(([t]) => $('#p-' + t).classList.toggle('on', t === id));
+    hideTip();
+  };
+  tabsEl.append(b);
+});
+
+/* ---------------------------------------------------------- standings */
+function cellTip(t, rd) {
+  const sc = t.rounds[rd], ev = eventOf[rd];
+  const where = `<b>Round ${rd}</b> · ${esc(ev.name)}`;
+  if (!runSet.has(Number(rd))) return `${where}<br>Not yet run`;
+  if (!sc) return `${where}<br>${esc(t.driver)} did not enter`;
+  const bits = [];
+  if (sc.status === 'classified') {
+    bits.push(`Finished <b>P${sc.pos}</b>`);
+    if (sc.scoring_place && sc.scoring_place !== sc.pos)
+      bits.push(`scores as P${sc.scoring_place} — guest entries are invisible for points`);
+    bits.push(`${sc.race_points} race points`);
+  } else bits.push(sc.status === 'DQ' ? 'Disqualified' : sc.status);
+  if (sc.fl) bits.push('+1 fastest lap');
+  if (sc.penalty) bits.push(`<b>${sc.penalty}</b> championship penalty from this round `
+    + `(reg 4.2.3) — taken off the season total, not off these race points`);
+  if (!t.registered) bits.push('Guest entry — scores no points');
+  return `${where}<br>${esc(t.driver)}: ${bits.join('<br>')}`;
+}
+
+/** Tooltip for the Pen column: every deduction the driver has taken. */
+function penTip(t) {
+  const rows = D.penalties.filter(p => p.driver === t.driver)
+    .map(p => `Round ${p.round}: <b>−${p.deduction}</b> (${p.licence_points} licence points)`);
+  return `<b>${esc(t.driver)}</b> — championship penalties, reg 4.2.3<br>${rows.join('<br>')}`
+    + `<br>Total <b>${t.penalty_points}</b>, deducted from the season total. `
+    + `A penalty is not part of a round score, so a drop score cannot cancel it.`;
+}
+
+function standings() {
+  const p = $('#p-standings'); p.innerHTML = '';
+  p.append(Object.assign(el('p', 'lede'),
+    { textContent: `Points scored in every race. An underlined score took the fastest lap of that `
+      + `race, worth the extra point inside the number. A round marked in `
+      + `red carried a championship penalty, but the points the driver earned on track are left `
+      + `whole - the deduction is collected in the Pen column and taken off the total. `
+      + `${D.roundsRun.length} of ${D.roundsTotal} races have been run; the remaining columns are `
+      + `hatched. Hover any cell for the finishing position behind the number.` }));
+
+  const sc = el('div', 'scroller'), tb = el('table', 'champ');
+  const thead = el('thead');
+
+  const band = el('tr', 'band');
+  band.append(Object.assign(el('th', 'stick1'), { rowSpan: 2 }));
+  band.append(Object.assign(el('th', 'stick2'), { rowSpan: 2, textContent: 'Driver' }));
+  D.events.forEach(e => {
+    const th = el('th', e.source ? '' : 'future', e.name);
+    th.colSpan = e.rounds.length; th.title = e.dates;
+    band.append(th);
+  });
+  ['Pen', 'Total', 'Drops', 'Net', 'W', 'FL'].forEach(h => {
+    const th = el('th', null, h); th.rowSpan = 2; th.style.background = 'var(--surface-2)';
+    th.style.color = 'var(--ink-2)'; band.append(th);
+  });
+  thead.append(band);
+
+  const cols = el('tr', 'cols');
+  for (let r = 1; r <= D.roundsTotal; r++) cols.append(el('th', 'num', 'R' + r));
+  thead.append(cols);
+  tb.append(thead);
+
+  const tbody = el('tbody');
+  D.table.forEach(t => {
+    const tr = el('tr', t.registered ? '' : 'guest');
+    tr.append(Object.assign(el('td', 'stick1 num'), { textContent: t.pos || '—' }));
+    const nm = el('td', 'stick2');
+    // only an unregistered entry is a guest; a registered driver with no class
+    // recorded (Spa's sheet has no class column) just gets no class chip
+    const clsChip = t.registered
+      ? (t.cls ? `<span class="chip${t.cls === 'Pro Am' ? ' pro' : ''}">${esc(t.cls)}</span>` : '')
+      : '<span class="chip">Guest</span>';
+    nm.innerHTML = `<span class="rowhead"><b>${esc(t.driver)}</b>${clsChip}`
+      + `<span class="chip">#${esc(t.no)}</span></span>`;
+    tr.append(nm);
+    for (let r = 1; r <= D.roundsTotal; r++) {
+      const key = String(r), s = t.rounds[key];
+      const td = el('td', 'pt');
+      if (!runSet.has(r)) td.classList.add('future');
+      else if (!s) { td.textContent = '·'; td.classList.add('none'); }
+      else {
+        // race points plus the fastest lap point - a penalty is never netted off
+        // here, it goes in the Pen column
+        td.textContent = (s.status === 'classified' || s.score !== 0)
+          ? s.score : s.status.toLowerCase();
+        if (s.status !== 'classified') td.style.fontSize = '11px';
+        if (s.fl) td.classList.add('fl');
+        if (s.scoring_place === 1) td.classList.add('win');
+        if (s.penalty) td.classList.add('pen');
+        if (s.status !== 'classified' && !s.penalty) td.classList.add('none');
+      }
+      td.dataset.tip = cellTip(t, key);
+      tr.append(td);
+    }
+    const drops = t.dropped.reduce((a, b) => a + b, 0);
+    const pen = el('td', 'num', t.penalty_points ? String(t.penalty_points) : '—');
+    if (t.penalty_points) {
+      pen.style.color = 'var(--alarm)';
+      pen.style.fontWeight = 600;
+      pen.dataset.tip = penTip(t);
+    } else {
+      pen.style.color = 'var(--ink-3)';
+    }
+    tr.append(pen);
+    [[t.gross, 'tot'], [drops, 'num'], [t.net, 'num'], [t.wins, 'num'], [t.fastest_laps, 'num']]
+      .forEach(([v, c]) => tr.append(el('td', c, String(v))));
+    tbody.append(tr);
+  });
+  tb.append(tbody); sc.append(tb); p.append(sc);
+
+  const lg = el('div', 'legend');
+  lg.innerHTML =
+    '<span><b class="mono" style="text-decoration:underline;text-decoration-color:var(--fl);'
+    + 'text-decoration-thickness:2px;text-underline-offset:3px">24</b>'
+    + 'Fastest lap of the race (+1 point)</span>'
+    + [['var(--flag-soft)', 'Race win'],
+       ['var(--alarm-soft)', 'Round carrying a championship penalty (deducted in Pen)'],
+       ['var(--sunk)', 'Round not yet run']]
+      .map(([c, t]) => `<span><i class="sw" style="background:${c}"></i>${t}</span>`).join('')
+    + '<span><i class="sw" style="background:var(--surface)"></i>· = did not enter</span>';
+  p.append(lg);
+
+  p.append(Object.assign(el('h2'), { textContent: 'How the title has swung' }));
+  p.append(Object.assign(el('p', 'sub'), { textContent:
+    'Running total after each race for the top six. Gross points — drop scores are not applied.' }));
+  p.append(chart());
+}
+
+/* -------------------------------------------------------------- chart */
+function chart() {
+  const box = el('div', 'chartbox');
+  const top = scoring.slice(0, 6);
+  const rounds = D.roundsRun;
+  const series = top.map((t, i) => {
+    let run = 0;
+    const pts = rounds.map(r => {
+      const s = t.rounds[String(r)]; run += s ? s.total : 0; return { r, v: run };
+    });
+    return { name: t.driver, short: t.driver.split(' ').slice(-1)[0], no: t.no,
+             colour: `var(${SERIES[i]})`, pts, end: run };
+  });
+  const maxY = Math.ceil(Math.max(...series.map(s => s.end)) / 50) * 50;
+
+  const W = 980, H = 340, M = { t: 12, r: 108, b: 30, l: 42 };
+  const x = i => M.l + (W - M.l - M.r) * (i / (rounds.length - 1));
+  const y = v => H - M.b - (H - M.t - M.b) * (v / maxY);
+
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cumulative championship points by race">`;
+  for (let g = 0; g <= maxY; g += 50)
+    s += `<line class="gl" x1="${M.l}" y1="${y(g)}" x2="${W - M.r}" y2="${y(g)}"/>`
+       + `<text class="ax" x="${M.l - 8}" y="${y(g) + 3.5}" text-anchor="end">${g}</text>`;
+  // event bands along the foot
+  D.events.filter(e => e.source).forEach(e => {
+    const idx = e.rounds.map(r => rounds.indexOf(r)).filter(i => i >= 0);
+    if (!idx.length) return;
+    const mid = (x(idx[0]) + x(idx[idx.length - 1])) / 2;
+    s += `<text class="ax" x="${mid}" y="${H - 8}" text-anchor="middle">${esc(e.name.split(' ')[0])}</text>`;
+  });
+  rounds.forEach((r, i) =>
+    s += `<text class="ax" x="${x(i)}" y="${H - M.b + 13}" text-anchor="middle">${r}</text>`);
+
+  series.forEach(se => {
+    const d = se.pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
+    s += `<path d="${d}" fill="none" stroke="${se.colour}" stroke-width="2"
+            stroke-linejoin="round" stroke-linecap="round"/>`;
+    const lx = x(rounds.length - 1), ly = y(se.end);
+    s += `<circle cx="${lx}" cy="${ly}" r="4" fill="${se.colour}" stroke="var(--surface)" stroke-width="2"/>`;
+    s += `<text class="serieslab" x="${lx + 9}" y="${ly + 4}" fill="${se.colour}">${esc(se.short)} ${se.end}</text>`;
+  });
+  s += `<line id="cross" x1="0" y1="${M.t}" x2="0" y2="${H - M.b}" stroke="var(--ink-3)"
+          stroke-width="1" stroke-dasharray="3 3" opacity="0"/>`;
+  s += `<rect id="hit" x="${M.l}" y="${M.t}" width="${W - M.l - M.r}" height="${H - M.t - M.b}" fill="transparent"/>`;
+  s += '</svg>';
+  box.innerHTML = s;
+
+  const svg = box.querySelector('svg'), cross = box.querySelector('#cross');
+  box.querySelector('#hit').addEventListener('mousemove', ev => {
+    const bb = svg.getBoundingClientRect();
+    const px = (ev.clientX - bb.left) / bb.width * W;
+    let i = Math.round((px - M.l) / (W - M.l - M.r) * (rounds.length - 1));
+    i = Math.max(0, Math.min(rounds.length - 1, i));
+    cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('opacity', .8);
+    const rd = rounds[i], race = raceOf[rd];
+    const rows = series.map(se => `<i class="dot" style="background:${se.colour}"></i> `
+      + `${esc(se.short)} <b>${se.pts[i].v}</b>`).join('<br>');
+    showTip(`<b>Round ${rd}</b> — ${esc(race.eventName)}<br>${rows}`, ev.clientX, ev.clientY);
+  });
+  box.querySelector('#hit').addEventListener('mouseleave', () => {
+    cross.setAttribute('opacity', 0); hideTip();
+  });
+
+  const lg = el('div', 'chart-legend');
+  lg.innerHTML = series.map(se =>
+    `<span><i class="dot" style="background:${se.colour}"></i>${esc(se.name)} <span class="mono"
+      style="color:var(--ink-3)">#${se.no}</span></span>`).join('');
+  box.append(lg);
+  return box;
+}
+
+/* --------------------------------------------------------------- races */
+function races() {
+  const p = $('#p-races'); p.innerHTML = '';
+  p.append(Object.assign(el('p', 'lede'), { textContent:
+    'Full classification for every race run so far, with the championship points each result was '
+    + 'worth. Guest entries are shown greyed — they take no points and the drivers behind them '
+    + 'move up a place for scoring.' }));
+  const pick = el('div', 'picker');
+  const host = el('div');
+  D.races.forEach(r => {
+    const b = el('button', null, `R${r.round} · ${r.eventName.split(' ')[0]}`);
+    b.setAttribute('aria-pressed', r.round === D.races[D.races.length - 1].round);
+    b.onclick = () => {
+      [...pick.children].forEach(x => x.setAttribute('aria-pressed', x === b));
+      renderRace(host, r);
+    };
+    pick.append(b);
+  });
+  p.append(pick, host);
+  renderRace(host, D.races[D.races.length - 1]);
+}
+
+function renderRace(host, r) {
+  host.innerHTML = '';
+  const h = el('div', 'racehead');
+  h.innerHTML = `<h3>Round ${r.round} — ${esc(r.eventName)}</h3>`
+    + `<span class="f">${esc(r.date || '')} · ${esc(r.start || '')}–${esc(r.finish || '')}</span>`
+    + (r.laps ? `<span class="f"><b>${r.laps}</b> laps / <b>${r.miles}</b> miles</span>` : '')
+    + (r.weather ? `<span class="f">${esc(r.weather)}</span>` : '')
+    + (r.fastest ? `<span class="f">Fastest lap <b>${esc(r.fastest.time)}</b> — ${esc(r.fastest.driver)}</span>` : '');
+  host.append(h);
+
+  const sc = el('div', 'scroller'), tb = el('table');
+  tb.innerHTML = '<thead><tr>'
+    + ['Pos', 'No', 'Driver', 'Class', 'Laps', 'Race time', 'Best lap', 'On', 'Grid',
+       'Race pts', 'FL', 'Pen', 'Round total']
+      .map((x, i) => `<th class="${i > 3 ? 'num' : ''}">${x}</th>`).join('')
+    + '</tr></thead>';
+  const body = el('tbody');
+  r.entries.forEach(e => {
+    const tr = el('tr', (e.pos === 1 ? 'win ' : '') + (e.status !== 'classified' ? 'dnf' : '')
+      + (e.guest ? ' guest' : ''));
+    const cells = [
+      [e.pos ?? e.status, ''], [e.no, 'num'],
+      [e.driver + (e.guest ? ' (guest)' : ''), ''], [e.cls || '—', ''],
+      [e.laps ?? '—', 'num'], [e.time || '—', 'num'], [e.best || '—', 'num'],
+      [e.on ?? '—', 'num'], [e.grid ?? '—', 'num'],
+      [e.status === 'classified' ? e.pts : '—', 'num'],
+      [e.fl ? '+1' : '', 'num'], [e.pen || '', 'num'],
+      [e.status === 'classified' || e.pen ? e.total : '—', 'num'],
+    ];
+    cells.forEach(([v, c], i) => {
+      const td = el('td', c, String(v));
+      if (i === 11 && e.pen) td.style.color = 'var(--alarm)';
+      if (i === 12) { td.style.fontWeight = 600; td.classList.add('mono'); }
+      tr.append(td);
+    });
+    body.append(tr);
+  });
+  tb.append(body); sc.append(tb); host.append(sc);
+
+  if (r.notes && r.notes.length) {
+    const n = el('div', 'notes');
+    n.innerHTML = '<p><b>Officials&rsquo; notes</b></p>' + r.notes.map(x => `<p>${esc(x)}</p>`).join('');
+    host.append(n);
+  }
+  const pens = D.penalties.filter(p => p.round === r.round);
+  if (pens.length) {
+    const n = el('div', 'notes');
+    n.innerHTML = '<p><b>Championship point deductions (reg 4.2.3)</b></p>'
+      + pens.map(p => `<p>${esc(p.driver)} — ${p.licence_points} licence points, `
+        + `<b>−${p.deduction}</b> championship points. ${esc(p.reason)}. `
+        + `<a href="${esc(p.source)}">Decision sheet</a></p>`).join('');
+    host.append(n);
+  }
+  const src = el('p', 'sub');
+  src.style.marginTop = '10px';
+  src.textContent = 'Timing and classification: ' + r.source + '. Results are provisional until '
+    + 'the conclusion of any judicial and technical matters.';
+  host.append(src);
+}
+
+/* ------------------------------------------------------------ calendar */
+function calendar() {
+  const p = $('#p-calendar'); p.innerHTML = '';
+  p.append(Object.assign(el('p', 'lede'), { textContent:
+    'Seven meetings, three 20-minute races at each. Scheduled session times come from the meeting '
+    + 'timetable; actual start and finish times are those printed on the classification sheets.' }));
+  const g = el('div', 'grid');
+  D.events.forEach(e => {
+    const t = D.timings[e.key] || { scheduled: [], actual: [] };
+    const done = !!e.source;
+    const c = el('div', 'card' + (done ? '' : ' future'));
+    c.innerHTML = `<div class="card-h"><span class="rnd">R${e.rounds[0]}–${e.rounds[2]}</span>`
+      + `<h3>${esc(e.name)}</h3><span class="when">${esc(e.dates)}</span></div>`;
+    const b = el('div', 'card-b');
+    const ses = el('div', 'ses');
+    const actual = t.actual.slice();
+    let ri = 0;
+    (t.scheduled.length ? t.scheduled : [{ activity: 'Timetable to be published', start: null }])
+      .forEach(s => {
+        const isQ = /^(q|fp)/i.test(s.activity);
+        let a = null;
+        if (isQ) a = actual.find(x => x.race_in_event === 0);
+        else { ri++; a = actual.find(x => x.race_in_event === ri); }
+        const label = a && a.round ? `Round ${a.round}` : s.activity;
+        ses.innerHTML += `<span class="t">${esc(s.start || '—')}${s.end ? '–' + esc(s.end) : ''}</span>`
+          + `<span class="n">${esc(label)}${s.day ? ' <span style="color:var(--ink-3)">· '
+            + esc(s.day) + '</span>' : ''}</span>`
+          + `<span class="r">${a && a.start ? 'ran ' + esc(a.start) : (done ? '' : 'scheduled')}</span>`;
+      });
+    b.append(ses);
+    const winners = D.races.filter(r => r.event === e.key)
+      .map(r => `R${r.round} ${esc(r.entries[0] ? r.entries[0].driver : '')}`);
+    const m = el('div', 'meta');
+    m.innerHTML = (winners.length ? `<b>Winners:</b> ${winners.join(' · ')}<br>` : '')
+      + `${esc(e.meeting)} · <a href="${esc(e.url)}">Event page</a>`;
+    b.append(m); c.append(b); g.append(c);
+  });
+  p.append(g);
+}
+
+/* ------------------------------------------------------------- run-in */
+const REMAINING = D.roundsTotal - D.roundsRun.length;
+const MAX_RACE = 26;                       // 25 for a win + 1 for the fastest lap
+
+/** Season total after the three drop scores (reg 1.6.4). */
+function netTotal(scores) {
+  const low = [...scores].sort((a, b) => a - b).slice(0, D.dropScores);
+  return scores.reduce((a, b) => a + b, 0) - low.reduce((a, b) => a + b, 0);
+}
+/**
+ * Projected final total, with `v` scored in each round still to run.
+ * Only round scores (race points plus the fastest lap point) can be dropped;
+ * a reg 4.2.3 penalty comes off the championship total, so it is added back
+ * after the drop rather than being discarded with a bad round.
+ */
+function project(t, v) {
+  const s = [];
+  for (let r = 1; r <= D.roundsTotal; r++) {
+    if (runSet.has(r)) { const x = t.rounds[String(r)]; s.push(x ? x.score : 0); }
+    else s.push(v);
+  }
+  return netTotal(s) + t.penalty_points;
+}
+function quantile(arr, q) {
+  const s = [...arr].sort((a, b) => a - b);
+  const p = (s.length - 1) * q, lo = Math.floor(p), hi = Math.ceil(p);
+  return s[lo] + (s[hi] - s[lo]) * (p - lo);
+}
+
+function runInModel() {
+  return scoring.map(t => {
+    // form band is about race pace, so it uses the round score rather than the
+    // penalty-adjusted total
+    const entered = D.roundsRun.map(r => t.rounds[String(r)])
+      .filter(Boolean).map(x => x.score);
+    const q1 = Math.round(quantile(entered, .25));
+    const q3 = Math.round(quantile(entered, .75));
+    const med = Math.round(quantile(entered, .5));
+    return {
+      t, entered,
+      floor: project(t, 0),             // scores nothing in the remaining races
+      ceiling: project(t, MAX_RACE),    // wins every remaining race with fastest lap
+      bodyLo: project(t, q1), bodyHi: project(t, q3), mid: project(t, med),
+      formLo: q1, formHi: q3, formMid: med,
+    };
+  });
+}
+
+function runin() {
+  const p = $('#p-runin'); p.innerHTML = '';
+  if (REMAINING === 0) {
+    p.innerHTML = '<p class="lede">Every round has been run — the championship table is final.</p>';
+    return;
+  }
+  const m = runInModel();
+  const bestFloor = Math.max(...m.map(d => d.floor));
+  m.forEach(d => { d.live = d.ceiling >= bestFloor; });
+  const live = m.filter(d => d.live);
+
+  p.append(Object.assign(el('p', 'lede'), { textContent:
+    `${REMAINING} races left, worth a theoretical maximum of ${REMAINING * MAX_RACE} points. `
+    + `Each candle is one driver's possible finishing total once the three drop scores are `
+    + `applied — so points banked now are not all bankable at the end.` }));
+
+  const kpi = el('div', 'kpis');
+  kpi.innerHTML = [
+    ['Races remaining', REMAINING,
+     D.events.filter(e => !e.source).map(e => e.name).join(' and ')],
+    ['Maximum still available', REMAINING * MAX_RACE, `${REMAINING} × 25 for a win + 1 fastest lap`],
+    ['Title floor to beat', bestFloor,
+     `${esc(m.find(d => d.floor === bestFloor).t.driver)} cannot finish below this`],
+    ['Still in contention', live.length, `of ${m.length} registered drivers`],
+  ].map(([k, v, n]) => `<div class="kpi"><div class="k">${k}</div><div class="v">${v}</div>`
+    + `<div class="n">${n}</div></div>`).join('');
+  p.append(kpi);
+
+  p.append(Object.assign(el('h2'), { textContent: 'Best and worst case, after drop scores' }));
+  p.append(Object.assign(el('p', 'sub'), { textContent:
+    'Wick: score nothing more (bottom) to win every remaining race with the fastest lap (top). '
+    + 'Body: the driver’s own form band — their 25th to 75th percentile race score so far, '
+    + 'repeated across the races left. The bar across the body is that form band’s midpoint.' }));
+  p.append(candles(m, bestFloor));
+
+  const lg = el('div', 'legend');
+  lg.innerHTML =
+    '<span><i class="sw" style="background:var(--flag-ink);border-color:var(--flag-ink)"></i>Championship leader</span>'
+    + '<span><i class="sw" style="background:var(--s1);border-color:var(--s1)"></i>Can still win the title</span>'
+    + '<span><i class="sw" style="background:var(--ink-3);border-color:var(--ink-3)"></i>Mathematically out</span>'
+    + '<span><i class="sw" style="background:transparent;border-style:dashed"></i>Dashed line: title floor to beat</span>';
+  p.append(lg);
+
+  const det = el('details', 'tv');
+  det.innerHTML = '<summary>Show the same figures as a table</summary>';
+  const sc = el('div', 'scroller'), tb = el('table');
+  tb.innerHTML = '<thead><tr><th>Pos</th><th>Driver</th><th class="num">Now (gross)</th>'
+    + '<th class="num">Worst finish</th><th class="num">Form band</th><th class="num">Best finish</th>'
+    + '<th class="num">Form score</th><th>Title</th></tr></thead><tbody>'
+    + m.map(d => `<tr class="${d.live ? '' : 'outrow'}"><td class="num mono">${d.t.pos}</td>`
+      + `<td>${esc(d.t.driver)}</td><td class="num mono">${d.t.gross}</td>`
+      + `<td class="num mono">${d.floor}</td>`
+      + `<td class="num mono">${d.bodyLo}–${d.bodyHi}</td>`
+      + `<td class="num mono">${d.ceiling}</td>`
+      + `<td class="num mono">${d.formLo}–${d.formHi}</td>`
+      + `<td>${d.live ? 'In contention' : 'Out'}</td></tr>`).join('')
+    + '</tbody>';
+  sc.append(tb); det.append(sc); p.append(det);
+
+  p.append(Object.assign(el('p', 'sub'), { textContent:
+    'Only one driver can take the win and the fastest lap in any race, so the top of every wick '
+    + 'is a ceiling no two drivers can reach together. Championship penalties already applied are '
+    + 'baked in; future ones obviously are not.' }));
+}
+
+function candles(m, bestFloor) {
+  const box = el('div', 'candlebox');
+  const SLOT = 46, PAD = { t: 14, r: 16, b: 58, l: 46 };
+  const W = PAD.l + m.length * SLOT + PAD.r, H = 400;
+  const vals = m.flatMap(d => [d.floor, d.ceiling]);
+  const lo = Math.floor(Math.min(...vals, 0) / 50) * 50;
+  const hi = Math.ceil(Math.max(...vals) / 50) * 50;
+  const y = v => PAD.t + (H - PAD.t - PAD.b) * (1 - (v - lo) / (hi - lo));
+  const cx = i => PAD.l + SLOT * i + SLOT / 2;
+
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img"
+    aria-label="Best and worst possible final points total for each driver">`;
+  for (let g = lo; g <= hi; g += 50)
+    s += `<line class="gl" x1="${PAD.l - 6}" y1="${y(g)}" x2="${W - PAD.r}" y2="${y(g)}"/>`
+       + `<text class="ax" x="${PAD.l - 12}" y="${y(g) + 3.5}" text-anchor="end">${g}</text>`;
+  s += `<line class="refline" x1="${PAD.l - 6}" y1="${y(bestFloor)}" x2="${W - PAD.r}" y2="${y(bestFloor)}"/>`
+     + `<text class="reftext" x="${W - PAD.r}" y="${y(bestFloor) - 5}" text-anchor="end">`
+     + `title floor ${bestFloor}</text>`;
+
+  m.forEach((d, i) => {
+    const c = !d.live ? 'var(--ink-3)' : (d.t.pos === 1 ? 'var(--flag-ink)' : 'var(--s1)');
+    const x = cx(i), bw = 20;
+    const top = Math.min(y(d.bodyHi), y(d.bodyLo)), h = Math.max(2, Math.abs(y(d.bodyHi) - y(d.bodyLo)));
+    const tipText = `<b>${esc(d.t.driver)}</b> — P${d.t.pos}, ${d.t.gross} pts<br>`
+      + `Best possible finish <b>${d.ceiling}</b><br>`
+      + `Form band <b>${d.bodyLo}–${d.bodyHi}</b> (scoring ${d.formLo}–${d.formHi} a race)<br>`
+      + `Worst possible finish <b>${d.floor}</b><br>`
+      + (d.live ? 'Can still win the title' : 'Mathematically out of the title race');
+    s += `<g data-tip="${tipText.replace(/"/g, '&quot;')}">`
+       + `<rect x="${x - SLOT / 2}" y="${PAD.t}" width="${SLOT}" height="${H - PAD.t - PAD.b}" fill="transparent"/>`
+       + `<line x1="${x}" y1="${y(d.ceiling)}" x2="${x}" y2="${y(d.floor)}" stroke="${c}" stroke-width="1.5"/>`
+       + `<line x1="${x - 5}" y1="${y(d.ceiling)}" x2="${x + 5}" y2="${y(d.ceiling)}" stroke="${c}" stroke-width="1.5"/>`
+       + `<line x1="${x - 5}" y1="${y(d.floor)}" x2="${x + 5}" y2="${y(d.floor)}" stroke="${c}" stroke-width="1.5"/>`
+       + `<rect x="${x - bw / 2}" y="${top}" width="${bw}" height="${h}" rx="1.5"
+            fill="${c}" fill-opacity=".22" stroke="${c}" stroke-width="1.5"/>`
+       + `<line x1="${x - bw / 2}" y1="${y(d.mid)}" x2="${x + bw / 2}" y2="${y(d.mid)}"
+            stroke="${c}" stroke-width="2.5"/>`
+       + `<text class="xlab${d.live ? '' : ' out'}" x="${x}" y="${H - PAD.b + 14}"
+            text-anchor="end" transform="rotate(-45 ${x} ${H - PAD.b + 14})">`
+       + `${esc(d.t.driver.split(' ').slice(-1)[0])}</text>`
+       + `</g>`;
+  });
+  s += '</svg>';
+  box.innerHTML = s;
+  return box;
+}
+
+/* --------------------------------------------------------------- rules */
+function rules() {
+  const p = $('#p-rules'); p.innerHTML = '';
+  const doc = el('a', 'doclink');
+  doc.href = REGS_URL; doc.target = '_blank'; doc.rel = 'noopener';
+  doc.innerHTML = '<b>2026 Caterham Seven Championship UK Regulations</b>'
+    + '<span>PDF · 40 pages · caterhamcars.com</span>';
+  p.append(doc);
+  const wrapEl = el('div', 'cols2');
+
+  const left = el('div', 'prose');
+  left.innerHTML = `
+    <h3>Race points</h3>
+    <p>Points go to every full-season registered driver classified as a finisher
+    <span class="reg">1.6.1</span>. Which scale applies depends on how many drivers registered for
+    the season — with ${D.registrations} registered, the ${D.scale}-point scale is in force.</p>
+    <h3>Fastest lap</h3>
+    <p>One extra point for the fastest lap of each race, shared if the time is equalled
+    <span class="reg">1.6.2</span>. A lap on which the driver exceeded track limits cannot count, and
+    a non-scoring car's fastest lap passes to the quickest points-scoring car.</p>
+    <h3>Guest entries</h3>
+    <p>Only drivers registered for the full year score. Anyone entering on a round-by-round basis is
+    <em>invisible for the allocation of points</em> <span class="reg">1.3.5</span>, so a driver who
+    finishes behind a guest still takes the higher score.</p>
+    <h3>Drop scores</h3>
+    <p>The three lowest round scores are discarded from the season total
+    <span class="reg">1.6.4</span>. A round score is race points plus the fastest lap point, and a
+    round a driver did not contest counts as a zero and is a candidate for dropping.
+    A championship penalty is <em>not</em> part of a round score - reg 4.2.3 takes it off the
+    championship total - so it cannot be discarded by dropping the round it came from.
+    With ${D.roundsTotal - D.roundsRun.length} races still to run the <em>Net</em> column is
+    indicative; the order shown follows the gross total, as the official leaderboard does.</p>
+    <h3>Penalties</h3>
+    <p>A penalty that carries Motorsport UK licence points also costs three times that number of
+    championship points <span class="reg">4.2.3</span>, deducted from the championship total rather
+    than from that round, so a drop score cannot wipe it out. Overseas rounds use notional licence
+    points one step below the equivalent domestic penalty.</p>
+    <h3>Shortened races</h3>
+    <p>If the Clerk of the Course cuts a race short: 60% or more of the intended time scores full
+    points, 25–60% scores half, below 25% scores nothing <span class="reg">1.6.4</span>.</p>`;
+
+  const right = el('div');
+  right.innerHTML = '<h3 class="disp" style="margin:0 0 8px;font-size:18px;text-transform:uppercase;'
+    + 'letter-spacing:.04em">Points scale in force</h3>';
+  const sc = el('div', 'scroller'), tb = el('table');
+  const rows = [];
+  for (let n = 1; n <= 24; n++) rows.push([n, n === 1 ? 25 : (n <= 23 ? 25 - n : 1)]);
+  tb.innerHTML = '<thead><tr><th>Finishing place (points-scoring cars)</th>'
+    + '<th class="num">Points</th></tr></thead><tbody>'
+    + rows.map(([n, v]) => `<tr><td>${n === 24 ? '24th and every other classified finisher'
+      : n + ordinal(n)}</td><td class="num mono">${v}</td></tr>`).join('')
+    + `<tr><td>Fastest lap of the race</td><td class="num mono">+1</td></tr></tbody>`;
+  sc.append(tb); right.append(sc);
+
+  const pen = el('div');
+  pen.innerHTML = '<h3 class="disp" style="margin:26px 0 8px;font-size:18px;text-transform:uppercase;'
+    + 'letter-spacing:.04em">Deductions applied this season</h3>'
+    + `<p class="sub">Three times the licence points for the offence <span class="reg">4.2.3</span>,`
+    + ` taken off the championship total.</p>`;
+  const psc = el('div', 'scroller'), ptb = el('table');
+  ptb.innerHTML = '<thead><tr><th class="num">Rd</th><th>Driver</th><th class="num">Licence pts</th>'
+    + '<th class="num">Deduction</th><th>Decision</th></tr></thead><tbody>'
+    + D.penalties.map(p => `<tr><td class="num mono">${p.round}</td><td>${esc(p.driver)}</td>`
+      + `<td class="num mono">${p.licence_points}</td>`
+      + `<td class="num mono" style="color:var(--alarm)">−${p.deduction}</td>`
+      + `<td><a href="${esc(p.source)}">sheet</a>${p.provisional ? ' <span class="chip">provisional</span>' : ''}</td></tr>`)
+      .join('') + '</tbody>';
+  psc.append(ptb); pen.append(psc); right.append(pen);
+
+  wrapEl.append(left, right); p.append(wrapEl);
+  linkRegs(p);
+}
+const ordinal = n => (n % 100 >= 11 && n % 100 <= 13) ? 'th'
+  : ['th', 'st', 'nd', 'rd'][n % 10] || 'th';
+
+standings(); races(); runin(); calendar(); rules();
+</script>
