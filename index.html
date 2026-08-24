@@ -358,17 +358,27 @@ const TABS = [['standings', 'Standings'], ['races', 'Races'],
               ['runin', 'Title run-in'], ['calendar', 'Calendar & timings'],
               ['rules', 'How points work']];
 const tabsEl = $('#tabs');
-TABS.forEach(([id, label], i) => {
+const tabBtn = {};
+/** Show one tab; unknown or empty ids fall back to the first tab. */
+function showTab(id) {
+  if (!tabBtn[id]) id = TABS[0][0];
+  TABS.forEach(([t]) => {
+    tabBtn[t].setAttribute('aria-selected', t === id);
+    $('#p-' + t).classList.toggle('on', t === id);
+  });
+  hideTip();
+}
+TABS.forEach(([id, label]) => {
   const b = el('button', null, label);
-  b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', i === 0);
+  b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', false);
   b.setAttribute('aria-controls', 'p-' + id);
-  b.onclick = () => {
-    [...tabsEl.children].forEach(x => x.setAttribute('aria-selected', x === b));
-    TABS.forEach(([t]) => $('#p-' + t).classList.toggle('on', t === id));
-    hideTip();
-  };
+  // the hash makes every tab linkable; hashchange does the actual switching
+  b.onclick = () => { showTab(id); if (location.hash.slice(1) !== id) location.hash = id; };
+  tabBtn[id] = b;
   tabsEl.append(b);
 });
+addEventListener('hashchange', () => showTab(location.hash.slice(1)));
+showTab(location.hash.slice(1));
 
 /* ---------------------------------------------------------- standings */
 function cellTip(t, rd) {
