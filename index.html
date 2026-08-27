@@ -708,7 +708,25 @@ function champTable(rows, split) {
   thead.append(band);
 
   const cols = el('tr', 'cols');
-  for (let r = 1; r <= D.roundsTotal; r++) cols.append(el('th', 'num', 'R' + r));
+  for (let r = 1; r <= D.roundsTotal; r++) {
+    const th = el('th', 'num');
+    const run = runSet.has(r);
+    const btn = el('button', null, 'R' + r);
+    btn.style.cssText = 'background:none;border:0;cursor:pointer;color:inherit;font:inherit;padding:0;'
+      + 'text-decoration:underline dotted currentColor';
+    btn.title = run ? 'Go to race results' : 'Go to calendar';
+    btn.addEventListener('click', () => {
+      currentTab = run ? 'races' : 'calendar';
+      showTab(currentTab);
+      writeHash();
+      if (run) {
+        const pb = $(`#p-races .picker-buttons [data-round="${r}"]`);
+        if (pb) pb.click();
+      }
+    });
+    th.append(btn);
+    cols.append(th);
+  }
   thead.append(cols);
   tb.append(thead);
 
