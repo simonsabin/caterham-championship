@@ -437,9 +437,9 @@ table.livetab .chip{font-size:10px;padding:0 4px;letter-spacing:.05em}
   table.livetab td[data-c="driver"] b{max-width:92px}
   table.deltatab td[data-c="driver"] b{max-width:104px}
   table.livetab .chip[data-k="cls"]{display:none}
-  table.livetab [data-c="move"],table.livetab [data-c="int"],
+  table.livetab [data-c="int"],
   table.livetab [data-c="stops"],table.livetab [data-c="best"],
-  table.deltatab [data-c="move"],table.deltatab [data-c="before"]{display:none}
+  table.deltatab [data-c="before"]{display:none}
   table.livetab,table.deltatab{font-size:12px}
   /* A timing table is columns of short numbers: the room between them is room
      the screen has not got. */
@@ -603,7 +603,7 @@ footer a{color:var(--racing-ink)}
     </div>
     <div class="mast-stats" id="mastStats"></div>
   </div>
-  <div class="wrap"><div id="seriesNote"></div><div id="liveNote"></div></div>
+  <div class="wrap"><div id="liveNote"></div></div>
   <nav class="tabs wrap" id="tabs" role="tablist"></nav>
 </header>
 
@@ -742,6 +742,7 @@ addEventListener('resize', hideTip);
 function seriesNote() {
   const box = $('#seriesNote');
   const r = D.reconciliation;
+  if (!box) return;
   if (!r) { box.innerHTML = ''; return; }
   const un = r.unverified_rounds || [];
   /* Caterham now publish four of the five tables net of the drop scores. The
@@ -1058,7 +1059,12 @@ function champTable(rows, split) {
 }
 
 function standings() {
-  const p = $('#p-standings'); p.innerHTML = '';
+  // How far this table has been checked against the championship's own is a
+  // statement about this table, so it is shown with it rather than over every
+  // page on the site.
+  const p = $('#p-standings');
+  p.innerHTML = '<div id="seriesNote"></div>';
+  seriesNote();
   const groups = classGroups();
   const classed = groups ? groups.filter(g => g.split).map(g => g.name) : [];
   p.append(Object.assign(el('p', 'lede'),
@@ -3267,7 +3273,7 @@ function liveTable(base, v, live) {
   const splits = ((v.session || {}).sectors || []).slice(0, -1);
   // Every column knows what it is, so a narrow screen can be given the ones
   // that matter and spared the rest.
-  const cols = [['pos', ICON_POS], ['move', ''], ['no', 'No'], ['driver', 'Driver'],
+  const cols = [['pos', ICON_POS], ['move', ''], ['driver', 'Driver'],
                 ['laps', ICON_LAPS], ['gap', 'Gap'], ['int', 'Int']]
     .concat(splits.map((x, i) => ['s' + (i + 1), 'S' + (i + 1)]))
     .concat([['last', 'Last'], ['best', 'Best'], ['stops', 'Stops']])
@@ -3281,8 +3287,8 @@ function liveTable(base, v, live) {
       : r.state === CAR_PIT ? 'pit' : r.missing ? 'gone' : r.onGrid ? 'ongrid' : '';
     const who = t
       ? driverCell(t.driver, [t.registered ? '' : metaChip('Guest'),
-                              r.cls ? metaChip(r.cls) : ''])
-      : driverCell(r.name || '—', [metaChip('Not in the table')]);
+                              r.cls ? metaChip(r.cls) : '', carChip(r.no)])
+      : driverCell(r.name || '—', [metaChip('Not in the table'), carChip(r.no)]);
     const flag = v.scored && v.scored.flDriver && t && t.driver === v.scored.flDriver;
     return `<tr class="${cls}">`
       + `<td class="stick1 num mono" data-c="pos"${!r.onGrid ? '' : r.missing
@@ -3296,7 +3302,6 @@ function liveTable(base, v, live) {
       + `</td>`
       + `<td class="num mono" data-c="move" data-tip="Places gained or lost since the session started">`
       + `${liveMove(r.posChange)}</td>`
-      + `<td class="num mono" data-c="no">${esc(r.no)}</td>`
       + `<td class="stick2" data-c="driver">${who}</td>`
       + `<td class="num mono" data-c="laps">${r.laps == null ? '—' : r.laps}</td>`
       + `<td class="num mono" data-c="gap">${esc(plain(r.gap))}</td>`
@@ -3873,7 +3878,7 @@ function selectSeries(key) {
   REMAINING = D.roundsTotal - D.roundsRun.length;
   [...seriesBar.children].forEach(b =>
     b.setAttribute('aria-pressed', b.dataset.key === D.key));
-  mast(); seriesNote(); standings(); races(); runin(); calendar(); rules(); about();
+  mast(); standings(); races(); runin(); calendar(); rules(); about();
   // Not liveDraw: a race that is running belongs to the standings and the title
   // run-in as much as to the Live tab, so the feed is opened for the series
   // being shown whatever tab that series is being looked at on.
