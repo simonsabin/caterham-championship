@@ -1186,6 +1186,33 @@ function champTable(rows, split) {
   return sc;
 }
 
+/**
+ * Every championship deduction taken this season, and where each was published.
+ *
+ * It belongs beside the table it comes off rather than with the article that
+ * allows it: the Pen column says a driver has lost points, and this is the only
+ * thing on the site that says which race and what for.
+ */
+function deductions() {
+  if (!D.penalties.length) return null;
+  const pen = el('div');
+  pen.innerHTML = '<h3 class="disp" style="margin:26px 0 8px;font-size:18px;text-transform:uppercase;'
+    + 'letter-spacing:.04em">Deductions applied this season</h3>'
+    + `<p class="sub">Three times the licence points for the offence `
+    + `<span class="reg">${D.penaltyReg}</span>, taken off the championship total.</p>`;
+  const psc = el('div', 'scroller'), ptb = el('table');
+  ptb.innerHTML = '<thead><tr><th class="num">Rd</th><th>Driver</th><th class="num">Licence pts</th>'
+    + '<th class="num">Deduction</th><th>Decision</th></tr></thead><tbody>'
+    + D.penalties.map(p => `<tr data-driver="${esc(p.driver)}"><td class="num mono">${p.round}</td><td>${esc(p.driver)}</td>`
+      + `<td class="num mono">${p.licence_points == null ? '—' : p.licence_points}</td>`
+      + `<td class="num mono" style="color:var(--alarm)">−${p.deduction}</td>`
+      + `<td><a href="${esc(p.source)}">${grads() ? 'table' : 'sheet'}</a>`
+      + `${p.provisional ? ' <span class="chip">provisional</span>' : ''}</td></tr>`)
+      .join('') + '</tbody>';
+  psc.append(ptb); pen.append(psc);
+  return pen;
+}
+
 function standings() {
   // How far this table has been checked against the championship's own is a
   // statement about this table, so it is shown with it rather than over every
@@ -1265,6 +1292,9 @@ function standings() {
       .map(([c, t]) => `<span><i class="sw" style="background:${c}"></i>${t}</span>`).join('')
     + '<span><i class="sw" style="background:var(--surface)"></i>· = did not enter</span>';
   p.append(lg);
+
+  const pen = deductions();
+  if (pen) { p.append(pen); linkRegs(pen); }
 
   p.append(Object.assign(el('h2'), { textContent: 'How the title has swung' }));
   p.append(Object.assign(el('p', 'sub'), { textContent:
@@ -2287,7 +2317,9 @@ function rules() {
     <p>A penalty that carries Motorsport UK licence points also costs three times that number of
     championship points <span class="reg">4.2.3</span>, deducted from the championship total rather
     than from that round, so a drop score cannot wipe it out. Overseas rounds use notional licence
-    points one step below the equivalent domestic penalty.</p>
+    points one step below the equivalent domestic penalty. Every deduction taken this season, and
+    where each was published, is listed on the
+    <a href="#${SEASON.year}/${D.key}/standings">standings</a> page.</p>
     <h3>Shortened races</h3>
     <p>If the Clerk of the Course cuts a race short: 60% or more of the intended time scores full
     points, 25–60% scores half, below 25% scores nothing <span class="reg">1.6.4</span>.</p>`;
@@ -2315,22 +2347,6 @@ function rules() {
         `<tr><td>${n}</td><td class="num mono">${v}</td></tr>`).join('')
     + '</tbody>';
   sc.append(tb); right.append(sc);
-
-  const pen = el('div');
-  pen.innerHTML = '<h3 class="disp" style="margin:26px 0 8px;font-size:18px;text-transform:uppercase;'
-    + 'letter-spacing:.04em">Deductions applied this season</h3>'
-    + `<p class="sub">Three times the licence points for the offence `
-    + `<span class="reg">${D.penaltyReg}</span>, taken off the championship total.</p>`;
-  const psc = el('div', 'scroller'), ptb = el('table');
-  ptb.innerHTML = '<thead><tr><th class="num">Rd</th><th>Driver</th><th class="num">Licence pts</th>'
-    + '<th class="num">Deduction</th><th>Decision</th></tr></thead><tbody>'
-    + D.penalties.map(p => `<tr data-driver="${esc(p.driver)}"><td class="num mono">${p.round}</td><td>${esc(p.driver)}</td>`
-      + `<td class="num mono">${p.licence_points == null ? '—' : p.licence_points}</td>`
-      + `<td class="num mono" style="color:var(--alarm)">−${p.deduction}</td>`
-      + `<td><a href="${esc(p.source)}">${grads() ? 'table' : 'sheet'}</a>`
-      + `${p.provisional ? ' <span class="chip">provisional</span>' : ''}</td></tr>`)
-      .join('') + '</tbody>';
-  psc.append(ptb); pen.append(psc); right.append(pen);
 
   wrapEl.append(left, right); p.append(wrapEl);
   linkRegs(p);
@@ -2365,9 +2381,9 @@ function graduatesRules() {
     <h3>Penalties</h3>
     <p>A penalty that carries Motorsport UK licence points also costs three times that number of
     championship points <span class="reg">4.2.4</span>, applied after the drop scores. The club
-    publishes those points in the class table itself, which is where the deductions below come
-    from. A round run outside the UK assumes notional licence points instead
-    <span class="reg">4.2.5</span>.</p>
+    publishes those points in the class table itself, which is where the deductions listed on the
+    <a href="#${SEASON.year}/${D.key}/standings">standings</a> page come from. A round run outside
+    the UK assumes notional licence points instead <span class="reg">4.2.5</span>.</p>
     <h3>Shortened races</h3>
     <p>A race cut short still counts as a full points-scoring round
     <span class="reg">1.6.4</span>.</p>`;
