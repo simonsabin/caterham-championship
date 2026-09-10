@@ -84,6 +84,9 @@ h1 em{font-style:normal;color:var(--racing-ink)}
 .stat .v small{font-size:13px;color:var(--ink-3);font-weight:400}
 
 .blurb{margin:8px 0 0;font-size:13.5px;color:var(--ink-2);max-width:52ch}
+/* The menu the whole page hangs off. It comes before the masthead because the
+   championship is chosen before anything about it is read. */
+.appbar{background:var(--surface-2);border-bottom:1px solid var(--line)}
 .serieswrap{background:var(--surface-2);border-top:1px solid var(--line)}
 .seriesbar{display:flex;gap:6px;overflow-x:auto;padding:9px 0}
 .seriesbar button{appearance:none;cursor:pointer;white-space:nowrap;
@@ -586,19 +589,20 @@ footer a{color:var(--racing-ink)}
 </style>
 
 <div class="startline"></div>
+<!-- The championships across the top, the pages of one of them underneath: the
+     first choice is which championship, and everything else is a view of it. -->
+<nav class="appbar" aria-label="Championship"><div class="wrap">
+  <div class="yearbar" id="yearBar" hidden aria-label="Season"></div>
+  <div class="seriesbar" id="seriesBar"></div>
+</div></nav>
 <header class="mast">
   <div class="wrap mast-in">
     <div>
       <p class="eyebrow">BARC · Caterham Motorsport · Season <span id="seasonLabel">2026</span></p>
       <h1>Caterham<br><em>Championships</em></h1>
-      <p class="blurb" id="seriesBlurb"></p>
     </div>
     <div class="mast-stats" id="mastStats"></div>
   </div>
-  <div class="serieswrap"><div class="wrap">
-    <div class="yearbar" id="yearBar" hidden aria-label="Season"></div>
-    <div class="seriesbar" id="seriesBar"></div>
-  </div></div>
   <div class="wrap"><div id="seriesNote"></div><div id="liveNote"></div></div>
   <nav class="tabs wrap" id="tabs" role="tablist"></nav>
 </header>
@@ -610,6 +614,7 @@ footer a{color:var(--racing-ink)}
   <section class="panel" id="p-calendar"></section>
   <section class="panel" id="p-runin"></section>
   <section class="panel" id="p-rules"></section>
+  <section class="panel" id="p-about"></section>
 </main>
 
 <footer class="wrap">
@@ -788,9 +793,11 @@ function mast() {
 }
 
 /* --------------------------------------------------------------- tabs */
+/* Short labels: the bar has to fit across a phone, and the id rather than the
+   label is what a link carries, so these can be as brief as they read. */
 const TABS = [['standings', 'Standings'], ['live', 'Live'], ['races', 'Races'],
-              ['runin', 'Title run-in'], ['calendar', 'Calendar & timings'],
-              ['rules', 'How points work']];
+              ['runin', 'Run-in'], ['calendar', 'Calendar'],
+              ['rules', 'Points'], ['about', 'About']];
 const tabsEl = $('#tabs');
 const tabBtn = {};
 /** Show one tab; unknown or empty ids fall back to the first tab. */
@@ -1110,6 +1117,58 @@ function standings() {
   p.append(Object.assign(el('p', 'sub'), { textContent:
     'Running total after each race for the top six. Gross points — drop scores are not applied.' }));
   p.append(chart());
+}
+
+/**
+ * What this is, in one place.
+ *
+ * The championship's own description, and everything that explains rather than
+ * reports: where the numbers come from, what is provisional about them, and
+ * what the live view is doing while a race is running. It is all here so that
+ * the pages which show the racing can get on with showing it.
+ */
+function about() {
+  const p = $('#p-about'); p.innerHTML = '';
+  const live = `<a href="#${SEASON.year}/${D.key}/live">Live</a>`;
+  p.innerHTML = `<p class="lede">${esc(D.fullName)}${D.blurb ? ' — ' + esc(D.blurb) : ''}</p>`
+    + '<h2>What this page is</h2>'
+    + `<div class="prose"><p>Every session of the ${SEASON.year} season, taken from the `
+    + `timekeepers' own sheets, with each championship's table rebuilt from that series' `
+    + `own regulations rather than copied from anywhere. Points, drop scores, guests and `
+    + `penalties all follow the document itself — the <a href="#${SEASON.year}/${D.key}/rules">`
+    + `Points</a> page sets out how, article by article.</p>`
+    + `<p>Everything here is provisional until the organisers declare it final. Where this `
+    + `table can be checked against the championship's own published one it has been, and `
+    + `the note at the top of the page says how far that check reaches and where the two `
+    + `disagree.</p></div>`
+    + '<h2>Watching a race as it runs</h2>'
+    + '<div class="prose">'
+    + `<p><b>Where it comes from.</b> TSL Timing's live feed for the meeting — the same `
+    + `timekeepers, and the same event number, as the classifications every other page is `
+    + `built from. The ${live} page talks to it directly; nothing sits in between.</p>`
+    + '<p><b>Why the table can start half-empty.</b> The feed sends changes, not a '
+    + 'snapshot: a car appears on it the first time it crosses the line after you connect, '
+    + 'so a page opened mid-race fills in over a lap. Before that it lays the grid out from '
+    + 'qualifying, and each slot stands until the timekeepers replace it.</p>'
+    + '<p><b>None of it is a result.</b> Points shown while a race is running are what the '
+    + 'running order would be worth. The tables themselves are rebuilt from the published '
+    + 'classification days later, after the stewards, and that is the only thing that ever '
+    + 'changes a championship total.</p>'
+    + '<p><b>Seeing it out of season.</b> <span class="mono">?demo</span> in the address, or '
+    + 'the button on the ' + live + ' page, races a made-up field against the clock in this '
+    + 'page — twenty minutes and then the lap they are on, from this series’ own last '
+    + 'race. Nothing is timed and none of those numbers are real.</p></div>'
+    + '<h2>Where the numbers come from</h2>'
+    + '<div class="prose"><ul>'
+    + '<li><b>Results and timing</b> — <a href="https://www.tsl-timing.com/">TSL Timing</a>, '
+    + 'and <a href="https://ser2026.racspa.be/">Spa Euro Race</a> (Alkamel Systems) for the '
+    + 'Spa rounds.</li>'
+    + '<li><b>Calendar and judicial decisions</b> — the organising club’s own pages.</li>'
+    + `<li><b>Scoring</b> — this series’ ${SEASON.year} regulations`
+    + (D.regsUrl ? `, <a href="${esc(D.regsUrl)}" target="_blank" rel="noopener">published `
+        + 'here</a>' : '') + '.</li>'
+    + '</ul></div>';
+  linkRegs(p);
 }
 
 /* -------------------------------------------------------------- chart */
@@ -3553,27 +3612,13 @@ function livePanel(base, v) {
     body += '<p class="lede">Every round has been run — there is nothing left to watch.</p>';
   }
 
-  const why = '<details class="tv" style="margin-top:18px">'
-    + '<summary>Where this comes from</summary><div class="notes">'
-    + (LIVE_FAKE
-       ? '<p><b>Nothing is being timed.</b> <span class="mono">?demo</span> in the address '
-         + 'races a made-up field against the clock in this page and hands every crossing of '
-         + 'the line to the same code the feed talks to — so what happens below is what will '
-         + 'happen on the day, and none of the numbers are real. The grid, the pace and the '
-         + 'length of the race are this series’ own last one. <b>Hold the race</b> stops it '
-         + 'where it is; <b>Restart the race</b> sends it back to the grid.</p>'
-       : '')
-    + '<p><b>Where this comes from.</b> TSL Timing\'s live feed for the meeting — the same '
-    + 'timekeepers, and the same event number, as the classifications every other tab is '
-    + 'built from. This page talks to it directly; nothing sits in between.</p>'
-    + '<p><b>Why the table can start half-empty.</b> The feed sends changes, not a '
-    + 'snapshot: a car appears on it the first time it crosses a line after you connect, '
-    + 'so a page opened mid-race fills in over a lap. The snapshot it starts from was '
-    + 'taken by the scraper, and is as old as the timestamp above says.</p>'
-    + '<p><b>None of this is a result.</b> Points here are what the running order would be '
-    + 'worth; the tables themselves are rebuilt from the published classification days '
-    + 'later, after the stewards, and that is the only thing that ever changes a '
-    + 'championship total.</p></div></details>';
+  // Everything that explains rather than reports is on the About page; what is
+  // left here is the one line that says where to find it.
+  const why = '<p class="sub" style="margin-top:18px">Where this comes from, why the '
+    + 'table can start half-empty, and why none of it is a result: '
+    + `<a href="#${SEASON.year}/${base.key}/about">About</a>.`
+    + (LIVE_FAKE ? ' Nothing is being timed at the moment — this is a demonstration.' : '')
+    + '</p>';
 
   /* The tables are redrawn every time the feed says anything - once a second
      through a race - and until now so was everything around them. A button
@@ -3828,8 +3873,7 @@ function selectSeries(key) {
   REMAINING = D.roundsTotal - D.roundsRun.length;
   [...seriesBar.children].forEach(b =>
     b.setAttribute('aria-pressed', b.dataset.key === D.key));
-  $('#seriesBlurb').textContent = D.blurb || '';
-  mast(); seriesNote(); standings(); races(); runin(); calendar(); rules();
+  mast(); seriesNote(); standings(); races(); runin(); calendar(); rules(); about();
   // Not liveDraw: a race that is running belongs to the standings and the title
   // run-in as much as to the Live tab, so the feed is opened for the series
   // being shown whatever tab that series is being looked at on.
