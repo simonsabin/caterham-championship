@@ -377,7 +377,7 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
 .doclink span{color:var(--ink-3);font-family:"IBM Plex Mono",monospace;font-size:12px}
 
 /* ---- live timing ------------------------------------------------------- */
-.livehead{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;
+.livehead{position:relative;display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;
   background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--racing);
   border-radius:0 4px 4px 0;box-shadow:var(--shadow);padding:12px 16px;margin-bottom:14px}
 .livehead .who{font-family:"Barlow Condensed",Arial,sans-serif;font-size:20px;font-weight:600;
@@ -434,22 +434,22 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
 .countin b{color:var(--ink)}
 /* The handles on the stand-in, kept out of the way of the race: one button on
    the right, and the rest behind it. */
-.livebar .fakes{margin-left:auto;position:relative}
-.livebar .fakes summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;
+.livehead .fakes{position:relative}
+.livehead .fakes summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;
   gap:8px;padding:5px 12px;border:1px solid var(--line-2);border-radius:3px;
   background:var(--surface);color:var(--ink-2);
   font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;font-size:14px;
   letter-spacing:.08em;text-transform:uppercase}
-.livebar .fakes summary::-webkit-details-marker{display:none}
-.livebar .fakes summary:hover{color:var(--ink);border-color:var(--racing)}
-.livebar .fakes .bars{width:14px;height:10px;flex:none;
+.livehead .fakes summary::-webkit-details-marker{display:none}
+.livehead .fakes summary:hover{color:var(--ink);border-color:var(--racing)}
+.livehead .fakes .bars{width:14px;height:10px;flex:none;
   background:linear-gradient(currentColor 0 2px,transparent 2px 4px,currentColor 4px 6px,
     transparent 6px 8px,currentColor 8px 10px)}
-.livebar .fakes .fakemenu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;
+.livehead .fakes .fakemenu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;
   display:flex;flex-direction:column;gap:6px;padding:10px;min-width:190px;
   background:var(--surface);border:1px solid var(--line-2);border-radius:4px;
   box-shadow:var(--shadow)}
-.livebar .fakes .fakemenu .livebtn{width:100%;text-align:left}
+.livehead .fakes .fakemenu .livebtn{width:100%;text-align:left}
 /* A heading that is a picture: the size of the words beside it, and the colour
    of them, so a row of headings still reads as one row. */
 .hicon{width:13px;height:13px;vertical-align:-2px;fill:currentColor;opacity:.75}
@@ -501,7 +501,11 @@ table.livetab .chip{font-size:10px;padding:0 4px;letter-spacing:.05em}
   .livehead .clock{font-size:17px;margin-left:8px;padding:1px 8px}
   .livehead .right{gap:6px 10px}
   .livebar{gap:6px 10px;margin-bottom:10px}
-  .livebar .fakes{margin-left:auto}
+  .livehead .fakes summary{padding:4px 10px;font-size:13px}
+  /* Narrow enough and the button has wrapped off the right-hand edge, so the
+     menu hangs off the box rather than off the button. */
+  .livehead .fakes{position:static}
+  .livehead .fakes .fakemenu{right:12px;top:calc(100% + 4px)}
   /* The notes above the tabs are context, not the thing being read. */
   .note{padding:8px 11px;font-size:12.5px;margin-top:10px}
   .note .tag{font-size:11px;margin-right:6px}
@@ -3614,6 +3618,29 @@ function livePanel(base, v) {
   // the session it is counting and says nothing about itself - a clock next to
   // a race is a clock counting the race down - and it is coloured by the flag
   // showing, which is the other thing a timing screen is read for.
+  // Driving the stand-in is not what this page is for, so it folds away behind
+  // one button, up in the box with the race it stands in for.
+  const fakes = LIVE_FAKE
+    ? '<details class="fakes"><summary aria-label="Simulation controls">'
+      + '<span class="bars"></span>Simulation</summary><div class="fakemenu">'
+      + `<button class="livebtn quiet" id="livePause" data-tip="Stop the `
+      + `simulation where it is — the clock stops with it — or let it go again">`
+      + `${LIVE.paused ? 'Let it go' : 'Hold the race'}</button>`
+      + '<button class="livebtn quiet" id="liveReset" data-tip="Send the '
+      + 'simulation back to the grid and run it again from lights out">'
+      + 'Restart the race</button>'
+      + '<button class="livebtn quiet" id="liveDemoOff" data-tip="Stop the '
+      + 'demonstration and put this tab back on TSL’s own feed">Done</button>'
+      + '</div></details>'
+    : '<details class="fakes"><summary aria-label="Simulation controls">'
+      + '<span class="bars"></span>Simulation</summary><div class="fakemenu">'
+      + '<button class="livebtn quiet" id="liveDemoOn" '
+      + 'data-tip="Race a made-up field against the clock in this page, in real '
+      + 'time, to show what this tab does while a meeting is running: twenty '
+      + 'minutes of it, a lap every minute and a half. Nothing is timed and none '
+      + 'of the numbers are real.">Show a demonstration race</button>'
+      + '</div></details>';
+
   const clock = sess
     ? `<span class="clock ${liveFlagClass(sess.flag)}" id="liveClock"`
       + ` data-tip="${esc(liveFlagSays(sess.flag))}">${liveClockNow() || '—'}</span>`
@@ -3642,6 +3669,7 @@ function livePanel(base, v) {
           : `<button class="livebtn" id="liveGo">`
             + `${LIVE_FAKE ? 'Run a race' : 'Watch live'}</button>`)
        : '')
+    + fakes
     + '</div></div>';
 
   const bar = [];
@@ -3653,32 +3681,6 @@ function livePanel(base, v) {
     bar.push(`<span style="font-size:12.5px;color:var(--ink-3)">Snapshot taken `
       + `${liveAgo(LIVE.seededAt)}${liveOn() ? ', and live since' : ''}</span>`);
   }
-
-  // The handles on the simulation, kept over on the right and behind a rule:
-  // they drive the stand-in rather than the championship, and nothing about
-  // them exists on a page that is watching TSL.
-  // Driving the stand-in is not what this page is for, so it folds away behind
-  // one button and stays out of the way of the race.
-  const fakes = LIVE_FAKE
-    ? '<details class="fakes"><summary aria-label="Simulation controls">'
-      + '<span class="bars"></span>Simulation</summary><div class="fakemenu">'
-      + `<button class="livebtn quiet" id="livePause" data-tip="Stop the `
-      + `simulation where it is — the clock stops with it — or let it go again">`
-      + `${LIVE.paused ? 'Let it go' : 'Hold the race'}</button>`
-      + '<button class="livebtn quiet" id="liveReset" data-tip="Send the '
-      + 'simulation back to the grid and run it again from lights out">'
-      + 'Restart the race</button>'
-      + '<button class="livebtn quiet" id="liveDemoOff" data-tip="Stop the '
-      + 'demonstration and put this tab back on TSL’s own feed">Done</button>'
-      + '</div></details>'
-    : '<details class="fakes"><summary aria-label="Simulation controls">'
-      + '<span class="bars"></span>Simulation</summary><div class="fakemenu">'
-      + '<button class="livebtn quiet" id="liveDemoOn" '
-      + 'data-tip="Race a made-up field against the clock in this page, in real '
-      + 'time, to show what this tab does while a meeting is running: twenty '
-      + 'minutes of it, a lap every minute and a half. Nothing is timed and none '
-      + 'of the numbers are real.">Show a demonstration race</button>'
-      + '</div></details>';
 
   let body = '', order = null, impact = null, gridNote = '';
   if (sess && v.kind) {
@@ -3809,7 +3811,7 @@ function livePanel(base, v) {
                  LIVE.applied, LIVE.seededAt, meet.event && meet.event.key].join('|');
   if (p.dataset.shell !== shell) {
     p.innerHTML = head
-      + (bar.length || fakes ? `<div class="livebar">${bar.join('')}${fakes}</div>` : '')
+      + (bar.length ? `<div class="livebar">${bar.join('')}</div>` : '')
       + '<div id="liveBody"></div>';
     p.dataset.shell = shell;
 
