@@ -416,6 +416,12 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
 .livebar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:0 0 14px}
 .livebar label{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;
   color:var(--ink-2)}
+/* The one control on the standings: whether the race being run counts in it. */
+.countin{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;
+  color:var(--ink-2);background:var(--surface);border:1px solid var(--line);
+  border-left:3px solid var(--flag);border-radius:0 3px 3px 0;padding:8px 12px;
+  margin:12px 0 0}
+.countin b{color:var(--ink)}
 /* The handles on the stand-in, kept away from the controls that are about the
    championship: over on the right, behind a rule, and labelled. */
 .livebar .fakes{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px;align-items:center;
@@ -1136,6 +1142,22 @@ function standings() {
   const p = $('#p-standings');
   p.innerHTML = '<div id="seriesNote"></div>';
   seriesNote();
+  // Whether a race that is running counts is a question about this table, so it
+  // is asked here rather than on the page showing the race.
+  const running = LIVE.view && LIVE.view.scored && LIVE.view.scored.scored.size
+    ? LIVE.view.scored.round : null;
+  if (running) {
+    const box = el('label', 'countin');
+    box.innerHTML = `<input type="checkbox"${LIVE.applied ? ' checked' : ''}>`
+      + `<span>Count <b>round ${running}</b>, running now at `
+      + `${esc((LIVE.view.meet.event || {}).name || 'this meeting')}, in this table and the `
+      + `title run-in</span>`;
+    box.querySelector('input').onchange = e => {
+      LIVE.applied = e.target.checked;
+      liveRefresh();
+    };
+    p.append(box);
+  }
   const groups = classGroups();
   const classed = groups ? groups.filter(g => g.split).map(g => g.name) : [];
   // How to read the table, kept until after it: somebody who wants the numbers
@@ -3589,10 +3611,6 @@ function livePanel(base, v) {
     bar.push(`<a class="livebtn quiet" style="text-decoration:none" target="_blank" `
       + `rel="noopener" href="${LIVE_SITE}${esc(LIVE.id)}">TSL live timing ↗</a>`);
   }
-  if (v.scored) {
-    bar.push(`<label><input type="checkbox" id="liveApply"${LIVE.applied ? ' checked' : ''}>`
-      + `Count round ${v.scored.round} in the standings and the run-in</label>`);
-  }
   if (LIVE.seededAt) {
     bar.push(`<span style="font-size:12.5px;color:var(--ink-3)">Snapshot taken `
       + `${liveAgo(LIVE.seededAt)}${liveOn() ? ', and live since' : ''}</span>`);
@@ -3751,10 +3769,9 @@ function livePanel(base, v) {
       + '<div id="liveBody"></div>';
     p.dataset.shell = shell;
 
-    const go = $('#liveGo', p), stop = $('#liveStop', p), apply = $('#liveApply', p);
+    const go = $('#liveGo', p), stop = $('#liveStop', p);
     if (go) go.onclick = () => liveStart();
     if (stop) stop.onclick = () => liveStop();
-    if (apply) apply.onchange = e => { LIVE.applied = e.target.checked; liveRefresh(); };
     const again = $('#liveReset', p);
     if (again) again.onclick = () => {
       // Back to the grid: the page's own view goes with it, so the last race's
