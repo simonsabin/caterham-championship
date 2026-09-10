@@ -403,6 +403,9 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
   padding-left:16px;border-left:1px dashed var(--line-2)}
 .livebar .fakes .k{font-family:"Barlow Condensed",Arial,sans-serif;font-size:11.5px;
   letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3)}
+/* A heading that is a picture: the size of the words beside it, and the colour
+   of them, so a row of headings still reads as one row. */
+.hicon{width:13px;height:13px;vertical-align:-2px;fill:currentColor;opacity:.75}
 table.livetab td.pts{font-family:"IBM Plex Mono",monospace;text-align:center;font-weight:600;
   background:var(--sunk)}
 /* A name is as wide as a name; the column it sits in is not. The championship
@@ -419,6 +422,12 @@ table.livetab .chip{font-size:10px;padding:0 4px;letter-spacing:.05em}
    it holds is what a driver would want first: where everyone is, what the last
    lap was, and what it is worth. The rest is a drag to the right too far. */
 @media (max-width:767px){
+  /* A running order is as wide as its columns and no wider. The blanket floor
+     under every table in a scroller is what was keeping this one at 720 pixels
+     however many columns were taken out of it, so the space went into the name
+     column and a clipped name sat in the middle of it looking like a fault. */
+  .scroller table.livetab,.scroller table.deltatab,.scroller table.results{min-width:0}
+
   /* max-width on a cell is advisory in an auto-laid-out table, so the name
      itself is what gets bounded, and the class chip goes: on a phone the name
      column is for telling drivers apart, not for classifying them. */
@@ -429,7 +438,11 @@ table.livetab .chip{font-size:10px;padding:0 4px;letter-spacing:.05em}
   table.livetab [data-c="stops"],table.livetab [data-c="best"],
   table.deltatab [data-c="move"],table.deltatab [data-c="before"]{display:none}
   table.livetab,table.deltatab{font-size:12px}
-  table.livetab th,table.livetab td,table.deltatab th,table.deltatab td{padding:4px 4px}
+  /* A timing table is columns of short numbers: the room between them is room
+     the screen has not got. */
+  table.livetab th,table.livetab td,
+  table.deltatab th,table.deltatab td,
+  table.results th,table.results td{padding:3px 4px}
 
   /* The head of the tab, which is a banner rather than the thing being read.
      Everything in it goes one size down and the meeting's small print is cut to
@@ -503,21 +516,33 @@ table.livetab .down{color:var(--alarm);font-weight:600}
   .scroller{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .scroller table{min-width:720px}
   .scroller table.champ{min-width:980px}
-  th,td{padding:6px 7px}
+  th,td{padding:4px 5px}
   thead th,thead tr.cols th,.stick1,.stick2,thead .stick1,thead .stick2{
     position:static;
     left:auto;
     z-index:auto;
   }
   .stick2,thead .stick2{border-right:0}
-  table.champ .stick1,table.champ .stick2{position:sticky}
-  table.champ .stick1{left:0;width:28px;min-width:28px;z-index:6;background:var(--surface)}
-  table.champ .stick2{left:28px;min-width:100px;width:100px;z-index:6;background:var(--surface);border-right:1px solid var(--line-2)}
-  table.champ thead .stick1,table.champ thead .stick2{background:var(--surface-2);z-index:7}
-  table.champ .chip-meta{display:none}
+  table.champ .stick1,table.champ .stick2,
+  table.livetab .stick1,table.livetab .stick2,
+  table.deltatab .stick1,table.deltatab .stick2,
+  table.results .stick1,table.results .stick2{position:sticky}
+  table.champ .stick1,table.livetab .stick1,table.deltatab .stick1,
+  table.results .stick1{
+    left:0;width:28px;min-width:28px;z-index:6;background:var(--surface)}
+  table.champ .stick2,table.livetab .stick2,table.deltatab .stick2,
+  table.results .stick2{
+    left:28px;min-width:100px;width:100px;z-index:6;background:var(--surface);
+    border-right:1px solid var(--line-2)}
+  table.champ thead .stick1,table.champ thead .stick2,
+  table.livetab thead .stick1,table.livetab thead .stick2,
+  table.deltatab thead .stick1,table.deltatab thead .stick2,
+  table.results thead .stick1,table.results thead .stick2{
+    background:var(--surface-2);z-index:7}
+  .chip-meta{display:none}
   table.champ .rowhead{gap:4px}
-  table.champ .rowhead .name-full{display:none}
-  table.champ .rowhead .name-init{display:inline}
+  .rowhead .name-full{display:none}
+  .rowhead .name-init{display:inline}
   table.champ .chip.carno{padding:0 3px;font-size:10px}
 
   .chartbox,.candlebox,.lapbox,.watch{padding:10px}
@@ -616,6 +641,25 @@ const shortName = name => {
   const lastInitial = (Array.from(parts[parts.length - 1])[0] || '').toUpperCase();
   return `${first} ${lastInitial}.`;
 };
+/**
+ * A driver, as every table on this page writes one.
+ *
+ * The name twice - in full, and as the first name and an initial - so that a
+ * narrow screen can show the short one without the tables disagreeing about who
+ * somebody is; then whatever the table wants said about them, and the car
+ * number last. The classification, the running order, the live championship
+ * table and the standings all go through here, which is what keeps a column of
+ * names the same width and the same shape wherever it appears.
+ */
+function driverCell(name, chips) {
+  return `<span class="rowhead"><b><span class="name-full">${esc(name)}</span>`
+    + `<span class="name-init">${esc(shortName(name))}</span></b>`
+    + (chips || []).map(c => c).join('') + '</span>';
+}
+const metaChip = (text, cls) =>
+  `<span class="chip chip-meta${cls ? ' ' + cls : ''}">${esc(text)}</span>`;
+const carChip = no => `<span class="chip carno">#${esc(no)}</span>`;
+
 const SERIES = ['--s1', '--s2', '--s3', '--s4', '--s5', '--s6'];
 /* Every series has its own regulations, and every season its own edition of
    them, so a link to an article has to follow whatever is being shown -
@@ -1532,20 +1576,21 @@ function renderRace(host, r) {
     if (row.children.length) host.append(row);
   }
 
-  const sc = el('div', 'scroller'), tb = el('table');
+  const sc = el('div', 'scroller'), tb = el('table', 'results');
   tb.innerHTML = '<thead><tr>'
     + ['Pos', 'No', 'Driver', 'Class', 'Laps', 'Race time', 'Best lap', 'On', 'Grid',
        'Race pts', 'FL', 'Pen', 'Round total']
-      .map((x, i) => `<th class="${i > 3 ? 'num' : ''}">${x}</th>`).join('')
+      .map((x, i) => `<th class="${i > 3 ? 'num' : ''}`
+        + `${i === 0 ? ' stick1' : i === 2 ? ' stick2' : ''}">${x}</th>`).join('')
     + '</tr></thead>';
   const body = el('tbody');
   r.entries.forEach(e => {
     const tr = el('tr', (e.pos === 1 ? 'win ' : '') + (e.status !== 'classified' ? 'dnf' : '')
       + (e.guest ? ' guest' : ''));
     const cells = [
-      [e.pos ?? e.status, ''], [e.no, 'num'],
+      [e.pos ?? e.status, 'stick1'], [e.no, 'num'],
       // the class column already says Trophy or Guest where a series prints it
-      [e.driver + (e.guest && !(grads() && e.cls) ? ' (guest)' : ''), ''],
+      [e.driver + (e.guest && !(grads() && e.cls) ? ' (guest)' : ''), 'stick2 driver'],
       [e.cls || '—', ''],
       [e.laps ?? '—', 'num'], [e.time || '—', 'num'], [e.best || '—', 'num'],
       [e.on ?? '—', 'num'], [e.grid ?? '—', 'num'],
@@ -1555,6 +1600,8 @@ function renderRace(host, r) {
     ];
     cells.forEach(([v, c], i) => {
       const td = el('td', c, String(v));
+      // The driver column is written the way every other table writes one.
+      if (i === 2) td.innerHTML = driverCell(String(v), []);
       if (i === 11 && e.pen) td.style.color = 'var(--alarm)';
       if (i === 12) { td.style.fontWeight = 600; td.classList.add('mono'); }
       tr.append(td);
@@ -3131,6 +3178,21 @@ function liveMove(n) {
 
 const LIVE_STATE_LABEL = { 2: 'DSQ', 3: 'Out', 4: 'Pit' };
 
+/* Two headings that are a word where a picture does: the order they are in, and
+   how far round they have got. Both carry the word for anyone hovering or
+   reading the page aloud. */
+const ICON_POS = '<svg class="hicon" viewBox="0 0 16 16" aria-label="Position" '
+  + 'role="img"><title>Position</title>'
+  + '<rect x="1" y="9" width="4" height="6" rx="1"/>'
+  + '<rect x="6" y="4" width="4" height="11" rx="1"/>'
+  + '<rect x="11" y="11" width="4" height="4" rx="1"/></svg>';
+const ICON_LAPS = '<svg class="hicon" viewBox="0 0 16 16" aria-label="Laps completed" '
+  + 'role="img"><title>Laps completed</title>'
+  + '<path d="M13.5 8a5.5 5.5 0 1 1-1.9-4.2" fill="none" stroke="currentColor" '
+  + 'stroke-width="1.8" stroke-linecap="round"/>'
+  + '<path d="M13.6 1.4v3.1h-3.1" fill="none" stroke="currentColor" stroke-width="1.8" '
+  + 'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
 /* A gap is behind by definition, so the plus in front of it says nothing and
    costs a column's width on a screen that has none to spare. */
 const plain = t => String(t == null ? '' : t).replace(/^\+/, '') || '—';
@@ -3146,8 +3208,8 @@ function liveTable(base, v, live) {
   const splits = ((v.session || {}).sectors || []).slice(0, -1);
   // Every column knows what it is, so a narrow screen can be given the ones
   // that matter and spared the rest.
-  const cols = [['pos', 'Pos'], ['move', ''], ['no', 'No'], ['driver', 'Driver'],
-                ['laps', 'Laps'], ['gap', 'Gap'], ['int', 'Int']]
+  const cols = [['pos', ICON_POS], ['move', ''], ['no', 'No'], ['driver', 'Driver'],
+                ['laps', ICON_LAPS], ['gap', 'Gap'], ['int', 'Int']]
     .concat(splits.map((x, i) => ['s' + (i + 1), 'S' + (i + 1)]))
     .concat([['last', 'Last'], ['best', 'Best'], ['stops', 'Stops']])
     .concat(scored ? [['pts', 'Pts']] : []).concat(nets ? [['net', 'Net']] : []);
@@ -3159,11 +3221,12 @@ function liveTable(base, v, live) {
     const cls = r.state === CAR_GONE || r.state === CAR_DSQ ? 'gone'
       : r.state === CAR_PIT ? 'pit' : r.missing ? 'gone' : r.onGrid ? 'ongrid' : '';
     const who = t
-      ? `<b>${esc(t.driver)}</b>${t.registered ? '' : '<span class="chip">Guest</span>'}`
-      : `<b>${esc(r.name || '—')}</b><span class="chip">Not in the table</span>`;
+      ? driverCell(t.driver, [t.registered ? '' : metaChip('Guest'),
+                              r.cls ? metaChip(r.cls) : ''])
+      : driverCell(r.name || '—', [metaChip('Not in the table')]);
     const flag = v.scored && v.scored.flDriver && t && t.driver === v.scored.flDriver;
     return `<tr class="${cls}">`
-      + `<td class="num mono" data-c="pos"${!r.onGrid ? '' : r.missing
+      + `<td class="stick1 num mono" data-c="pos"${!r.onGrid ? '' : r.missing
           ? ' data-tip="Qualified here and has not been seen since the start, so it '
             + 'is not being scored as though it were running."'
           : ' data-tip="Where this car starts from, off the qualifying sheet. It has '
@@ -3175,9 +3238,7 @@ function liveTable(base, v, live) {
       + `<td class="num mono" data-c="move" data-tip="Places gained or lost since the session started">`
       + `${liveMove(r.posChange)}</td>`
       + `<td class="num mono" data-c="no">${esc(r.no)}</td>`
-      + `<td data-c="driver"><span class="rowhead">${who}`
-      + (r.cls ? `<span class="chip" data-k="cls">${esc(r.cls)}</span>` : '')
-      + `</span></td>`
+      + `<td class="stick2" data-c="driver">${who}</td>`
       + `<td class="num mono" data-c="laps">${r.laps == null ? '—' : r.laps}</td>`
       + `<td class="num mono" data-c="gap">${esc(plain(r.gap))}</td>`
       + `<td class="num mono" data-c="int">${esc(plain(r.diff))}</td>`
@@ -3207,8 +3268,8 @@ function liveTable(base, v, live) {
   }).join('');
   return { rows, cols: head.join('|'),
     html: `<div class="scroller"><table class="livetab" id="liveOrderTab"><thead><tr>`
-      + cols.map(([k, h]) => `<th data-c="${k}" class="${h && h !== 'Driver' ? 'num' : ''}">`
-        + `${h}</th>`).join('')
+      + cols.map(([k, h]) => `<th data-c="${k}" class="${h && h !== 'Driver' ? 'num' : ''}`
+        + `${k === 'pos' ? ' stick1' : k === 'driver' ? ' stick2' : ''}">${h}</th>`).join('')
       + `</tr></thead><tbody>${rows}</tbody></table></div>` };
 }
 
@@ -3281,11 +3342,11 @@ function liveImpact(base, v, d) {
     const move = (b.pos || 0) - (t.pos || 0);
     const floor = project(t, 0, d, v.scored.round);
     const ceiling = project(t, maxRace(d), d, v.scored.round);
-    return `<tr><td class="num mono">${t.pos}</td>`
+    return `<tr><td class="stick1 num mono" data-c="pos">${t.pos}</td>`
       + `<td class="mv" data-c="move">${move ? liveMove(-move)
           : '<span style="color:var(--ink-3)">·</span>'}</td>`
-      + `<td data-c="driver"><span class="rowhead"><b>${esc(t.driver)}</b>`
-      + `<span class="chip">#${esc(t.no)}</span></span></td>`
+      + `<td class="stick2" data-c="driver">`
+      + `${driverCell(t.driver, [carChip(t.no)])}</td>`
       + `<td class="num mono" data-c="before">${b.gross == null ? '—' : b.gross}</td>`
       + `<td class="num mono">${!s ? '—'
           : s.status === 'classified' ? '+' + s.score
@@ -3302,8 +3363,9 @@ function liveImpact(base, v, d) {
   }).join('');
   return { rows,
     html: `<div class="scroller"><table class="deltatab" id="liveImpactTab"><thead><tr>`
-      + '<th class="num">Pos</th><th class="num" data-c="move">Move</th>'
-      + '<th data-c="driver">Driver</th>'
+      + `<th class="num stick1" data-c="pos">${ICON_POS}</th>`
+      + '<th class="num" data-c="move">Move</th>'
+      + '<th class="stick2" data-c="driver">Driver</th>'
       + '<th class="num" data-c="before">Before</th><th class="num">This race</th>'
       + '<th class="num">Total</th><th class="num">Net</th>'
       + '<th class="num">Min</th><th class="num">Max</th>'
