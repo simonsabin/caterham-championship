@@ -405,6 +405,50 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
   letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3)}
 table.livetab td.pts{font-family:"IBM Plex Mono",monospace;text-align:center;font-weight:600;
   background:var(--sunk)}
+/* A name is as wide as a name; the column it sits in is not. The championship
+   table has always clipped them to a fixed width and the running order does the
+   same, so that the columns that carry numbers keep their place. */
+table.livetab td[data-c="driver"],table.deltatab td[data-c="driver"]{
+  max-width:150px;overflow:hidden}
+table.livetab td[data-c="driver"] b,table.deltatab td[data-c="driver"] b{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+table.livetab .rowhead,table.deltatab .rowhead{gap:5px;min-width:0}
+table.livetab .chip{font-size:10px;padding:0 4px;letter-spacing:.05em}
+
+/* On a phone the table is wider than the screen whatever is done to it, so what
+   it holds is what a driver would want first: where everyone is, what the last
+   lap was, and what it is worth. The rest is a drag to the right too far. */
+@media (max-width:767px){
+  /* max-width on a cell is advisory in an auto-laid-out table, so the name
+     itself is what gets bounded, and the class chip goes: on a phone the name
+     column is for telling drivers apart, not for classifying them. */
+  table.livetab td[data-c="driver"] b{max-width:92px}
+  table.deltatab td[data-c="driver"] b{max-width:104px}
+  table.livetab .chip[data-k="cls"]{display:none}
+  table.livetab [data-c="move"],table.livetab [data-c="int"],
+  table.livetab [data-c="stops"],table.livetab [data-c="best"],
+  table.deltatab [data-c="move"],table.deltatab [data-c="before"]{display:none}
+  table.livetab,table.deltatab{font-size:12px}
+  table.livetab th,table.livetab td,table.deltatab th,table.deltatab td{padding:4px 4px}
+
+  /* The head of the tab, which is a banner rather than the thing being read.
+     Everything in it goes one size down and the meeting's small print is cut to
+     the line it fits on. */
+  .livehead{padding:10px 12px;gap:6px 12px;margin-bottom:10px}
+  .livehead .who{font-size:17px}
+  .livehead .who small{font-size:11.5px;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;max-width:100%;display:block}
+  .livehead .clock{font-size:19px}
+  .livehead .right{gap:6px 10px}
+  .livebar{gap:6px 10px;margin-bottom:10px}
+  .livebar .fakes{padding-left:0;border-left:0;margin-left:0;width:100%}
+  /* The notes above the tabs are context, not the thing being read. */
+  .note{padding:8px 11px;font-size:12.5px;margin-top:10px}
+  .note .tag{font-size:11px;margin-right:6px}
+  .livebtn{padding:5px 10px;font-size:13px}
+  .flagpill{font-size:12px;padding:1px 8px}
+}
+
 /* Sector splits, in the colours a timing screen has always used them in. */
 table.livetab td.split{color:var(--ink-3)}
 table.livetab td.split.pbest{color:var(--racing-ink);font-weight:600}
@@ -714,6 +758,8 @@ function showTab(id) {
     $('#p-' + t).classList.toggle('on', t === id);
   });
   hideTip();
+  // Anything the points moved on while it was out of sight is caught up here.
+  if (LIVE_STALE[id]) { keepScroll($('#p-' + id), LIVE_TABS[id]); LIVE_STALE[id] = false; }
   if (id === 'live') liveEnter();
 }
 TABS.forEach(([id, label]) => {
@@ -820,7 +866,9 @@ function champTable(rows, split) {
   // Where a driver could still finish, from the same projection the title run-in
   // draws: both ends of it, beside the total they have now. There is nothing to
   // project once every round has been run.
-  const ends = REMAINING > 0;
+  // A race that is running is one still to win, so there is something to project
+  // even when it is the last of the season and REMAINING has already counted it.
+  const ends = REMAINING > 0 || !!D.live;
   ['Pen', 'Total', 'Drops', 'Net'].concat(ends ? ['Min', 'Max'] : [])
     .concat(['W', 'FL']).forEach(h => {
     const th = el('th', null, h); th.rowSpan = 2; th.style.background = 'var(--surface-2)';
@@ -1745,7 +1793,7 @@ function runInModel(rows, split) {
 
 function runin() {
   const p = $('#p-runin'); p.innerHTML = '';
-  if (REMAINING === 0) {
+  if (REMAINING === 0 && !D.live) {
     p.innerHTML = '<p class="lede">Every round has been run — the championship table is final.</p>';
     return;
   }
@@ -1768,7 +1816,8 @@ function runin() {
   const open = D.live ? 1 : 0;
   const togo = REMAINING + open;
   p.append(Object.assign(el('p', 'lede'), { textContent:
-    `${togo} races left, worth a theoretical maximum of ${togo * maxRace()} points`
+    `${togo} race${togo === 1 ? '' : 's'} left, worth a theoretical maximum of `
+    + `${togo * maxRace()} points`
     + (open ? ` — the one running now among them, since it can still be won and can `
         + `still be scored nothing in` : '')
     + `. Each candle is one driver's possible finishing total once the ${D.dropScores} drop `
@@ -2633,7 +2682,12 @@ function liveView(base) {
   // meeting's, and nothing at all about practice.
   const { rows, mixed, fromGrid, missing } =
     liveRows(base, kind, round ? meet.event : null);
-  const scored = round ? liveScore(base, rows, session, round) : null;
+  // `mixed` is a shared grid the feed will not split: both classes are on the
+  // sheet and nothing on it says which car is in which. The order is still
+  // worth showing, and is shown with that said - but it cannot be scored, and
+  // allocating places down a list that has the other class's cars in it would
+  // hand this championship's points to the wrong people.
+  const scored = round && !mixed ? liveScore(base, rows, session, round) : null;
   return { forKey, meet, session, kind, rows, mixed, fromGrid, missing, round, scored };
 }
 
@@ -3077,6 +3131,10 @@ function liveMove(n) {
 
 const LIVE_STATE_LABEL = { 2: 'DSQ', 3: 'Out', 4: 'Pit' };
 
+/* A gap is behind by definition, so the plus in front of it says nothing and
+   costs a column's width on a screen that has none to spare. */
+const plain = t => String(t == null ? '' : t).replace(/^\+/, '') || '—';
+
 /** The running order, this championship's cars only. */
 function liveTable(base, v, live) {
   const scored = v.scored ? v.scored.scored : null;
@@ -3086,10 +3144,14 @@ function liveTable(base, v, live) {
   // The sectors this session is cut into, in the order a car goes through them.
   // The last of them is the lap itself, so only the ones before it are columns.
   const splits = ((v.session || {}).sectors || []).slice(0, -1);
-  const head = ['Pos', '', 'No', 'Driver', 'Laps', 'Gap', 'Int']
-    .concat(splits.map((x, i) => 'S' + (i + 1)))
-    .concat(['Last', 'Best', 'Stops'])
-    .concat(scored ? ['Pts'] : []).concat(nets ? ['Net'] : []);
+  // Every column knows what it is, so a narrow screen can be given the ones
+  // that matter and spared the rest.
+  const cols = [['pos', 'Pos'], ['move', ''], ['no', 'No'], ['driver', 'Driver'],
+                ['laps', 'Laps'], ['gap', 'Gap'], ['int', 'Int']]
+    .concat(splits.map((x, i) => ['s' + (i + 1), 'S' + (i + 1)]))
+    .concat([['last', 'Last'], ['best', 'Best'], ['stops', 'Stops']])
+    .concat(scored ? [['pts', 'Pts']] : []).concat(nets ? [['net', 'Net']] : []);
+  const head = cols.map(c => c[1]);
   const rows = v.rows.map(r => {
     const t = liveWho(base, r);
     const s = scored && t ? scored.get(t.driver) : null;
@@ -3101,7 +3163,7 @@ function liveTable(base, v, live) {
       : `<b>${esc(r.name || '—')}</b><span class="chip">Not in the table</span>`;
     const flag = v.scored && v.scored.flDriver && t && t.driver === v.scored.flDriver;
     return `<tr class="${cls}">`
-      + `<td class="num mono"${!r.onGrid ? '' : r.missing
+      + `<td class="num mono" data-c="pos"${!r.onGrid ? '' : r.missing
           ? ' data-tip="Qualified here and has not been seen since the start, so it '
             + 'is not being scored as though it were running."'
           : ' data-tip="Where this car starts from, off the qualifying sheet. It has '
@@ -3110,41 +3172,44 @@ function liveTable(base, v, live) {
          : r.pos == null ? '—' : r.pos)
       + (LIVE_STATE_LABEL[r.state] ? ` <small>${LIVE_STATE_LABEL[r.state]}</small>` : '')
       + `</td>`
-      + `<td class="num mono" data-tip="Places gained or lost since the session started">`
+      + `<td class="num mono" data-c="move" data-tip="Places gained or lost since the session started">`
       + `${liveMove(r.posChange)}</td>`
-      + `<td class="num mono">${esc(r.no)}</td>`
-      + `<td><span class="rowhead">${who}`
-      + (r.cls ? `<span class="chip">${esc(r.cls)}</span>` : '') + `</span></td>`
-      + `<td class="num mono">${r.laps == null ? '—' : r.laps}</td>`
-      + `<td class="num mono">${esc(r.gap || '—')}</td>`
-      + `<td class="num mono">${esc(r.diff || '—')}</td>`
-      + splits.map(x => {
+      + `<td class="num mono" data-c="no">${esc(r.no)}</td>`
+      + `<td data-c="driver"><span class="rowhead">${who}`
+      + (r.cls ? `<span class="chip" data-k="cls">${esc(r.cls)}</span>` : '')
+      + `</span></td>`
+      + `<td class="num mono" data-c="laps">${r.laps == null ? '—' : r.laps}</td>`
+      + `<td class="num mono" data-c="gap">${esc(plain(r.gap))}</td>`
+      + `<td class="num mono" data-c="int">${esc(plain(r.diff))}</td>`
+      + splits.map((x, i) => {
           const got = (r.sectors || {})[x.key];
-          if (!got) return '<td class="num mono">—</td>';
+          if (!got) return `<td class="num mono" data-c="s${i + 1}">—</td>`;
           // The conventions a timing screen has always used: purple for the
           // best anybody has gone in that sector, green for a car's own best.
-          return `<td class="num mono split${got.best ? ' sbest' : got.pb ? ' pbest' : ''}"`
+          return `<td data-c="s${i + 1}" class="num mono split${got.best ? ' sbest' : got.pb ? ' pbest' : ''}"`
             + ` data-tip="${esc(x.name || x.key)}${got.best
                 ? ' — quickest anybody has gone in it'
                 : got.pb ? ' — this car’s own best' : ''}">`
             + `${esc(got.time)}</td>`;
         }).join('')
-      + `<td class="num mono">${esc(r.last || '—')}</td>`
-      + `<td class="num mono${flag ? ' fl' : ''}"`
+      + `<td class="num mono" data-c="last">${esc(r.last || '—')}</td>`
+      + `<td class="num mono${flag ? ' fl' : ''}" data-c="best"`
       + (flag ? ' data-tip="Fastest lap of the session so far — the extra point"' : '')
       + `>${esc(r.best || '—')}</td>`
-      + `<td class="num mono">${r.pitStops == null ? '—' : r.pitStops}</td>`
-      + (scored ? `<td class="pts">${!s ? '—'
+      + `<td class="num mono" data-c="stops">${r.pitStops == null ? '—' : r.pitStops}</td>`
+      + (scored ? `<td class="pts" data-c="pts">${!s ? '—'
           : s.status === 'classified' ? s.score
           : (s.score ? s.score + ' ' : '') + s.status.toLowerCase()}</td>` : '')
-      + (nets ? `<td class="pts net${gain === 0 ? ' none' : ''}"`
+      + (nets ? `<td class="pts net${gain === 0 ? ' none' : ''}" data-c="net"`
           + (gain == null ? '' : ` data-tip="${esc(liveNetTip(base, t, s, gain))}"`)
           + `>${gain == null ? '—' : '+' + gain}</td>` : '')
       + '</tr>';
   }).join('');
-  return `<div class="scroller"><table class="livetab"><thead><tr>`
-    + head.map(h => `<th class="${h && h !== 'Driver' ? 'num' : ''}">${h}</th>`).join('')
-    + `</tr></thead><tbody>${rows}</tbody></table></div>`;
+  return { rows, cols: head.join('|'),
+    html: `<div class="scroller"><table class="livetab" id="liveOrderTab"><thead><tr>`
+      + cols.map(([k, h]) => `<th data-c="${k}" class="${h && h !== 'Driver' ? 'num' : ''}">`
+        + `${h}</th>`).join('')
+      + `</tr></thead><tbody>${rows}</tbody></table></div>` };
 }
 
 /**
@@ -3217,10 +3282,11 @@ function liveImpact(base, v, d) {
     const floor = project(t, 0, d, v.scored.round);
     const ceiling = project(t, maxRace(d), d, v.scored.round);
     return `<tr><td class="num mono">${t.pos}</td>`
-      + `<td class="mv">${move ? liveMove(-move) : '<span style="color:var(--ink-3)">·</span>'}</td>`
-      + `<td><span class="rowhead"><b>${esc(t.driver)}</b>`
+      + `<td class="mv" data-c="move">${move ? liveMove(-move)
+          : '<span style="color:var(--ink-3)">·</span>'}</td>`
+      + `<td data-c="driver"><span class="rowhead"><b>${esc(t.driver)}</b>`
       + `<span class="chip">#${esc(t.no)}</span></span></td>`
-      + `<td class="num mono">${b.gross == null ? '—' : b.gross}</td>`
+      + `<td class="num mono" data-c="before">${b.gross == null ? '—' : b.gross}</td>`
       + `<td class="num mono">${!s ? '—'
           : s.status === 'classified' ? '+' + s.score
           : s.status.toLowerCase() + (s.score ? ' +' + s.score : '')}</td>`
@@ -3234,12 +3300,14 @@ function liveImpact(base, v, d) {
       + `${left} after it the same. The race running now is still to win, so it `
       + `counts here as one of them.">${ceiling}</td></tr>`;
   }).join('');
-  return `<div class="scroller"><table class="deltatab"><thead><tr>`
-    + '<th class="num">Pos</th><th class="num">Move</th><th>Driver</th>'
-    + '<th class="num">Before</th><th class="num">This race</th>'
-    + '<th class="num">Total</th><th class="num">Net</th>'
-    + '<th class="num">Min</th><th class="num">Max</th>'
-    + `</tr></thead><tbody>${rows}</tbody></table></div>`;
+  return { rows,
+    html: `<div class="scroller"><table class="deltatab" id="liveImpactTab"><thead><tr>`
+      + '<th class="num">Pos</th><th class="num" data-c="move">Move</th>'
+      + '<th data-c="driver">Driver</th>'
+      + '<th class="num" data-c="before">Before</th><th class="num">This race</th>'
+      + '<th class="num">Total</th><th class="num">Net</th>'
+      + '<th class="num">Min</th><th class="num">Max</th>'
+      + `</tr></thead><tbody>${rows}</tbody></table></div>` };
 }
 
 /** The Live tab. */
@@ -3312,7 +3380,7 @@ function livePanel(base, v) {
       + 'minutes of it, a lap every minute and a half. Nothing is timed and none '
       + 'of the numbers are real.">Show a demonstration race</button></span>';
 
-  let body = '';
+  let body = '', order = null, impact = null, gridNote = '';
   if (sess && v.kind) {
     body += `<h2>${esc(sess.typeName)} — ${esc(sess.name || '')}</h2>`
       + `<p class="sub">${esc(sess.series || '')}`
@@ -3326,8 +3394,8 @@ function livePanel(base, v) {
          ? ' · finished — this is the order it ended in, as the last snapshot saw it'
          : '')
       + `</p>`;
-    if (v.fromGrid || v.missing) {
-      body += '<div class="livenote">'
+    {
+      gridNote = (v.fromGrid || v.missing ? ''
         + (v.fromGrid ? (v.fromGrid === v.rows.length
             ? 'Nobody has crossed the line yet, so this is the grid'
             : `${v.fromGrid} car${v.fromGrid === 1 ? ' has' : 's have'} yet to cross the `
@@ -3341,38 +3409,47 @@ function livePanel(base, v) {
             + `${v.missing === 1 ? 'has' : 'have'} not been seen since the start, so `
             + `${v.missing === 1 ? 'it is' : 'they are'} listed with no time and scored `
             + 'as having qualified and not started.' : '')
-        + '</div>';
+        : '');
+      // Its own element, because how much of the grid is still standing changes
+      // every time a car comes past and the rest of the page does not.
+      body += `<div class="livenote" id="liveGridNote"${gridNote ? '' : ' hidden'}>`
+        + `${gridNote}</div>`;
     }
     if (v.mixed) {
       body += '<div class="livenote">This grid is shared by both classes and the feed '
-        + 'does not say which class each car is in, so every car on it is listed. '
-        + 'Points below cover the cars this table recognises.</div>';
+        + 'does not say which class each car is in, so every car on it is listed and '
+        + 'none of it is scored: places are allocated down a championship’s own '
+        + 'entries, and there is no telling here which of these are ours. The '
+        + 'classification will say, when it is published.</div>';
     }
     // The table with this session's round folded in, worked out once: the
     // running order needs it for what a place is worth, and the standings under
     // it are the same table shown a different way round.
     const live = v.scored && v.scored.scored.size ? withLive(base, v.scored) : null;
-    body += liveTable(base, v, live);
+    order = liveTable(base, v, live);
+    body += order.html;
     if (live && base.dropScores) {
       const n = base.dropScores;
-      body += `<p class="sub" style="margin-top:8px"><b>Pts</b> is what the place is worth `
+      body += `<details class="tv"><summary>What Pts and Net mean</summary>`
+        + `<p class="sub" style="margin:8px 0 0"><b>Pts</b> is what the place is worth `
         + `under <span class="reg">1.6.1</span>, with the fastest lap point in it. `
         + `<b>Net</b> is what it adds to the season total: ${n === 1 ? 'the lowest score is'
           : `the lowest ${n} scores are`} dropped at the end of the year `
         + `(<span class="reg">${grads() ? '1.6.2a' : '1.6.4'}</span>), so a driver with `
         + `nothing poor left to discard keeps less of a good round than the number beside it `
         + `suggests — and none of it at all where this round is the one being dropped. `
-        + `Hover any of them for which it is.</p>`;
+        + `Hover any of them for which it is.</p></details>`;
     }
     if (v.scored && v.scored.scored.size) {
       body += '<h2>The championship, if it ends like this</h2>'
-        + `<p class="sub">Round ${v.scored.round} scored under `
+        + (impact = liveImpact(base, v, live)).html
+        + `<details class="tv"><summary>How this is worked out</summary>`
+        + `<p class="sub" style="margin:8px 0 0">Round ${v.scored.round} scored under `
         + `<span class="reg">1.6.1</span> from the order above, with the fastest lap point `
         + `and the drop scores applied. Min and Max carry it into the title run-in: where `
         + `each driver ends the season if they score nothing after this race, and where they `
         + `end it if they win everything left. Provisional in every sense — the race is still `
-        + `running, and the classification is the stewards' to write.</p>`
-        + liveImpact(base, v, live);
+        + `running, and the classification is the stewards' to write.</p></details>`;
     }
     if (LIVE.rc.length) {
       body += '<h2>Race control</h2><div class="notes">'
@@ -3414,7 +3491,8 @@ function livePanel(base, v) {
     body += '<p class="lede">Every round has been run — there is nothing left to watch.</p>';
   }
 
-  const why = '<div class="notes" style="margin-top:22px">'
+  const why = '<details class="tv" style="margin-top:18px">'
+    + '<summary>Where this comes from</summary><div class="notes">'
     + (LIVE_FAKE
        ? '<p><b>Nothing is being timed.</b> <span class="mono">?demo</span> in the address '
          + 'races a made-up field against the clock in this page and hands every crossing of '
@@ -3433,7 +3511,7 @@ function livePanel(base, v) {
     + '<p><b>None of this is a result.</b> Points here are what the running order would be '
     + 'worth; the tables themselves are rebuilt from the published classification days '
     + 'later, after the stewards, and that is the only thing that ever changes a '
-    + 'championship total.</p></div>';
+    + 'championship total.</p></div></details>';
 
   /* The tables are redrawn every time the feed says anything - once a second
      through a race - and until now so was everything around them. A button
@@ -3474,9 +3552,35 @@ function livePanel(base, v) {
     const demoOff = $('#liveDemoOff', p);
     if (demoOff) demoOff.onclick = () => liveDemoOff();
   }
+  /* A table is a thing you are holding: on a phone it is wider than the screen,
+     and reading the points column means dragging it sideways. Rebuilding it
+     under your finger every time a car crosses the line throws that away - the
+     scroll goes back to the left, and a drag in progress dies with the element
+     it was dragging. So the page around the tables is rebuilt only when it
+     actually differs, and the rows alone are replaced on a tick, into the table
+     that is already on the screen, exactly where you left it. */
   const into = $('#liveBody', p);
-  into.innerHTML = body + why;
-  linkRegs(into);
+  const shape = [(sess || {}).id, v.kind, v.round, v.mixed, LIVE.rc.length,
+                 order && order.cols, !!impact, !!v.scored].join('|');
+  const same = into.dataset.shape === shape && $('#liveOrderTab', into);
+  if (same) {
+    liveRows2(into, '#liveOrderTab', order);
+    liveRows2(into, '#liveImpactTab', impact);
+    const note = $('#liveGridNote', into);
+    if (note) { note.innerHTML = gridNote; note.hidden = !gridNote; }
+  } else {
+    into.innerHTML = body + why;
+    into.dataset.shape = shape;
+    linkRegs(into);
+  }
+}
+
+/** New rows into the table already on the page, leaving the page where it is. */
+function liveRows2(into, sel, made) {
+  const tab = made && $(sel, into);
+  if (!tab) return;
+  const body = tab.tBodies[0];
+  if (body && body.innerHTML !== made.rows) body.innerHTML = made.rows;
 }
 
 /** The line under the tabs, on every tab, when a live round is being counted. */
@@ -3486,6 +3590,16 @@ function liveNote(base, v) {
   const s = D.live;
   const connected = liveOn();
   box.className = 'note';
+  const where = v.meet.event ? v.meet.event.name : '';
+  if (innerWidth < 768) {
+    // Same thing said in a quarter of the room.
+    box.innerHTML = `<span class="tag">${connected ? 'Live' : 'Provisional'}</span>`
+      + `<b>Round ${s.round}</b> at ${esc(where)} is counted in the standings and the `
+      + `run-in, provisionally. <a href="#" id="liveOff">Leave it out</a>`;
+    const off = $('#liveOff', box);
+    if (off) off.onclick = e => { e.preventDefault(); LIVE.applied = false; liveRefresh(); };
+    return;
+  }
   box.innerHTML = `<span class="tag">${connected ? 'Live' : 'Provisional'}</span>`
     + `<b>Round ${s.round}</b> `
     + (connected ? 'is running at ' : LIVE.ended ? 'has just been run at ' : 'was running at ')
@@ -3535,6 +3649,37 @@ function liveTick() {
   if (sig !== LIVE.sig) { LIVE.sig = sig; liveRefresh(); } else liveDraw();
 }
 
+/* Tabs whose contents the points have moved on from. */
+const LIVE_STALE = {};
+const LIVE_TABS = { standings: () => standings(), runin: () => runin() };
+
+/** Rebuild a tab if it is on screen; otherwise remember that it needs it. */
+function liveStale(tab) {
+  // What is on the screen, rather than what the routing thinks is: a panel can
+  // be shown without the address having caught up with it, and a tab that never
+  // rebuilds because of that bookkeeping is worse than one that rebuilds twice.
+  const panel = $('#p-' + tab);
+  if (panel && panel.classList.contains('on')) {
+    keepScroll(panel, LIVE_TABS[tab]);
+    LIVE_STALE[tab] = false;
+  } else LIVE_STALE[tab] = true;
+}
+
+/**
+ * Rebuild something, and leave the page where the reader had it.
+ *
+ * A championship table is twenty-one rounds wide and a phone is not, so reading
+ * the right-hand end of it means dragging it there. Rebuilding it puts it back
+ * at the left, which on a race day it would do every few seconds.
+ */
+function keepScroll(host, render) {
+  const was = [...host.querySelectorAll('.scroller')].map(x => x.scrollLeft);
+  render();
+  [...host.querySelectorAll('.scroller')].forEach((x, i) => {
+    if (was[i]) x.scrollLeft = was[i];
+  });
+}
+
 /** Rebuild the series being shown, and every tab that depends on the points. */
 function liveRefresh() {
   const base = SEASON.series.find(s => s.key === (D || {}).key);
@@ -3543,7 +3688,11 @@ function liveRefresh() {
   runSet = new Set(D.roundsRun);
   scoring = D.table.filter(t => t.registered);
   REMAINING = D.roundsTotal - D.roundsRun.length;
-  mast(); standings(); runin();
+  mast();
+  // Only what is being looked at. The others are marked and rebuilt when they
+  // are next shown, which saves the work and, more to the point, stops a table
+  // being pulled out from under somebody who is reading it on another tab.
+  liveStale('standings'); liveStale('runin');
   liveDraw();
 }
 
@@ -3557,6 +3706,11 @@ function liveAdopt(seed) {
   // Held so that a session which has since moved on can be recognised.
   LIVE.fromSeed = true;
   LIVE.seedIds = new Set(LIVE.cars.keys());
+  // The snapshot carries the session's best in each sector. Without them the
+  // first split to arrive is the best this page has seen and goes purple, and a
+  // previous session's bests would sit there suppressing real ones.
+  LIVE.sectorBest = {};
+  liveSectorBests(seed.session);
   LIVE.unknown = null;
   LIVE.ended = !!seed.ended;
   liveSetClock(seed.session.clock);
