@@ -77,6 +77,8 @@ header.mast{background:var(--surface);border-bottom:1px solid var(--line)}
 h1{margin:0;font-size:clamp(30px,4.4vw,46px);line-height:.98;text-transform:uppercase}
 h1 em{font-style:normal;color:var(--racing-ink)}
 .mast-stats{display:flex;gap:26px;margin-left:auto;flex-wrap:wrap}
+/* The same five figures, standing on their own page rather than in a masthead. */
+.mast-stats.standalone{margin:0 0 4px;gap:18px 30px}
 .stat{min-width:88px}
 .stat .k{font-family:"Barlow Condensed",Arial,sans-serif;font-size:12px;letter-spacing:.13em;
   text-transform:uppercase;color:var(--ink-3)}
@@ -203,6 +205,16 @@ tr.guest .stick2{font-style:italic}
   text-transform:uppercase;padding:1px 5px;border-radius:2px;border:1px solid var(--line-2);
   color:var(--ink-3)}
 .chip.pro{border-color:var(--racing);color:var(--racing-ink)}
+/* A class, as a shape and a colour. Shape as well, because a colour on its own
+   is no use to somebody who cannot see that colour. */
+.cmark{display:inline-block;width:9px;height:9px;flex:none;background:var(--s1);
+  border-radius:50%;vertical-align:0}
+.cmark.two{background:var(--s2);border-radius:2px}
+.cmark.three{background:var(--s3);border-radius:1px;transform:rotate(45deg)}
+.cmark.four{background:var(--s5);border-radius:50%;box-shadow:inset 0 0 0 2px var(--surface)}
+.cmark.other{background:none;border:1.5px solid var(--ink-3);border-radius:2px}
+.legend.classlegend{margin-top:10px;gap:8px 16px;font-size:12.5px}
+.legend.classlegend span{gap:6px}
 
 .legend{display:flex;flex-wrap:wrap;gap:8px 20px;margin:12px 0 0;font-size:12.5px;color:var(--ink-2)}
 .legend span{display:inline-flex;align-items:center;gap:7px}
@@ -370,6 +382,10 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
   border-radius:0 4px 4px 0;box-shadow:var(--shadow);padding:12px 16px;margin-bottom:14px}
 .livehead .who{font-family:"Barlow Condensed",Arial,sans-serif;font-size:20px;font-weight:600;
   text-transform:uppercase;letter-spacing:.03em;line-height:1.1}
+/* The session, beside the meeting it belongs to rather than in a heading of its
+   own repeating both. */
+.livehead .who .sess{margin-left:10px;padding:1px 8px;border-radius:2px;
+  background:var(--band);color:var(--band-ink);font-size:15px;letter-spacing:.06em}
 .livehead .who small{display:block;font-family:"IBM Plex Sans",Arial,sans-serif;font-size:12.5px;
   font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink-3)}
 .livehead .clock{font-family:"IBM Plex Mono",monospace;font-size:22px;font-weight:600;
@@ -601,7 +617,6 @@ footer a{color:var(--racing-ink)}
       <p class="eyebrow">BARC · Caterham Motorsport · Season <span id="seasonLabel">2026</span></p>
       <h1>Caterham<br><em>Championships</em></h1>
     </div>
-    <div class="mast-stats" id="mastStats"></div>
   </div>
   <div class="wrap"><div id="liveNote"></div></div>
   <nav class="tabs wrap" id="tabs" role="tablist"></nav>
@@ -615,6 +630,7 @@ footer a{color:var(--racing-ink)}
   <section class="panel" id="p-runin"></section>
   <section class="panel" id="p-rules"></section>
   <section class="panel" id="p-about"></section>
+  <section class="panel" id="p-faq"></section>
 </main>
 
 <footer class="wrap">
@@ -664,6 +680,52 @@ function driverCell(name, chips) {
 const metaChip = (text, cls) =>
   `<span class="chip chip-meta${cls ? ' ' + cls : ''}">${esc(text)}</span>`;
 const carChip = no => `<span class="chip carno">#${esc(no)}</span>`;
+
+/**
+ * A class as a mark rather than a word.
+ *
+ * Class is the one thing in a row that repeats down the whole column, and
+ * spelling it out costs more room than it is worth on a phone. A shape and a
+ * colour say it in nine pixels - shape as well as colour, so that it still says
+ * it to somebody who cannot tell the colours apart - and the legend under the
+ * table says which is which.
+ */
+const CLASS_MARKS = ['one', 'two', 'three', 'four'];
+function classOrder(cls) {
+  const known = (D.classes && D.classes.length ? D.classes : CLASS_SEEN[D.key] || []);
+  const i = known.indexOf(cls);
+  return i < 0 ? known.length : i;
+}
+/* Whatever classes this series' own results actually carry, in a stable order:
+   several of them award no class title and still print one on the sheet. */
+const CLASS_SEEN = {};
+function classesHere(d) {
+  if (CLASS_SEEN[d.key]) return CLASS_SEEN[d.key];
+  const seen = [];
+  (d.classes || []).forEach(c => seen.push(c));      // the ones it awards a title in
+  const rest = [];
+  d.races.forEach(r => r.entries.forEach(e => {
+    if (e.cls && !seen.includes(e.cls) && !rest.includes(e.cls)) rest.push(e.cls);
+  }));
+  // Then whatever else the sheets carry, in a settled order rather than the
+  // order the season happened to run in.
+  rest.sort((a, b) => a.localeCompare(b));
+  return (CLASS_SEEN[d.key] = seen.concat(rest));
+}
+function classMark(cls) {
+  if (!cls) return '';
+  const i = classesHere(D).indexOf(cls);
+  return `<span class="cmark ${CLASS_MARKS[i] || 'other'}" data-tip="${esc(cls)}" `
+    + `role="img" aria-label="${esc(cls)}"></span>`;
+}
+/** The marks used in a table, spelled out underneath it. */
+function classLegend(used) {
+  const list = classesHere(D).filter(c => used.has(c));
+  if (list.length < 2) return '';
+  return '<div class="legend classlegend">'
+    + list.map(c => `<span>${classMark(c)}${esc(c)}</span>`).join('')
+    + '</div>';
+}
 
 const SERIES = ['--s1', '--s2', '--s3', '--s4', '--s5', '--s6'];
 /* Every series has its own regulations, and every season its own edition of
@@ -779,18 +841,27 @@ function seriesNote() {
     + '</ul></details>' + tail;
 }
 
-function mast() {
+/**
+ * Where this championship stands, in five figures.
+ *
+ * It used to sit under the title on every page, which put one championship's
+ * leader over the top of a page about another one's race. It belongs on the
+ * page that is about the championship itself.
+ */
+function champStats() {
   const leader = scoring[0];
   const done = D.roundsRun.length, next = D.events.find(e => !e.source);
   const cells = [
     ['Races run', `${done}<small>/${D.roundsTotal}</small>`],
-    ['Championship leader', `${esc(leader.driver.split(' ').pop().toUpperCase())} <small>#${leader.no}</small>`],
+    ['Championship leader',
+     `${esc(leader.driver.split(' ').pop().toUpperCase())} <small>#${leader.no}</small>`],
     ['Leading total', `${leader.gross}<small> pts</small>`],
     ['Registered', `${D.registrations}<small> drivers</small>`],
     ['Next round', next ? `<small>${esc(next.name)}</small>` : '<small>Season complete</small>'],
   ];
-  $('#mastStats').innerHTML = cells.map(([k, v]) =>
-    `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+  return '<div class="mast-stats standalone">' + cells.map(([k, v]) =>
+    `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('')
+    + '</div>';
 }
 
 /* --------------------------------------------------------------- tabs */
@@ -798,7 +869,7 @@ function mast() {
    label is what a link carries, so these can be as brief as they read. */
 const TABS = [['standings', 'Standings'], ['live', 'Live'], ['races', 'Races'],
               ['runin', 'Run-in'], ['calendar', 'Calendar'],
-              ['rules', 'Points'], ['about', 'About']];
+              ['rules', 'Points'], ['about', 'About'], ['faq', 'FAQ']];
 const tabsEl = $('#tabs');
 const tabBtn = {};
 /** Show one tab; unknown or empty ids fall back to the first tab. */
@@ -1067,7 +1138,10 @@ function standings() {
   seriesNote();
   const groups = classGroups();
   const classed = groups ? groups.filter(g => g.split).map(g => g.name) : [];
-  p.append(Object.assign(el('p', 'lede'),
+  // How to read the table, kept until after it: somebody who wants the numbers
+  // should not have to scroll a paragraph to reach them, and somebody who wants
+  // the paragraph knows where the bottom of a page is.
+  const howToRead = Object.assign(el('p', 'lede'),
     { textContent: `Points scored in every race. An underlined score took the fastest lap of that `
       + `race, worth the extra point inside the number. A round marked in `
       + `red carried a championship penalty, but the points the driver earned on track are left `
@@ -1087,7 +1161,7 @@ function standings() {
          ? ` ${D.short} awards a title in ${classed.join(' and ')}, so the table is split into `
            + `those classes - the points are unchanged, only the positions are counted within `
            + `the class.`
-         : '') }));
+         : '') });
 
   if (groups) {
     groups.forEach(g => {
@@ -1123,6 +1197,10 @@ function standings() {
   p.append(Object.assign(el('p', 'sub'), { textContent:
     'Running total after each race for the top six. Gross points — drop scores are not applied.' }));
   p.append(chart());
+
+  p.append(Object.assign(el('h2'), { textContent: 'Reading the table' }));
+  howToRead.style.margin = '0';
+  p.append(howToRead);
 }
 
 /**
@@ -1133,11 +1211,36 @@ function standings() {
  * what the live view is doing while a race is running. It is all here so that
  * the pages which show the racing can get on with showing it.
  */
+/** The championship itself: what it is, and where it stands. */
 function about() {
-  const p = $('#p-about'); p.innerHTML = '';
-  const live = `<a href="#${SEASON.year}/${D.key}/live">Live</a>`;
+  const p = $('#p-about');
+  const next = D.events.find(e => !e.source);
   p.innerHTML = `<p class="lede">${esc(D.fullName)}${D.blurb ? ' — ' + esc(D.blurb) : ''}</p>`
-    + '<h2>What this page is</h2>'
+    + champStats()
+    + '<h2>The season</h2>'
+    + `<div class="prose"><p>${D.roundsTotal} rounds across `
+    + `${D.events.length} meetings, ${D.roundsRun.length} of them run`
+    + (next ? `; the next is <b>${esc(next.name)}</b>, ${esc(next.dates)}` : '')
+    + `. ${D.registrations} drivers are registered for the full season`
+    + (D.dropScores ? `, and the lowest ${D.dropScores === 1 ? 'score is'
+        : D.dropScores + ' scores are'} dropped from each of their totals` : '')
+    + `. <a href="#${SEASON.year}/${D.key}/calendar">Calendar</a> · `
+    + `<a href="#${SEASON.year}/${D.key}/standings">Standings</a> · `
+    + `<a href="#${SEASON.year}/${D.key}/rules">How the points work</a>.</p>`
+    + (D.regsUrl ? `<p>Scored from this series’ own ${SEASON.year} regulations, `
+        + `<a href="${esc(D.regsUrl)}" target="_blank" rel="noopener">published here</a> — `
+        + 'not from any summary of them.</p>' : '')
+    + '</div>'
+    + `<p class="sub">Where the numbers come from and what is provisional about them: `
+    + `<a href="#${SEASON.year}/${D.key}/faq">FAQ</a>.</p>`;
+  linkRegs(p);
+}
+
+/** The questions the page raises, answered once. */
+function faq() {
+  const p = $('#p-faq'); p.innerHTML = '';
+  const live = `<a href="#${SEASON.year}/${D.key}/live">Live</a>`;
+  p.innerHTML = '<h2>What this page is</h2>'
     + `<div class="prose"><p>Every session of the ${SEASON.year} season, taken from the `
     + `timekeepers' own sheets, with each championship's table rebuilt from that series' `
     + `own regulations rather than copied from anywhere. Points, drop scores, guests and `
@@ -1649,6 +1752,7 @@ function renderRace(host, r) {
         + `${i === 0 ? ' stick1' : i === 2 ? ' stick2' : ''}">${x}</th>`).join('')
     + '</tr></thead>';
   const body = el('tbody');
+  const used = new Set();
   r.entries.forEach(e => {
     const tr = el('tr', (e.pos === 1 ? 'win ' : '') + (e.status !== 'classified' ? 'dnf' : '')
       + (e.guest ? ' guest' : ''));
@@ -1656,7 +1760,7 @@ function renderRace(host, r) {
       [e.pos ?? e.status, 'stick1'], [e.no, 'num'],
       // the class column already says Trophy or Guest where a series prints it
       [e.driver + (e.guest && !(grads() && e.cls) ? ' (guest)' : ''), 'stick2 driver'],
-      [e.cls || '—', ''],
+      [e.cls || '—', 'num cls'],
       [e.laps ?? '—', 'num'], [e.time || '—', 'num'], [e.best || '—', 'num'],
       [e.on ?? '—', 'num'], [e.grid ?? '—', 'num'],
       [e.status === 'classified' || e.pts ? e.pts : '—', 'num'],
@@ -1667,6 +1771,7 @@ function renderRace(host, r) {
       const td = el('td', c, String(v));
       // The driver column is written the way every other table writes one.
       if (i === 2) td.innerHTML = driverCell(String(v), []);
+      if (i === 3 && e.cls) { td.innerHTML = classMark(e.cls); used.add(e.cls); }
       if (i === 11 && e.pen) td.style.color = 'var(--alarm)';
       if (i === 12) { td.style.fontWeight = 600; td.classList.add('mono'); }
       tr.append(td);
@@ -1674,6 +1779,9 @@ function renderRace(host, r) {
     body.append(tr);
   });
   tb.append(body); sc.append(tb); host.append(sc);
+  // What the marks in the class column mean, across the foot of the table.
+  const legend = classLegend(used);
+  if (legend) { const l = el('div'); l.innerHTML = legend; host.append(l.firstChild); }
 
   if (r.notes && r.notes.length) {
     const n = el('div', 'notes');
@@ -3279,15 +3387,17 @@ function liveTable(base, v, live) {
     .concat([['last', 'Last'], ['best', 'Best'], ['stops', 'Stops']])
     .concat(scored ? [['pts', 'Pts']] : []).concat(nets ? [['net', 'Net']] : []);
   const head = cols.map(c => c[1]);
+  const used = new Set();
   const rows = v.rows.map(r => {
     const t = liveWho(base, r);
     const s = scored && t ? scored.get(t.driver) : null;
     const gain = nets && t && nets.has(t.driver) ? nets.get(t.driver) : null;
     const cls = r.state === CAR_GONE || r.state === CAR_DSQ ? 'gone'
       : r.state === CAR_PIT ? 'pit' : r.missing ? 'gone' : r.onGrid ? 'ongrid' : '';
+    if (r.cls) used.add(r.cls);
     const who = t
       ? driverCell(t.driver, [t.registered ? '' : metaChip('Guest'),
-                              r.cls ? metaChip(r.cls) : '', carChip(r.no)])
+                              classMark(r.cls), carChip(r.no)])
       : driverCell(r.name || '—', [metaChip('Not in the table'), carChip(r.no)]);
     const flag = v.scored && v.scored.flDriver && t && t.driver === v.scored.flDriver;
     return `<tr class="${cls}">`
@@ -3334,7 +3444,7 @@ function liveTable(base, v, live) {
     html: `<div class="scroller"><table class="livetab" id="liveOrderTab"><thead><tr>`
       + cols.map(([k, h]) => `<th data-c="${k}" class="${h && h !== 'Driver' ? 'num' : ''}`
         + `${k === 'pos' ? ' stick1' : k === 'driver' ? ' stick2' : ''}">${h}</th>`).join('')
-      + `</tr></thead><tbody>${rows}</tbody></table></div>` };
+      + `</tr></thead><tbody>${rows}</tbody></table></div>${classLegend(used)}` };
 }
 
 /**
@@ -3443,7 +3553,9 @@ function livePanel(base, v) {
   const [cc, ctext] = liveConn();
   const sess = v.session;
   const where = meet.event
-    ? `${esc(meet.event.name)}<small>${esc(meet.event.meeting || '')}`
+    ? `${esc(meet.event.name)}`
+      + (sess ? `<span class="sess">${esc(sess.name || sess.typeName)}</span>` : '')
+      + `<small>${esc(meet.event.meeting || '')}`
       + (meet.event.rounds ? ` · rounds ${meet.event.rounds[0]}–`
         + `${meet.event.rounds[meet.event.rounds.length - 1]}` : '')
       + ` · ${esc(meet.event.dates)}</small>`
@@ -3508,18 +3620,16 @@ function livePanel(base, v) {
 
   let body = '', order = null, impact = null, gridNote = '';
   if (sess && v.kind) {
-    body += `<h2>${esc(sess.typeName)} — ${esc(sess.name || '')}</h2>`
-      + `<p class="sub">${esc(sess.series || '')}`
-      + (sess.track ? ` · ${esc(sess.track)}` : '')
-      + (sess.duration && sess.duration.laps ? ` · ${sess.duration.laps} laps` : '')
-      + (v.scored ? ` · scored as round ${v.scored.round}`
-         : sess.type === 3 ? ' · this race already has a published classification, '
-           + 'which is what the tables use'
-         : ' · practice and qualifying carry no championship points')
-      + (LIVE.ended && !LIVE.ws
-         ? ' · finished — this is the order it ended in, as the last snapshot saw it'
-         : '')
-      + `</p>`;
+    // The meeting and the session are in the box above; what is left to say is
+    // what this session is worth.
+    const about = [
+      sess.duration && sess.duration.laps ? `${sess.duration.laps} laps` : '',
+      v.scored ? `scored as round ${v.scored.round}`
+        : sess.type === 3 ? 'already classified — the tables use that, not this'
+        : 'practice and qualifying carry no championship points',
+      LIVE.ended && !LIVE.ws ? 'finished, as the last snapshot saw it' : '',
+    ].filter(Boolean);
+    body += `<p class="sub" style="margin-top:0">${about.join(' · ')}</p>`;
     {
       gridNote = (v.fromGrid || v.missing ? ''
         + (v.fromGrid ? (v.fromGrid === v.rows.length
@@ -3621,7 +3731,7 @@ function livePanel(base, v) {
   // left here is the one line that says where to find it.
   const why = '<p class="sub" style="margin-top:18px">Where this comes from, why the '
     + 'table can start half-empty, and why none of it is a result: '
-    + `<a href="#${SEASON.year}/${base.key}/about">About</a>.`
+    + `<a href="#${SEASON.year}/${base.key}/faq">FAQ</a>.`
     + (LIVE_FAKE ? ' Nothing is being timed at the moment — this is a demonstration.' : '')
     + '</p>';
 
@@ -3800,7 +3910,7 @@ function liveRefresh() {
   runSet = new Set(D.roundsRun);
   scoring = D.table.filter(t => t.registered);
   REMAINING = D.roundsTotal - D.roundsRun.length;
-  mast();
+  about();                     // where the championship stands has moved
   // Only what is being looked at. The others are marked and rebuilt when they
   // are next shown, which saves the work and, more to the point, stops a table
   // being pulled out from under somebody who is reading it on another tab.
@@ -3878,7 +3988,7 @@ function selectSeries(key) {
   REMAINING = D.roundsTotal - D.roundsRun.length;
   [...seriesBar.children].forEach(b =>
     b.setAttribute('aria-pressed', b.dataset.key === D.key));
-  mast(); standings(); races(); runin(); calendar(); rules(); about();
+  standings(); races(); runin(); calendar(); rules(); about(); faq();
   // Not liveDraw: a race that is running belongs to the standings and the title
   // run-in as much as to the Live tab, so the feed is opened for the series
   // being shown whatever tab that series is being looked at on.
