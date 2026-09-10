@@ -99,6 +99,11 @@ h1 em{font-style:normal;color:var(--racing-ink)}
 .seriesbar button:hover{border-color:var(--racing);color:var(--ink)}
 .seriesbar button[aria-pressed="true"]{background:var(--band);border-color:var(--band);
   color:var(--band-ink)}
+/* On a phone the strip of championships does not fit across the top, and it is
+   the one control that is wanted from anywhere on the page - so there it is a
+   button in the corner nearest the thumb, with the strip stacked above it. On
+   anything wider it stays what it is and this button does not exist. */
+.seriesfab{display:none}
 /* Season chooser. Hidden while there is only one season, so it costs nothing
    until a second year exists. Deliberately quieter than the series bar - the
    year is picked once, the series is switched constantly. */
@@ -558,7 +563,30 @@ table.livetab .down{color:var(--alarm);font-weight:600}
   .picker{display:block}
   .picker-buttons{display:none}
   .picker-select{display:block;width:100%}
-  .seriesbar button{padding:8px 12px}
+  /* The appbar is the strip's home on a wide screen; on a phone the strip
+     leaves it for the corner, and unless there is a season to choose there is
+     nothing left in it - so it keeps its place in the document, which is what
+     holds the strip, and stops drawing a line across the top of the page. */
+  .appbar:has(.yearbar[hidden]){border-bottom:0}
+  .seriesfab{position:fixed;left:12px;bottom:12px;z-index:61;
+    display:inline-flex;align-items:center;gap:9px;cursor:pointer;appearance:none;
+    padding:11px 16px;border-radius:26px;
+    background:var(--band);color:var(--band-ink);border:1px solid var(--band);
+    box-shadow:0 3px 14px rgba(0,0,0,.28);
+    font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;font-size:15px;
+    letter-spacing:.07em;text-transform:uppercase}
+  .seriesfab .bars{width:15px;height:11px;flex:none;
+    background:linear-gradient(currentColor 0 2px,transparent 2px 4.5px,
+      currentColor 4.5px 6.5px,transparent 6.5px 9px,currentColor 9px 11px)}
+  .seriesbar{position:fixed;left:12px;bottom:64px;z-index:60;
+    display:none;flex-direction:column;gap:6px;padding:8px;
+    width:min(230px,calc(100vw - 24px));max-height:60vh;overflow-y:auto;
+    background:var(--surface);border:1px solid var(--line-2);border-radius:8px;
+    box-shadow:0 6px 22px rgba(0,0,0,.3)}
+  .seriesbar.open{display:flex}
+  .seriesbar button{padding:8px 12px;width:100%;justify-content:flex-start}
+  /* Nothing at the foot of the page should sit under the button. */
+  footer{padding-bottom:76px}
   .yearbar button{padding:8px 10px}
   nav.tabs button{font-size:14px;padding:10px 12px 7px}
   main{padding:16px 0 40px}
@@ -644,6 +672,9 @@ footer a{color:var(--racing-ink)}
   <div class="yearbar" id="yearBar" hidden aria-label="Season"></div>
   <div class="seriesbar" id="seriesBar"></div>
 </div></nav>
+<button class="seriesfab" id="seriesFab" type="button" aria-expanded="false"
+        aria-controls="seriesBar"><span class="bars"></span><span
+        class="now" id="seriesFabNow"></span></button>
 <header class="mast">
   <nav class="tabs wrap" id="tabs" role="tablist"></nav>
 </header>
@@ -1918,7 +1949,10 @@ function calendar() {
     + 'classification sheets. Each meeting carries the organising club’s page for it, and the '
     + 'stream, timetable, timing and noticeboard that page publishes.' }));
   const g = el('div', 'grid');
-  D.events.forEach(e => {
+  // Last meeting first. The season is read from where it has got to - the one
+  // that has just run and the one that is next - and a list in calendar order
+  // buries both under however many months are already over.
+  [...D.events].reverse().forEach(e => {
     const t = D.timings[e.key] || { scheduled: [], actual: [] };
     const done = !!e.source;
     const c = el('div', 'card' + (done ? '' : ' future'));
@@ -4075,6 +4109,7 @@ function selectSeries(key) {
   REMAINING = D.roundsTotal - D.roundsRun.length;
   [...seriesBar.children].forEach(b =>
     b.setAttribute('aria-pressed', b.dataset.key === D.key));
+  $('#seriesFabNow').textContent = base.short;
   about(); standings(); races(); runin(); calendar(); rules(); faq();
   // Not liveDraw: a race that is running belongs to the standings and the title
   // run-in as much as to the Live tab, so the feed is opened for the series
@@ -4085,6 +4120,34 @@ function selectSeries(key) {
 }
 
 const seriesBar = $('#seriesBar');
+const seriesFab = $('#seriesFab');
+
+/* The corner button, on a phone. It says which championship is being read as
+   well as opening the list, because on a page with the strip out of sight that
+   is the only thing left saying so. */
+function seriesPick(open) {
+  const want = open === undefined ? !seriesBar.classList.contains('open') : open;
+  seriesBar.classList.toggle('open', want);
+  seriesFab.setAttribute('aria-expanded', String(want));
+  if (want) {
+    const on = seriesBar.querySelector('[aria-pressed="true"]');
+    if (on) on.focus();
+  }
+}
+
+seriesFab.onclick = e => { e.stopPropagation(); seriesPick(); };
+// Anywhere else is a way out of it, and so is Escape.
+document.addEventListener('click', e => {
+  if (seriesBar.classList.contains('open') && !seriesBar.contains(e.target)) {
+    seriesPick(false);
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && seriesBar.classList.contains('open')) {
+    seriesPick(false);
+    seriesFab.focus();
+  }
+});
 
 /* The series on offer change with the season, so the bar is rebuilt rather
    than filtered - a series that ran in one year need not exist in another. */
@@ -4094,7 +4157,7 @@ function buildSeriesBar() {
     const b = el('button', null, s.short);
     b.dataset.key = s.key;
     b.title = s.fullName;
-    b.onclick = () => { selectSeries(s.key); writeHash(); };
+    b.onclick = () => { selectSeries(s.key); writeHash(); seriesPick(false); };
     seriesBar.append(b);
   });
 }
