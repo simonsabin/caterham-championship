@@ -388,10 +388,20 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
   background:var(--band);color:var(--band-ink);font-size:15px;letter-spacing:.06em}
 .livehead .who small{display:block;font-family:"IBM Plex Sans",Arial,sans-serif;font-size:12.5px;
   font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink-3)}
-.livehead .clock{font-family:"IBM Plex Mono",monospace;font-size:22px;font-weight:600;
-  font-variant-numeric:tabular-nums}
-.livehead .clock small{display:block;font-family:"Barlow Condensed",Arial,sans-serif;font-size:11.5px;
-  font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3)}
+/* The clock, in the flag's own colour. A race is run on flags and the one
+   showing is the first thing anyone wants off a timing screen, so rather than
+   spell it out in a pill of its own it colours the number everyone is already
+   looking at: green running, yellow slowing, red stopped, chequered done. The
+   colour is not the only way it is said - the tooltip names it. */
+.livehead .clock{font-family:"IBM Plex Mono",monospace;font-size:20px;font-weight:600;
+  font-variant-numeric:tabular-nums;margin-left:12px;letter-spacing:-.01em;
+  padding:2px 10px;border-radius:3px;border:1px solid var(--line-2);
+  background:var(--surface-2);color:var(--ink-2)}
+.livehead .clock.green{background:var(--racing);color:#fff;border-color:var(--racing)}
+.livehead .clock.yellow,.livehead .clock.fcy{background:var(--flag);color:#241B00;
+  border-color:var(--flag)}
+.livehead .clock.red{background:var(--alarm);color:#fff;border-color:var(--alarm)}
+.livehead .clock.finish{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .livehead .right{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
 .flagpill{font-family:"Barlow Condensed",Arial,sans-serif;font-size:13px;font-weight:600;
   letter-spacing:.1em;text-transform:uppercase;padding:2px 10px;border-radius:2px;
@@ -422,12 +432,24 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
   border-left:3px solid var(--flag);border-radius:0 3px 3px 0;padding:8px 12px;
   margin:12px 0 0}
 .countin b{color:var(--ink)}
-/* The handles on the stand-in, kept away from the controls that are about the
-   championship: over on the right, behind a rule, and labelled. */
-.livebar .fakes{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px;align-items:center;
-  padding-left:16px;border-left:1px dashed var(--line-2)}
-.livebar .fakes .k{font-family:"Barlow Condensed",Arial,sans-serif;font-size:11.5px;
-  letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3)}
+/* The handles on the stand-in, kept out of the way of the race: one button on
+   the right, and the rest behind it. */
+.livebar .fakes{margin-left:auto;position:relative}
+.livebar .fakes summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;
+  gap:8px;padding:5px 12px;border:1px solid var(--line-2);border-radius:3px;
+  background:var(--surface);color:var(--ink-2);
+  font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;font-size:14px;
+  letter-spacing:.08em;text-transform:uppercase}
+.livebar .fakes summary::-webkit-details-marker{display:none}
+.livebar .fakes summary:hover{color:var(--ink);border-color:var(--racing)}
+.livebar .fakes .bars{width:14px;height:10px;flex:none;
+  background:linear-gradient(currentColor 0 2px,transparent 2px 4px,currentColor 4px 6px,
+    transparent 6px 8px,currentColor 8px 10px)}
+.livebar .fakes .fakemenu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;
+  display:flex;flex-direction:column;gap:6px;padding:10px;min-width:190px;
+  background:var(--surface);border:1px solid var(--line-2);border-radius:4px;
+  box-shadow:var(--shadow)}
+.livebar .fakes .fakemenu .livebtn{width:100%;text-align:left}
 /* A heading that is a picture: the size of the words beside it, and the colour
    of them, so a row of headings still reads as one row. */
 .hicon{width:13px;height:13px;vertical-align:-2px;fill:currentColor;opacity:.75}
@@ -476,10 +498,10 @@ table.livetab .chip{font-size:10px;padding:0 4px;letter-spacing:.05em}
   .livehead .who{font-size:17px}
   .livehead .who small{font-size:11.5px;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis;max-width:100%;display:block}
-  .livehead .clock{font-size:19px}
+  .livehead .clock{font-size:17px;margin-left:8px;padding:1px 8px}
   .livehead .right{gap:6px 10px}
   .livebar{gap:6px 10px;margin-bottom:10px}
-  .livebar .fakes{padding-left:0;border-left:0;margin-left:0;width:100%}
+  .livebar .fakes{margin-left:auto}
   /* The notes above the tabs are context, not the thing being read. */
   .note{padding:8px 11px;font-size:12.5px;margin-top:10px}
   .note .tag{font-size:11px;margin-right:6px}
@@ -618,24 +640,17 @@ footer a{color:var(--racing-ink)}
   <div class="seriesbar" id="seriesBar"></div>
 </div></nav>
 <header class="mast">
-  <div class="wrap mast-in">
-    <div>
-      <p class="eyebrow">BARC · Caterham Motorsport · Season <span id="seasonLabel">2026</span></p>
-      <h1>Caterham<br><em>Championships</em></h1>
-    </div>
-  </div>
-  <div class="wrap"><div id="liveNote"></div></div>
   <nav class="tabs wrap" id="tabs" role="tablist"></nav>
 </header>
 
 <main class="wrap">
-  <section class="panel on" id="p-standings"></section>
+  <section class="panel on" id="p-about"></section>
+  <section class="panel" id="p-standings"></section>
   <section class="panel" id="p-live"></section>
   <section class="panel" id="p-races"></section>
   <section class="panel" id="p-calendar"></section>
   <section class="panel" id="p-runin"></section>
   <section class="panel" id="p-rules"></section>
-  <section class="panel" id="p-about"></section>
   <section class="panel" id="p-faq"></section>
 </main>
 
@@ -873,9 +888,9 @@ function champStats() {
 /* --------------------------------------------------------------- tabs */
 /* Short labels: the bar has to fit across a phone, and the id rather than the
    label is what a link carries, so these can be as brief as they read. */
-const TABS = [['standings', 'Standings'], ['live', 'Live'], ['races', 'Races'],
-              ['runin', 'Run-in'], ['calendar', 'Calendar'],
-              ['rules', 'Points'], ['about', 'About'], ['faq', 'FAQ']];
+const TABS = [['about', 'About'], ['standings', 'Standings'], ['live', 'Live'],
+              ['races', 'Races'], ['runin', 'Run-in'], ['calendar', 'Calendar'],
+              ['rules', 'Points'], ['faq', 'FAQ']];
 const tabsEl = $('#tabs');
 const tabBtn = {};
 /** Show one tab; unknown or empty ids fall back to the first tab. */
@@ -1237,7 +1252,12 @@ function standings() {
 function about() {
   const p = $('#p-about');
   const next = D.events.find(e => !e.source);
-  p.innerHTML = `<p class="lede">${esc(D.fullName)}${D.blurb ? ' — ' + esc(D.blurb) : ''}</p>`
+  p.innerHTML = '<div class="mast-in"><div>'
+    + `<p class="eyebrow">BARC · Caterham Motorsport · Season `
+    + `<span id="seasonLabel">${SEASON.year}</span></p>`
+    + '<h1>Caterham<br><em>Championships</em></h1></div></div>'
+    + '<div id="liveNote"></div>'
+    + `<p class="lede">${esc(D.fullName)}${D.blurb ? ' — ' + esc(D.blurb) : ''}</p>`
     + champStats()
     + '<h2>The season</h2>'
     + `<div class="prose"><p>${D.roundsTotal} rounds across `
@@ -3343,6 +3363,21 @@ const FLAG_CLASS = { green: 'green', yellow: 'yellow', fcy: 'fcy', red: 'red',
                      finish: 'finish' };
 const liveFlagClass = f => FLAG_CLASS[String(f || '').toLowerCase()] || '';
 
+/* What the colour on the clock means, for anyone who would rather read it than
+   know it - and for anyone who cannot tell the two of them apart. */
+const FLAG_SAYS = {
+  green: 'Green flag: the session is running, and this is the time left in it.',
+  yellow: 'Yellow flag: something is wrong somewhere on the circuit and cars are '
+    + 'slowing for it. The clock is still running.',
+  fcy: 'Full course yellow: the whole circuit is neutralised and nobody may '
+    + 'improve. The clock is still running.',
+  red: 'Red flag: the session is stopped. The clock is stopped with it.',
+  finish: 'Chequered flag: the session is over and this classification is '
+    + 'provisional until the timekeepers publish it.',
+};
+const liveFlagSays = f => FLAG_SAYS[String(f || '').toLowerCase()]
+  || `${f ? f + '. ' : ''}Time left in the session.`;
+
 /** Where the socket has got to, in a phrase. */
 function liveConn() {
   switch (LIVE.status) {
@@ -3574,9 +3609,19 @@ function livePanel(base, v) {
   const meet = v.meet;
   const [cc, ctext] = liveConn();
   const sess = v.session;
+  // The clock the feed carries is a time in every session, lap-limited or not:
+  // a race over a number of laps still counts the minutes down. It sits beside
+  // the session it is counting and says nothing about itself - a clock next to
+  // a race is a clock counting the race down - and it is coloured by the flag
+  // showing, which is the other thing a timing screen is read for.
+  const clock = sess
+    ? `<span class="clock ${liveFlagClass(sess.flag)}" id="liveClock"`
+      + ` data-tip="${esc(liveFlagSays(sess.flag))}">${liveClockNow() || '—'}</span>`
+    : '';
   const where = meet.event
     ? `${esc(meet.event.name)}`
       + (sess ? `<span class="sess">${esc(sess.name || sess.typeName)}</span>` : '')
+      + clock
       + `<small>${esc(meet.event.meeting || '')}`
       + (meet.event.rounds ? ` · rounds ${meet.event.rounds[0]}–`
         + `${meet.event.rounds[meet.event.rounds.length - 1]}` : '')
@@ -3584,19 +3629,12 @@ function livePanel(base, v) {
     : `No meeting<small>Nothing on this series' calendar to watch</small>`;
 
   let head = `<div class="livehead"><div class="who">${where}</div>`;
-  if (sess) {
-    // The clock the feed carries is a time in every session, lap-limited or
-    // not: a race over a number of laps still counts the minutes down.
-    head += `<div class="clock"><span id="liveClock">${liveClockNow() || '—'}</span>`
-      + `<small>Time to go</small></div>`;
-  }
   head += '<div class="right">'
     + (LIVE_FAKE ? `<span class="flagpill" data-tip="Nothing is being timed: this `
         + `page is racing a made-up field against the clock to show what the live `
         + `view does`
         + `${SIM.speed > 1 ? `, at ${SIM.speed} times life` : `, in real time`}. `
         + `None of these numbers are real.">Simulated race</span>` : '')
-    + (sess ? `<span class="flagpill ${liveFlagClass(sess.flag)}">${esc(sess.flag || '—')}</span>` : '')
     + `<span class="conn ${cc}"><i></i>${ctext}</span>`
     + (LIVE.id || LIVE_FAKE
        ? (LIVE.wanted
@@ -3619,8 +3657,11 @@ function livePanel(base, v) {
   // The handles on the simulation, kept over on the right and behind a rule:
   // they drive the stand-in rather than the championship, and nothing about
   // them exists on a page that is watching TSL.
+  // Driving the stand-in is not what this page is for, so it folds away behind
+  // one button and stays out of the way of the race.
   const fakes = LIVE_FAKE
-    ? '<span class="fakes"><span class="k">Stand-in</span>'
+    ? '<details class="fakes"><summary aria-label="Simulation controls">'
+      + '<span class="bars"></span>Simulation</summary><div class="fakemenu">'
       + `<button class="livebtn quiet" id="livePause" data-tip="Stop the `
       + `simulation where it is — the clock stops with it — or let it go again">`
       + `${LIVE.paused ? 'Let it go' : 'Hold the race'}</button>`
@@ -3629,12 +3670,15 @@ function livePanel(base, v) {
       + 'Restart the race</button>'
       + '<button class="livebtn quiet" id="liveDemoOff" data-tip="Stop the '
       + 'demonstration and put this tab back on TSL’s own feed">Done</button>'
-      + '</span>'
-    : '<span class="fakes"><button class="livebtn quiet" id="liveDemoOn" '
+      + '</div></details>'
+    : '<details class="fakes"><summary aria-label="Simulation controls">'
+      + '<span class="bars"></span>Simulation</summary><div class="fakemenu">'
+      + '<button class="livebtn quiet" id="liveDemoOn" '
       + 'data-tip="Race a made-up field against the clock in this page, in real '
       + 'time, to show what this tab does while a meeting is running: twenty '
       + 'minutes of it, a lap every minute and a half. Nothing is timed and none '
-      + 'of the numbers are real.">Show a demonstration race</button></span>';
+      + 'of the numbers are real.">Show a demonstration race</button>'
+      + '</div></details>';
 
   let body = '', order = null, impact = null, gridNote = '';
   if (sess && v.kind) {
@@ -3989,7 +4033,14 @@ function liveEnter(base) {
 /* The clock is the one thing that changes with no message behind it. */
 setInterval(() => {
   const c = $('#liveClock');
-  if (c && LIVE.clockSecs != null) c.textContent = liveClockNow() || '—';
+  if (!c || LIVE.clockSecs == null) return;
+  c.textContent = liveClockNow() || '—';
+  // A flag can change between draws, and the clock is now how it is shown.
+  const want = 'clock ' + liveFlagClass((LIVE.session || {}).flag);
+  if (c.className.trim() !== want.trim()) {
+    c.className = want;
+    c.setAttribute('data-tip', liveFlagSays((LIVE.session || {}).flag));
+  }
 }, 1000);
 
 function selectSeries(key) {
@@ -4005,7 +4056,7 @@ function selectSeries(key) {
   REMAINING = D.roundsTotal - D.roundsRun.length;
   [...seriesBar.children].forEach(b =>
     b.setAttribute('aria-pressed', b.dataset.key === D.key));
-  standings(); races(); runin(); calendar(); rules(); about(); faq();
+  about(); standings(); races(); runin(); calendar(); rules(); faq();
   // Not liveDraw: a race that is running belongs to the standings and the title
   // run-in as much as to the Live tab, so the feed is opened for the series
   // being shown whatever tab that series is being looked at on.
@@ -4040,7 +4091,8 @@ function selectSeason(year, keepSeries) {
     b.setAttribute('aria-pressed', Number(b.dataset.year) === SEASON.year));
   // every place the page names the season, so an archived year never shows
   // the live season's figures or links
-  $('#seasonLabel').textContent = SEASON.year;
+  const label = $('#seasonLabel');
+  if (label) label.textContent = SEASON.year;
   $('#footerSeason').textContent = SEASON.year;
   buildSeriesBar();
   // hold the same series across a year change when that year also ran it
