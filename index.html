@@ -3713,6 +3713,16 @@ function liveTable(base, v, live) {
   // The sectors this session is cut into, in the order a car goes through them.
   // The last of them is the lap itself, so only the ones before it are columns.
   const splits = ((v.session || {}).sectors || []).slice(0, -1);
+  // The quickest lap anybody has set. In a race that is the fastest lap; in
+  // qualifying it is pole. It goes purple either way, because purple on a
+  // timing screen means the best anybody has gone and not what it is worth.
+  // What it is worth is a separate matter: the championship's extra point goes
+  // to a registered driver, which is not always whoever set the time.
+  let quickest = null, quickestAt = Infinity;
+  v.rows.forEach(r => {
+    const t = secsOf(r.best);
+    if (t != null && t < quickestAt) { quickestAt = t; quickest = r.id; }
+  });
   // Every column knows what it is, so a narrow screen can be given the ones
   // that matter and spared the rest.
   const cols = [['pos', ICON_POS], ['move', ''], ['driver', 'Driver'],
@@ -3733,7 +3743,8 @@ function liveTable(base, v, live) {
       ? driverCell(t.driver, [t.registered ? '' : metaChip('Guest'),
                               classMark(r.cls), carChip(r.no)])
       : driverCell(r.name || '—', [metaChip('Not in the table'), carChip(r.no)]);
-    const flag = v.scored && v.scored.flDriver && t && t.driver === v.scored.flDriver;
+    const fastest = quickest != null && r.id === quickest;
+    const point = v.scored && v.scored.flDriver && t && t.driver === v.scored.flDriver;
     return `<tr class="${cls}">`
       + `<td class="stick1 num mono" data-c="pos"${!r.onGrid ? '' : r.missing
           ? ' data-tip="Qualified here and has not been seen since the start, so it '
@@ -3762,8 +3773,15 @@ function liveTable(base, v, live) {
             + `${esc(got.time)}</td>`;
         }).join('')
       + `<td class="num mono" data-c="last">${esc(r.last || '—')}</td>`
-      + `<td class="num mono${flag ? ' fl' : ''}" data-c="best"`
-      + (flag ? ' data-tip="Fastest lap of the session so far — the extra point"' : '')
+      + `<td class="num mono${fastest || point ? ' fl' : ''}" data-c="best"`
+      + (fastest || point
+         ? ` data-tip="${esc(
+             (fastest ? (v.session && v.session.type === 2
+                ? 'Quickest lap of qualifying so far — provisional pole'
+                : 'Quickest lap of the session so far') : '')
+             + (fastest && point ? '. ' : '')
+             + (point ? 'Carries this championship’s extra point' : ''))}"`
+         : '')
       + `>${esc(r.best || '—')}</td>`
       + `<td class="num mono" data-c="stops">${r.pitStops == null ? '—' : r.pitStops}</td>`
       + (scored ? `<td class="pts" data-c="pts">${!s ? '—'
@@ -3996,7 +4014,9 @@ function livePanel(base, v) {
       // when a session does not count at all.
       v.scored ? ''
         : sess.type === 3 ? 'already classified — the tables use that, not this'
-        : 'practice and qualifying carry no championship points',
+        : sess.type === 2 ? 'qualifying — no championship points, but this is the '
+            + 'sheet the grid for the race is laid out from'
+        : 'practice carries no championship points',
       LIVE.ended && !LIVE.ws ? 'finished, as the last snapshot saw it' : '',
     ].filter(Boolean);
     if (about.length) body += `<p class="sub" style="margin-top:0">${about.join(' · ')}</p>`;
