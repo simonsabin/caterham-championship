@@ -398,7 +398,7 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
    spell it out in a pill of its own it colours the number everyone is already
    looking at: green running, yellow slowing, red stopped, chequered done. The
    colour is not the only way it is said - the tooltip names it. */
-.livehead .clock{font-family:"IBM Plex Mono",monospace;font-size:20px;font-weight:600;
+.livehead .clock{font-family:"IBM Plex Mono",monospace;font-size:15px;font-weight:600;
   font-variant-numeric:tabular-nums;margin-left:12px;letter-spacing:-.01em;
   padding:2px 10px;border-radius:3px;border:1px solid var(--line-2);
   background:var(--surface-2);color:var(--ink-2)}
@@ -407,6 +407,11 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
   border-color:var(--flag)}
 .livehead .clock.red{background:var(--alarm);color:#fff;border-color:var(--alarm)}
 .livehead .clock.finish{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+/* Counting down to a session rather than through one: dashed, because the time
+   is the timetable's and the timetable is not the timekeepers. */
+.livehead .clock.soon{border-style:dashed;color:var(--ink-2)}
+.livehead .who .sess.next{background:var(--surface-2);color:var(--ink-2);
+  border:1px solid var(--line-2)}
 .livehead .right{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
 .flagpill{font-family:"Barlow Condensed",Arial,sans-serif;font-size:13px;font-weight:600;
   letter-spacing:.1em;text-transform:uppercase;padding:2px 10px;border-radius:2px;
@@ -437,25 +442,33 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
   border-left:3px solid var(--flag);border-radius:0 3px 3px 0;padding:8px 12px;
   margin:12px 0 0}
 .countin b{color:var(--ink)}
-/* The handles on the stand-in, kept out of the way of the race: one button on
-   the right, and the rest behind it. */
-.livehead .fakes{position:relative}
-.livehead .fakes summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;
+/* One button, and everything it does behind it. Used twice on this tab: for
+   the handles on the race, and for the columns of the table. */
+.fakes{position:relative}
+.fakes summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;
   gap:8px;padding:5px 12px;border:1px solid var(--line-2);border-radius:3px;
   background:var(--surface);color:var(--ink-2);
   font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;font-size:14px;
   letter-spacing:.08em;text-transform:uppercase}
-.livehead .fakes summary::-webkit-details-marker{display:none}
-.livehead .fakes summary:hover{color:var(--ink);border-color:var(--racing)}
-.livehead .fakes .bars{width:14px;height:10px;flex:none;
+.fakes summary::-webkit-details-marker{display:none}
+.fakes summary:hover{color:var(--ink);border-color:var(--racing)}
+.fakes .bars{width:14px;height:10px;flex:none;
   background:linear-gradient(currentColor 0 2px,transparent 2px 4px,currentColor 4px 6px,
     transparent 6px 8px,currentColor 8px 10px)}
-.livehead .fakes .fakemenu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;
+.fakes .fakemenu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;
   display:flex;flex-direction:column;gap:6px;padding:10px;min-width:190px;
   background:var(--surface);border:1px solid var(--line-2);border-radius:4px;
   box-shadow:var(--shadow)}
-.livehead .fakes .fakemenu .livebtn{width:100%;text-align:left;text-decoration:none;
+.fakes .fakemenu .livebtn{width:100%;text-align:left;text-decoration:none;
   display:block}
+/* The column chooser, above the table it governs. */
+.colbar{display:flex;justify-content:flex-end;margin:0 0 8px}
+.fakes .fakemenu label{display:flex;align-items:center;gap:9px;cursor:pointer;
+  font-size:13px;color:var(--ink-2);white-space:nowrap}
+.fakes .fakemenu label:hover{color:var(--ink)}
+/* The fastest lap of the session, in the colour a timing screen has always used
+   for the best anybody has gone. */
+table.livetab td.fl{color:var(--fl);font-weight:600}
 /* A heading that is a picture: the size of the words beside it, and the colour
    of them, so a row of headings still reads as one row. */
 .hicon{width:13px;height:13px;vertical-align:-2px;fill:currentColor;opacity:.75}
@@ -487,8 +500,6 @@ table.livetab .chip{font-size:10px;padding:0 4px;letter-spacing:.05em}
   table.livetab td[data-c="driver"] b{max-width:92px}
   table.deltatab td[data-c="driver"] b{max-width:104px}
   table.livetab .chip[data-k="cls"]{display:none}
-  table.livetab [data-c="int"],
-  table.livetab [data-c="stops"],table.livetab [data-c="best"],
   table.deltatab [data-c="before"]{display:none}
   table.livetab,table.deltatab{font-size:12px}
   /* A timing table is columns of short numbers: the room between them is room
@@ -504,7 +515,7 @@ table.livetab .chip{font-size:10px;padding:0 4px;letter-spacing:.05em}
   .livehead .who{font-size:17px}
   .livehead .who small{font-size:11.5px;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis;max-width:100%;display:block}
-  .livehead .clock{font-size:17px;margin-left:8px;padding:1px 8px}
+  .livehead .clock{font-size:14px;margin-left:8px;padding:1px 8px}
   .livehead .right{gap:6px 10px}
   .livebar{gap:6px 10px;margin-bottom:10px}
   .livehead .fakes summary{padding:4px 10px;font-size:13px}
@@ -2496,6 +2507,14 @@ function liveSetSession(s) {
     LIVE.cars.clear(); LIVE.rc = []; LIVE.sectorBest = {};
   }
   LIVE.session = next;
+  // A session that arrives with its field in it is a snapshot, and a page that
+  // has none is entitled to it: without one, nothing is known about a car until
+  // it first crosses the line, so the splits it puts in on the way round have
+  // nowhere to land and the first lap of a race shows nothing.
+  const field = s.classification || s.competitors;
+  if (field && field.length && !LIVE.cars.size) {
+    field.forEach(c => LIVE.cars.set(c.id, c.result ? liveCar(c) : c));
+  }
   liveSectorBests(next);
   LIVE.fromSeed = false;      // the feed has now said so itself
   LIVE.seedIds = null;
@@ -2738,6 +2757,88 @@ function liveMeeting(base) {
   const next = base.events.find(e => e.kind === 'tsl' && e.last >= today);
   return { event: next || null, id: (next && next.tslEvent) || null, seed: null,
            running: false };
+}
+
+/* The timetable prints a clock time and a day; the countdown needs an instant.
+   A meeting abroad prints its own local time - Dijon's noon is not Britain's -
+   so the day and time are read in the circuit's zone rather than the reader's,
+   whichever side of the Channel each of them is on. */
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun',
+                'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const ZONES = { CET: 'Europe/Paris', CEST: 'Europe/Paris' };
+
+function zoneOffset(t, zone) {
+  const f = new Intl.DateTimeFormat('en-GB', { timeZone: zone, hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const p = {};
+  f.formatToParts(new Date(t)).forEach(x => { p[x.type] = x.value; });
+  return Date.UTC(+p.year, p.month - 1, +p.day, p.hour % 24, +p.minute, +p.second) - t;
+}
+
+/** A scheduled session's start, as an instant, or null if it cannot be placed. */
+function schedAt(sch, ev) {
+  if (!sch || !sch.start) return null;
+  const hm = /^(\d{1,2}):(\d{2})/.exec(sch.start);
+  if (!hm) return null;
+  const zone = ZONES[ev.tz] || 'Europe/London';
+  const txt = String(sch.day || '');
+  let y, mo, d;
+  const mi = MONTHS.findIndex(n => new RegExp(n, 'i').test(txt));
+  const dm = /\b(\d{1,2})\b/.exec(txt);
+  if (mi >= 0 && dm) {
+    y = +String(ev.first || '').slice(0, 4) || SEASON.year;
+    mo = mi; d = +dm[1];
+  } else if (ev.first && ev.first === ev.last) {
+    // One day at the meeting and no day printed against the session: there is
+    // only one day it can be on.
+    [y, mo, d] = ev.first.split('-').map(Number); mo -= 1;
+  } else {
+    return null;
+  }
+  let t = Date.UTC(y, mo, d, +hm[1], +hm[2]);
+  // The offset depends on the instant, and the instant on the offset: two
+  // passes settle it either side of a clock change.
+  for (let i = 0; i < 2; i++) t = Date.UTC(y, mo, d, +hm[1], +hm[2]) - zoneOffset(t, zone);
+  return t;
+}
+
+/**
+ * The next session this series is scheduled for at this meeting.
+ *
+ * The timetable is the only thing that knows a session is coming: the feed says
+ * nothing until it starts. Races are matched to rounds in the order the
+ * timetable prints them, the same pairing the calendar makes.
+ */
+function liveNext(base, meet) {
+  const ev = meet && meet.event;
+  if (!ev) return null;
+  const t = (base.timings || {})[ev.key];
+  if (!t || !t.scheduled || !t.scheduled.length) return null;
+  const rows = [];
+  const qual = t.scheduled.find(x => x.kind === 'qualifying');
+  if (qual) rows.push({ name: 'Qualifying', s: qual });
+  t.scheduled.filter(x => x.kind === 'race').forEach((x, i) => rows.push({
+    name: ev.rounds[i] != null ? `Round ${ev.rounds[i]}` : (x.activity || 'Race'), s: x }));
+  const now = Date.now();
+  const next = rows.map(r => ({ name: r.name, s: r.s, at: schedAt(r.s, ev) }))
+    .filter(r => r.at != null && r.at > now)
+    .sort((a, b) => a.at - b.at)[0];
+  return next ? { ...next, secs: Math.round((next.at - now) / 1000) } : null;
+}
+
+/* Five minutes out is close enough to open the feed. It costs one socket, and
+   a page that waits for the session to start has already missed the start. */
+const LIVE_CONNECT = 5 * 60;
+
+/** A countdown, in as few figures as it takes to read it. */
+function liveCountText(secs) {
+  if (secs == null) return '—';
+  if (secs <= 0) return 'any moment';
+  if (secs >= 86400) return `${Math.round(secs / 86400)} days`;
+  const h = Math.floor(secs / 3600), m = Math.floor(secs % 3600 / 60), ss = secs % 60;
+  return (h ? h + ':' + String(m).padStart(2, '0') : String(m))
+    + ':' + String(ss).padStart(2, '0');
 }
 
 /**
@@ -3270,6 +3371,12 @@ function simSetUp(base) {
                        { name: 'Sector 3', key: 'S3Time', isSpeedTrap: false }] },
     classes: [...new Set(SIM.cars.map(c => c.cls).filter(Boolean))]
       .map((c, i) => ({ id: String(i), name: c, colour: '#FF00A650' })),
+    // The grid, as the snapshot a real page is built with would have it. The
+    // feed itself says nothing about a car until it crosses the line, so
+    // without this the demonstration spends its first lap unable to show the
+    // splits it is sending - which is not what a real race day looks like.
+    classification: SIM.cars.slice().sort((a, b) => a.grid - b.grid)
+      .map(c => simRow(c, null, null)),
   };
   return true;
 }
@@ -3478,6 +3585,56 @@ const ICON_LAPS = '<svg class="hicon" viewBox="0 0 16 16" aria-label="Laps compl
   + '<path d="M13.6 1.4v3.1h-3.1" fill="none" stroke="currentColor" stroke-width="1.8" '
   + 'stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+/**
+ * Which columns of the running order are on.
+ *
+ * A timing screen is wider than a phone and there is no arrangement of it that
+ * suits everybody, so it is the reader's to arrange: what they turn off is
+ * remembered in this browser and applied to every session afterwards.
+ *
+ * The default is the width of the screen it is first read on - a phone gets the
+ * interval to the car ahead rather than the gap to the leader, and is spared
+ * the pit stops - and the moment anything is changed that judgement is over and
+ * the choice is theirs.
+ */
+const COL_STORE = 'caterham.live.cols';
+const COL_LOCKED = new Set(['pos', 'driver']);
+const COL_NAME = {
+  move: 'Places gained or lost', laps: 'Laps', gap: 'Gap to the leader',
+  int: 'Interval to the car ahead', last: 'Last lap', best: 'Best lap',
+  stops: 'Pit stops', pts: 'Points', net: 'Net after drop scores',
+};
+
+function colHidden() {
+  if (LIVE.cols) return LIVE.cols;
+  let held = null;
+  try { held = localStorage.getItem(COL_STORE); } catch (e) { held = null; }
+  LIVE.cols = new Set(held !== null ? held.split(' ').filter(Boolean)
+    : innerWidth < 768 ? ['gap', 'stops'] : []);
+  return LIVE.cols;
+}
+
+function colShow(key, on) {
+  const hidden = colHidden();
+  if (on) hidden.delete(key); else hidden.add(key);
+  try { localStorage.setItem(COL_STORE, [...hidden].join(' ')); } catch (e) { /* private */ }
+  colApply();
+}
+
+/** One stylesheet says what is off, so a change costs no redraw of the table. */
+function colApply() {
+  let tag = $('#liveColCss');
+  if (!tag) {
+    tag = el('style');
+    tag.id = 'liveColCss';
+    document.head.append(tag);
+  }
+  const off = [...colHidden()];
+  tag.textContent = off.length
+    ? off.map(k => `table.livetab [data-c="${k}"]`).join(',') + '{display:none}'
+    : '';
+}
+
 /* A gap is behind by definition, so the plus in front of it says nothing and
    costs a column's width on a screen that has none to spare. */
 const plain = t => String(t == null ? '' : t).replace(/^\+/, '') || '—';
@@ -3518,7 +3675,7 @@ function liveTable(base, v, live) {
             + 'is not being scored as though it were running."'
           : ' data-tip="Where this car starts from, off the qualifying sheet. It has '
             + 'not crossed the line yet."'}>`
-      + (r.onGrid ? `${r.gridPos}<small> ${r.missing ? 'no time' : 'grid'}</small>`
+      + (r.onGrid ? `${r.gridPos}${r.missing ? '<small> no time</small>' : ''}`
          : r.pos == null ? '—' : r.pos)
       + (LIVE_STATE_LABEL[r.state] ? ` <small>${LIVE_STATE_LABEL[r.state]}</small>` : '')
       + `</td>`
@@ -3552,8 +3709,20 @@ function liveTable(base, v, live) {
           + `>${gain == null ? '—' : '+' + gain}</td>` : '')
       + '</tr>';
   }).join('');
+  const hidden = colHidden();
+  const chooser = '<div class="colbar"><details class="fakes">'
+    + '<summary aria-label="Choose the columns to show"><span class="bars"></span>'
+    + 'Columns</summary><div class="fakemenu">'
+    + cols.filter(([k]) => !COL_LOCKED.has(k)).map(([k]) => {
+        const sec = /^s(\d+)$/.exec(k);
+        const name = sec ? ((splits[+sec[1] - 1] || {}).name || 'Sector ' + sec[1])
+          : COL_NAME[k] || k;
+        return `<label><input type="checkbox" data-col="${k}"`
+          + `${hidden.has(k) ? '' : ' checked'}> ${esc(name)}</label>`;
+      }).join('')
+    + '</div></details></div>';
   return { rows, cols: head.join('|'),
-    html: `<div class="scroller"><table class="livetab" id="liveOrderTab"><thead><tr>`
+    html: chooser + `<div class="scroller"><table class="livetab" id="liveOrderTab"><thead><tr>`
       + cols.map(([k, h]) => `<th data-c="${k}" class="${h && h !== 'Driver' ? 'num' : ''}`
         + `${k === 'pos' ? ' stick1' : k === 'driver' ? ' stick2' : ''}">${h}</th>`).join('')
       + `</tr></thead><tbody>${rows}</tbody></table></div>${classLegend(used)}` };
@@ -3715,19 +3884,33 @@ function livePanel(base, v) {
     + '<span class="bars"></span>Menu</summary>'
     + `<div class="fakemenu">${items.join('')}</div></details>`;
 
+  // Nothing is running until the timetable says it is, and the feed will not
+  // say so either - it is silent until the first car crosses the line. So when
+  // there is no session the same slot counts down to the one that is coming.
+  const soon = sess ? null : liveNext(base, meet);
+  LIVE.startsAt = soon ? soon.at : null;
+  const soonTip = soon
+    ? `${soon.name} is timetabled for ${soon.s.start}`
+      + (soon.s.day ? `, ${soon.s.day}` : '')
+      + (meet.event && meet.event.tz ? ` ${meet.event.tz}` : '')
+      + '. This page opens the feed five minutes before it starts.'
+    : '';
   const clock = sess
     ? `<span class="clock ${liveFlagClass(sess.flag)}" id="liveClock"`
       + ` data-tip="${esc(liveFlagSays(sess.flag))}">${liveClockNow() || '—'}</span>`
+    : soon
+    ? `<span class="clock soon" id="liveClock" data-tip="${esc(soonTip)}">`
+      + `${liveCountText(soon.secs)}</span>`
     : '';
+  // The meeting and what is on at it, and nothing else: which rounds it carries
+  // and what dates it runs on are the calendar's business, and repeating them
+  // over a timing screen is a line of the page spent saying nothing.
   const where = meet.event
     ? `${esc(meet.event.name)}`
       + (sess ? `<span class="sess">${esc(sess.name || sess.typeName)}</span>` : '')
+      + (soon ? `<span class="sess next">${esc(soon.name)}</span>` : '')
       + clock
-      + `<small>${esc(meet.event.meeting || '')}`
-      + (meet.event.rounds ? ` · rounds ${meet.event.rounds[0]}–`
-        + `${meet.event.rounds[meet.event.rounds.length - 1]}` : '')
-      + ` · ${esc(meet.event.dates)}</small>`
-    : `No meeting<small>Nothing on this series' calendar to watch</small>`;
+    : 'No meeting';
 
   let head = `<div class="livehead"><div class="who">${where}</div>`;
   head += '<div class="right">'
@@ -3762,20 +3945,14 @@ function livePanel(base, v) {
     ].filter(Boolean);
     if (about.length) body += `<p class="sub" style="margin-top:0">${about.join(' · ')}</p>`;
     {
-      gridNote = (v.fromGrid || v.missing ? ''
-        + (v.fromGrid ? (v.fromGrid === v.rows.length
-            ? 'Nobody has crossed the line yet, so this is the grid'
-            : `${v.fromGrid} car${v.fromGrid === 1 ? ' has' : 's have'} yet to cross the `
-              + 'line, and are shown in the slots they started from')
-            + (LIVE_FAKE
-               ? ' — the qualifying this demonstration made up to put them there. Each '
-               : ' — qualifying, as the build read it off TSL’s own sheet. Each ')
-            + 'one is replaced by the timekeepers the first time its car comes past. '
-          : '')
-        + (v.missing ? `${v.missing} car${v.missing === 1 ? '' : 's'} on that grid `
+      // A car that has not come past yet is shown in the slot it starts from,
+      // which the table says for itself. What is worth a note is a car that
+      // started and has not been seen since.
+      gridNote = (v.missing ? ''
+        + (`${v.missing} car${v.missing === 1 ? '' : 's'} on the grid `
             + `${v.missing === 1 ? 'has' : 'have'} not been seen since the start, so `
             + `${v.missing === 1 ? 'it is' : 'they are'} listed with no time and scored `
-            + 'as having qualified and not started.' : '')
+            + 'as having qualified and not started.')
         : '');
       // Its own element, because how much of the grid is still standing changes
       // every time a car comes past and the rest of the page does not.
@@ -3845,9 +4022,17 @@ function livePanel(base, v) {
       + 'between sessions, and this page will fill in on its own when the next one '
       + 'starts.</p>';
   } else if (meet.running) {
-    body += `<p class="lede">${esc(meet.event.name)} is running today. Nothing has been `
-      + `asked of TSL yet — press <b>Watch live</b> and this page opens their timing feed `
-      + `directly, then scores every lap of it under this championship's regulations.</p>`;
+    body += `<p class="lede">${esc(meet.event.name)} is running today`
+      + (soon
+         ? `, and <b>${esc(soon.name)}</b> is timetabled for ${esc(soon.s.start)}`
+           + (soon.s.day ? ` on ${esc(soon.s.day)}` : '')
+           + '. This page opens TSL’s feed five minutes before that, and scores every '
+           + 'lap of it under this championship’s regulations — or press <b>Watch live</b> '
+           + 'in the menu to open it now.'
+         : '. Nothing has been asked of TSL yet — press <b>Watch live</b> in the menu and '
+           + 'this page opens their timing feed directly, then scores every lap of it '
+           + 'under this championship’s regulations.')
+      + '</p>';
   } else if (meet.event) {
     body += `<p class="lede">Nothing is running. The next meeting on ${esc(base.short)}'s `
       + `calendar is <b>${esc(meet.event.name)}</b>, ${esc(meet.event.dates)}`
@@ -3875,7 +4060,8 @@ function livePanel(base, v) {
      tick. */
   const shell = [base.key, LIVE.status, LIVE.wanted, LIVE.paused, LIVE.id, LIVE_FAKE,
                  sess && sess.id, sess && sess.flag, v.scored && v.scored.round,
-                 LIVE.applied, LIVE.seededAt, meet.event && meet.event.key].join('|');
+                 LIVE.applied, LIVE.seededAt, meet.event && meet.event.key,
+                 soon && soon.name].join('|');
   if (p.dataset.shell !== shell) {
     p.innerHTML = head
       + (bar.length ? `<div class="livebar">${bar.join('')}</div>` : '')
@@ -3926,6 +4112,13 @@ function livePanel(base, v) {
     linkRegs(into);
   }
 }
+
+/* The column chooser is rebuilt whenever the table around it is, so the handler
+   is on the panel rather than on the boxes. */
+$('#p-live').addEventListener('change', e => {
+  const box = e.target.closest('input[data-col]');
+  if (box) colShow(box.dataset.col, box.checked);
+});
 
 /** New rows into the table already on the page, leaving the page where it is. */
 function liveRows2(into, sel, made) {
@@ -4091,10 +4284,17 @@ function liveEnter(base) {
   base = base || SEASON.series.find(s => s.key === (D || {}).key);
   if (!base) return;
   const meet = liveMeeting(base);
-  // Opening this tab while the meeting is on is asking to watch it - unless
+  // Opening this tab while a session is close is asking to watch it - unless
   // the answer last time was to stop, which stands until it is asked again.
   // Asking for a simulation is asking for it to run, whatever day it is.
-  const wants = LIVE_DEMO !== null || (meet.running && meet.id);
+  //
+  // Close means within five minutes of the timetable, or a session already
+  // under way. Where no timetable has been published there is nothing to be
+  // close to, and a meeting running today is reason enough on its own.
+  const soon = liveNext(base, meet);
+  const under = !!(meet.seed && meet.seed.session && !meet.seed.ended);
+  const wants = LIVE_DEMO !== null
+    || (meet.running && meet.id && (under || !soon || soon.secs <= LIVE_CONNECT));
   if (wants && !LIVE.wanted && !LIVE.declined && LIVE.status !== 'error') liveStart();
   liveDraw();
 }
@@ -4102,7 +4302,20 @@ function liveEnter(base) {
 /* The clock is the one thing that changes with no message behind it. */
 setInterval(() => {
   const c = $('#liveClock');
-  if (!c || LIVE.clockSecs == null) return;
+  if (!c) return;
+  // Counting down to a session that has not started. Five minutes out the feed
+  // is opened, so that the first lap of it arrives on a page already listening.
+  if (LIVE.startsAt != null && !LIVE.session) {
+    const secs = Math.round((LIVE.startsAt - Date.now()) / 1000);
+    c.textContent = liveCountText(secs);
+    if (secs <= LIVE_CONNECT && LIVE.id && !LIVE.wanted && !LIVE.declined
+        && LIVE.status !== 'error' && !LIVE_FAKE) {
+      liveStart();
+      liveDraw();
+    }
+    return;
+  }
+  if (LIVE.clockSecs == null) return;
   c.textContent = liveClockNow() || '—';
   // A flag can change between draws, and the clock is now how it is shown.
   const want = 'clock ' + liveFlagClass((LIVE.session || {}).flag);
@@ -4258,6 +4471,7 @@ function applyHash() {
 }
 
 addEventListener('hashchange', applyHash);
+colApply();                      // whatever columns this browser was left on
 applyHash();
 writeHash();
 </script>
