@@ -404,7 +404,7 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
    looking at: green running, yellow slowing, red stopped, chequered done. The
    colour is not the only way it is said - the tooltip names it. */
 .livehead .clock{font-family:"IBM Plex Mono",monospace;font-size:15px;font-weight:600;
-  font-variant-numeric:tabular-nums;flex:none;letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;flex:none;letter-spacing:-.01em;text-transform:none;
   padding:2px 10px;border-radius:3px;border:1px solid var(--line-2);
   background:var(--surface-2);color:var(--ink-2)}
 .livehead .clock.green{background:var(--racing);color:#fff;border-color:var(--racing)}
@@ -865,6 +865,10 @@ function showTipFor(t) {
   showTip(t.dataset.tip, r.left + r.width / 2, r.top);
 }
 const hideTip = () => { tip.style.opacity = 0; tipTarget = null; };
+/* A tooltip belongs to the thing it is about. Press a button that rebuilds the
+   page around it - start the demonstration, stop it - and that thing is gone
+   without ever being moved off, so nothing takes the tooltip down with it. */
+const tipGone = () => { if (tipTarget && !tipTarget.isConnected) hideTip(); };
 document.addEventListener('mouseover', e => {
   const t = e.target.closest('[data-tip]');
   if (t) showTipFor(t);
@@ -877,7 +881,10 @@ document.addEventListener('focusin', e => {
 document.addEventListener('focusout', e => { if (e.target.closest('[data-tip]')) hideTip(); });
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-tip]');
-  if (!t) { hideTip(); return; }
+  // A button that rebuilt the page around it is off the page by the time this
+  // runs, and putting its tooltip up now would leave it there with nothing to
+  // take it down: `closest` is just as happy to walk a detached node.
+  if (!t || !t.isConnected) { hideTip(); return; }
   if (tipTarget === t && tip.style.opacity !== '0') { hideTip(); return; }
   showTipFor(t);
 });
@@ -2848,14 +2855,25 @@ function liveNext(base, meet) {
    a page that waits for the session to start has already missed the start. */
 const LIVE_CONNECT = 5 * 60;
 
-/** A countdown, in as few figures as it takes to read it. */
+/**
+ * A countdown, in as few figures as it takes to read it.
+ *
+ * Hours and minutes while the session is still hours away - a seconds figure
+ * turning over for two hours is movement that means nothing, and it is the kind
+ * of number a glance has to stop and read. Inside the five minutes where the
+ * page connects by itself it becomes a race clock, minutes and seconds, because
+ * by then the seconds are the whole point.
+ */
 function liveCountText(secs) {
   if (secs == null) return '—';
   if (secs <= 0) return 'any moment';
-  if (secs >= 86400) return `${Math.round(secs / 86400)} days`;
+  if (secs >= 86400) {
+    return `${Math.floor(secs / 86400)}d ${Math.round(secs % 86400 / 3600)}h`;
+  }
   const h = Math.floor(secs / 3600), m = Math.floor(secs % 3600 / 60), ss = secs % 60;
-  return (h ? h + ':' + String(m).padStart(2, '0') : String(m))
-    + ':' + String(ss).padStart(2, '0');
+  if (h) return `${h}h ${String(m).padStart(2, '0')}m`;
+  if (secs > LIVE_CONNECT) return `${m}m`;
+  return `${m}:${String(ss).padStart(2, '0')}`;
 }
 
 /**
@@ -4101,6 +4119,7 @@ function livePanel(base, v) {
       + (bar.length ? `<div class="livebar">${bar.join('')}</div>` : '')
       + '<div id="liveBody"></div>';
     p.dataset.shell = shell;
+    tipGone();
 
     const go = $('#liveGo', p), stop = $('#liveStop', p);
     if (go) go.onclick = () => liveStart();
@@ -4144,6 +4163,7 @@ function livePanel(base, v) {
     into.innerHTML = body + why;
     into.dataset.shape = shape;
     linkRegs(into);
+    tipGone();
   }
 }
 
