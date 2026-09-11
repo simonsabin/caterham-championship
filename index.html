@@ -385,11 +385,16 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
 .livehead{position:relative;display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;
   background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--racing);
   border-radius:0 4px 4px 0;box-shadow:var(--shadow);padding:12px 16px;margin-bottom:14px}
-.livehead .who{font-family:"Barlow Condensed",Arial,sans-serif;font-size:20px;font-weight:600;
+/* One row: the meeting, what is on at it, and the clock. The meeting is the
+   only part that can be any length, so it is the only part that gives - the
+   pill and the clock are never squeezed or wrapped. */
+.livehead .who{display:flex;align-items:center;gap:10px;min-width:0;
+  font-family:"Barlow Condensed",Arial,sans-serif;font-size:20px;font-weight:600;
   text-transform:uppercase;letter-spacing:.03em;line-height:1.1}
+.livehead .who .ev{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* The session, beside the meeting it belongs to rather than in a heading of its
    own repeating both. */
-.livehead .who .sess{margin-left:10px;padding:1px 8px;border-radius:2px;
+.livehead .who .sess{flex:none;padding:1px 8px;border-radius:2px;
   background:var(--band);color:var(--band-ink);font-size:15px;letter-spacing:.06em}
 .livehead .who small{display:block;font-family:"IBM Plex Sans",Arial,sans-serif;font-size:12.5px;
   font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink-3)}
@@ -399,7 +404,7 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
    looking at: green running, yellow slowing, red stopped, chequered done. The
    colour is not the only way it is said - the tooltip names it. */
 .livehead .clock{font-family:"IBM Plex Mono",monospace;font-size:15px;font-weight:600;
-  font-variant-numeric:tabular-nums;margin-left:12px;letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;flex:none;letter-spacing:-.01em;
   padding:2px 10px;border-radius:3px;border:1px solid var(--line-2);
   background:var(--surface-2);color:var(--ink-2)}
 .livehead .clock.green{background:var(--racing);color:#fff;border-color:var(--racing)}
@@ -462,7 +467,17 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
 .fakes .fakemenu .livebtn{width:100%;text-align:left;text-decoration:none;
   display:block}
 /* The column chooser, above the table it governs. */
-.colbar{display:flex;justify-content:flex-end;margin:0 0 8px}
+.livehead .acts{display:inline-flex;gap:8px;align-items:center}
+/* Wide enough and the whole box is one line, so the buttons end up at the right
+   of it on their own. Narrow, and the box wraps: the buttons stay up with the
+   meeting and the clock, and the connection status takes the line below. */
+@media (max-width:767px){
+  .livehead .who{order:1;flex:1 1 auto;min-width:0}
+  .livehead .acts{order:2;margin-left:auto}
+  .livehead .right{order:3;flex-basis:100%;margin-left:0}
+}
+.fakes.icon summary{padding:6px 9px;gap:0}
+.fakes.icon .cogicon{width:15px;height:15px;display:block}
 .fakes .fakemenu label{display:flex;align-items:center;gap:9px;cursor:pointer;
   font-size:13px;color:var(--ink-2);white-space:nowrap}
 .fakes .fakemenu label:hover{color:var(--ink)}
@@ -511,11 +526,13 @@ table.livetab .chip{font-size:10px;padding:0 4px;letter-spacing:.05em}
   /* The head of the tab, which is a banner rather than the thing being read.
      Everything in it goes one size down and the meeting's small print is cut to
      the line it fits on. */
-  .livehead{padding:10px 12px;gap:6px 12px;margin-bottom:10px}
-  .livehead .who{font-size:17px}
+  .livehead{padding:10px 12px;gap:6px 10px;margin-bottom:10px}
+  .livehead .who{font-size:16px;gap:7px}
+  .livehead .acts{gap:6px}
+  .fakes.icon summary{padding:5px 8px}
   .livehead .who small{font-size:11.5px;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis;max-width:100%;display:block}
-  .livehead .clock{font-size:14px;margin-left:8px;padding:1px 8px}
+  .livehead .clock{font-size:14px;padding:1px 7px}
   .livehead .right{gap:6px 10px}
   .livebar{gap:6px 10px;margin-bottom:10px}
   .livehead .fakes summary{padding:4px 10px;font-size:13px}
@@ -3578,6 +3595,14 @@ const ICON_POS = '<svg class="hicon" viewBox="0 0 16 16" aria-label="Position" '
   + '<rect x="1" y="9" width="4" height="6" rx="1"/>'
   + '<rect x="6" y="4" width="4" height="11" rx="1"/>'
   + '<rect x="11" y="11" width="4" height="4" rx="1"/></svg>';
+/* Teeth rather than rays: they start where the body ends, and they are cut off
+   square, which is what stops a small cog reading as a small sun. */
+const ICON_COG = '<svg class="cogicon" viewBox="0 0 16 16" aria-hidden="true" '
+  + 'focusable="false" fill="none" stroke="currentColor">'
+  + '<circle cx="8" cy="8" r="4.8" stroke-width="1.6"/>'
+  + '<path d="M8 .7v1.9M8 13.4v1.9M.7 8h1.9M13.4 8h1.9'
+  + 'M2.84 2.84 4.18 4.18M11.82 11.82l1.34 1.34'
+  + 'M13.16 2.84 11.82 4.18M4.18 11.82 2.84 13.16" stroke-width="2.2"/></svg>';
 const ICON_LAPS = '<svg class="hicon" viewBox="0 0 16 16" aria-label="Laps completed" '
   + 'role="img"><title>Laps completed</title>'
   + '<path d="M13.5 8a5.5 5.5 0 1 1-1.9-4.2" fill="none" stroke="currentColor" '
@@ -3710,9 +3735,10 @@ function liveTable(base, v, live) {
       + '</tr>';
   }).join('');
   const hidden = colHidden();
-  const chooser = '<div class="colbar"><details class="fakes">'
-    + '<summary aria-label="Choose the columns to show"><span class="bars"></span>'
-    + 'Columns</summary><div class="fakemenu">'
+  const chooser = '<details class="fakes icon">'
+    + `<summary aria-label="Choose the columns to show" data-tip="Which columns `
+    + `this table shows. What you turn off stays off, in this browser, for every `
+    + `session after it.">${ICON_COG}</summary><div class="fakemenu">`
     + cols.filter(([k]) => !COL_LOCKED.has(k)).map(([k]) => {
         const sec = /^s(\d+)$/.exec(k);
         const name = sec ? ((splits[+sec[1] - 1] || {}).name || 'Sector ' + sec[1])
@@ -3720,9 +3746,9 @@ function liveTable(base, v, live) {
         return `<label><input type="checkbox" data-col="${k}"`
           + `${hidden.has(k) ? '' : ' checked'}> ${esc(name)}</label>`;
       }).join('')
-    + '</div></details></div>';
-  return { rows, cols: head.join('|'),
-    html: chooser + `<div class="scroller"><table class="livetab" id="liveOrderTab"><thead><tr>`
+    + '</div></details>';
+  return { rows, cols: head.join('|'), chooser,
+    html: `<div class="scroller"><table class="livetab" id="liveOrderTab"><thead><tr>`
       + cols.map(([k, h]) => `<th data-c="${k}" class="${h && h !== 'Driver' ? 'num' : ''}`
         + `${k === 'pos' ? ' stick1' : k === 'driver' ? ' stick2' : ''}">${h}</th>`).join('')
       + `</tr></thead><tbody>${rows}</tbody></table></div>${classLegend(used)}` };
@@ -3880,8 +3906,9 @@ function livePanel(base, v) {
                     + 'running: twenty minutes of it, a lap every minute and a '
                     + 'half. Nothing is timed and none of the numbers are real.'));
   }
-  const fakes = '<details class="fakes"><summary aria-label="What this tab can do">'
-    + '<span class="bars"></span>Menu</summary>'
+  const fakes = '<details class="fakes icon"><summary aria-label="What this tab can do"'
+    + ' data-tip="Watch the feed, stop watching, and the handles on the '
+    + 'demonstration"><span class="bars"></span></summary>'
     + `<div class="fakemenu">${items.join('')}</div></details>`;
 
   // Nothing is running until the timetable says it is, and the feed will not
@@ -3906,22 +3933,11 @@ function livePanel(base, v) {
   // and what dates it runs on are the calendar's business, and repeating them
   // over a timing screen is a line of the page spent saying nothing.
   const where = meet.event
-    ? `${esc(meet.event.name)}`
+    ? `<span class="ev">${esc(meet.event.name)}</span>`
       + (sess ? `<span class="sess">${esc(sess.name || sess.typeName)}</span>` : '')
       + (soon ? `<span class="sess next">${esc(soon.name)}</span>` : '')
       + clock
     : 'No meeting';
-
-  let head = `<div class="livehead"><div class="who">${where}</div>`;
-  head += '<div class="right">'
-    + (LIVE_FAKE ? `<span class="flagpill" data-tip="Nothing is being timed: this `
-        + `page is racing a made-up field against the clock to show what the live `
-        + `view does`
-        + `${SIM.speed > 1 ? `, at ${SIM.speed} times life` : `, in real time`}. `
-        + `None of these numbers are real.">Simulated race</span>` : '')
-    + `<span class="conn ${cc}"><i></i>${ctext}</span>`
-    + fakes
-    + '</div></div>';
 
   const bar = [];
   if (LIVE.seededAt) {
@@ -4058,10 +4074,28 @@ function livePanel(base, v) {
      controls are their own piece of the page, rebuilt only when something
      about them actually changes, and the running order alone is replaced on a
      tick. */
+  // Built last, because the columns the cog offers are the columns the table
+  // turned out to have - which sectors this circuit is cut into, and whether
+  // this session is one that scores.
+  let head = `<div class="livehead"><div class="who">${where}</div>`;
+  head += '<div class="right">'
+    + (LIVE_FAKE ? `<span class="flagpill" data-tip="Nothing is being timed: this `
+        + `page is racing a made-up field against the clock to show what the live `
+        + `view does`
+        + `${SIM.speed > 1 ? `, at ${SIM.speed} times life` : `, in real time`}. `
+        + `None of these numbers are real.">Simulated race</span>` : '')
+    + `<span class="conn ${cc}"><i></i>${ctext}</span>`
+    + '</div>'
+    // The two buttons are a child of the box rather than of the status group,
+    // so that on a phone they can stay up on the line with the clock while the
+    // status drops below them.
+    + `<span class="acts">${fakes}${order ? order.chooser : ''}</span>`
+    + '</div>';
+
   const shell = [base.key, LIVE.status, LIVE.wanted, LIVE.paused, LIVE.id, LIVE_FAKE,
                  sess && sess.id, sess && sess.flag, v.scored && v.scored.round,
                  LIVE.applied, LIVE.seededAt, meet.event && meet.event.key,
-                 soon && soon.name].join('|');
+                 soon && soon.name, order && order.cols].join('|');
   if (p.dataset.shell !== shell) {
     p.innerHTML = head
       + (bar.length ? `<div class="livebar">${bar.join('')}</div>` : '')
@@ -4118,6 +4152,20 @@ function livePanel(base, v) {
 $('#p-live').addEventListener('change', e => {
   const box = e.target.closest('input[data-col]');
   if (box) colShow(box.dataset.col, box.checked);
+});
+
+/* Two menus side by side: opening one puts the other away, and anywhere that is
+   not a menu puts both away. A panel left hanging over the running order is the
+   one thing worse than no menu at all. */
+document.addEventListener('click', e => {
+  const inside = e.target.closest('details.fakes');
+  document.querySelectorAll('details.fakes[open]').forEach(d => {
+    if (d !== inside) d.open = false;
+  });
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  document.querySelectorAll('details.fakes[open]').forEach(d => { d.open = false; });
 });
 
 /** New rows into the table already on the page, leaving the page where it is. */
