@@ -24,34 +24,20 @@
   --shadow:0 1px 2px rgba(17,28,24,.06), 0 8px 24px -12px rgba(17,28,24,.18);
 }
 @media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
+  :root{
     --paper:#0D1512; --surface:#16211D; --surface-2:#1D2925; --sunk:#111B17;
     --ink:#E9EFEB; --ink-2:#AFBEB7; --ink-3:#8D9D96;
     --line:#28352F; --line-2:#35453E;
     --racing:#4FBF8B; --racing-ink:#7FD3AB; --racing-soft:#183026;
     --band:#1E4535; --band-ink:#D6EBE0; --band-off:#2A3A34; --band-off-ink:#B4C3BC;
-  --tip-bg:#24312C; --tip-ink:#C6D3CD; --tip-strong:#FFFFFF; --tip-line:#3B4C45; --band-off:#2A3A34; --band-off-ink:#B4C3BC;
     --tip-bg:#24312C; --tip-ink:#C6D3CD; --tip-strong:#FFFFFF; --tip-line:#3B4C45;
     --flag:#E5B93B; --flag-soft:#38300F; --flag-ink:#F0CE68;
-  --fl:#C2A0EA;
     --fl:#C2A0EA;
-    --alarm:#E4795E; --alarm-soft:#3A1E17; --tag-warn:#5C241A; --tag-warn-ink:#F5C7BC; --tag-warn:#5C241A; --tag-warn-ink:#F5C7BC;
+    --alarm:#E4795E; --alarm-soft:#3A1E17; --tag-warn:#5C241A; --tag-warn-ink:#F5C7BC;
     --s1:#2A9C74; --s2:#6E8FE0; --s3:#E0603A; --s4:#A874D8; --s5:#B08F1C; --s6:#1FA4BE;
     --grid:#243029;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
   }
-}
-:root[data-theme="dark"]{
-  --paper:#0D1512; --surface:#16211D; --surface-2:#1D2925; --sunk:#111B17;
-  --ink:#E9EFEB; --ink-2:#AFBEB7; --ink-3:#8D9D96;
-  --line:#28352F; --line-2:#35453E;
-  --racing:#4FBF8B; --racing-ink:#7FD3AB; --racing-soft:#183026;
-  --band:#1E4535; --band-ink:#D6EBE0;
-  --flag:#E5B93B; --flag-soft:#38300F; --flag-ink:#F0CE68;
-  --alarm:#E4795E; --alarm-soft:#3A1E17;
-  --s1:#2A9C74; --s2:#6E8FE0; --s3:#E0603A; --s4:#A874D8; --s5:#B08F1C; --s6:#1FA4BE;
-  --grid:#243029;
-  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
 }
 
 *{box-sizing:border-box}
@@ -97,7 +83,6 @@ h1 em{font-style:normal;color:var(--racing-ink)}
    so they stay at the top of the window rather than at the top of the page. */
 .topbar{position:sticky;top:0;z-index:50}
 .appbar{background:var(--surface-2);border-bottom:1px solid var(--line)}
-.serieswrap{background:var(--surface-2);border-top:1px solid var(--line)}
 .seriesbar{display:flex;gap:6px;overflow-x:auto;padding:9px 0}
 .seriesbar button{appearance:none;cursor:pointer;white-space:nowrap;
   font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;font-size:15px;
@@ -179,11 +164,10 @@ td.num,th.num{text-align:center}
 
 /* sticky driver identity columns */
 .stick1{position:sticky;left:0;z-index:2;background:var(--surface);width:44px}
-.stick2{position:sticky;left:44px;z-index:2;background:var(--surface);min-width:150px}
+.stick2{position:sticky;left:44px;z-index:2;background:var(--surface);min-width:150px;
+  border-right:1px solid var(--line-2)}
 thead .stick1,thead .stick2{z-index:5;background:var(--surface-2)}
 tbody tr:hover .stick1,tbody tr:hover .stick2{background:var(--surface-2)}
-.stick2{border-right:1px solid var(--line-2)}
-thead .stick2{border-right:1px solid var(--line-2)}
 
 td.pt{text-align:center;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;
   cursor:default}
@@ -200,7 +184,6 @@ table.champ thead tr.cols th{font-size:11px;letter-spacing:.02em}
 td.pt.win{background:var(--flag-soft);color:var(--flag-ink);font-weight:600}
 td.pt.fl{text-decoration:underline;text-decoration-color:var(--fl);
   text-decoration-thickness:2px;text-underline-offset:3px;font-weight:600}
-td.pt.pod{background:var(--racing-soft)}
 td.pt.pen{color:var(--alarm);font-weight:600;background:var(--alarm-soft)}
 td.pt.none{color:var(--ink-3)}
 td.pt.future{background:repeating-linear-gradient(135deg,transparent 0 5px,var(--sunk) 5px 10px)}
@@ -221,7 +204,6 @@ tr.guest .stick2{font-style:italic}
 .chip{font-family:"Barlow Condensed",Arial,sans-serif;font-size:11px;letter-spacing:.08em;
   text-transform:uppercase;padding:1px 5px;border-radius:2px;border:1px solid var(--line-2);
   color:var(--ink-3)}
-.chip.pro{border-color:var(--racing);color:var(--racing-ink)}
 /* A class, as a shape and a colour. Shape as well, because a colour on its own
    is no use to somebody who cannot see that colour. */
 .cmark{display:inline-block;width:9px;height:9px;flex:none;background:var(--s1);
@@ -320,8 +302,8 @@ tr.outrow td{color:var(--ink-3)}
 tr.dnf td{color:var(--ink-3)}
 tr.win td{background:var(--flag-soft)}
 tr.win:hover td{background:var(--flag-soft)}
-tr.highlight td{background:var(--flag-soft);animation:pulse 0.6s ease-in-out 2}
-@keyframes pulse{0%,100%{background:var(--flag-soft)}50%{background:var(--flag)}}
+tr.highlight td{background:var(--flag-soft);animation:flash 0.6s ease-in-out 2}
+@keyframes flash{0%,100%{background:var(--flag-soft)}50%{background:var(--flag)}}
 
 /* ---- race replay: the lap chart, and the video it plays against -------- */
 /* The chart, then the video under it at the full width of the page: a race is
@@ -340,7 +322,6 @@ tr.highlight td{background:var(--flag-soft);animation:pulse 0.6s ease-in-out 2}
 .lc-line{fill:none;stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round;opacity:.85}
 .lc-line.dim{opacity:.13}
 .lc-line.on{stroke-width:3.4;opacity:1}
-.lc-dot{stroke:var(--surface);stroke-width:1.5}
 .lc-lab{font-family:"IBM Plex Mono",monospace;font-size:10.5px;cursor:pointer}
 .lc-lab.dim{opacity:.3}
 .lc-head{font-family:"Barlow Condensed",Arial,sans-serif;font-size:11px;letter-spacing:.1em;
@@ -492,10 +473,6 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
 .flagpill{font-family:"Barlow Condensed",Arial,sans-serif;font-size:13px;font-weight:600;
   letter-spacing:.1em;text-transform:uppercase;padding:2px 10px;border-radius:2px;
   background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line-2)}
-.flagpill.green{background:var(--racing);color:#fff;border-color:var(--racing)}
-.flagpill.yellow,.flagpill.fcy{background:var(--flag);color:#241B00;border-color:var(--flag)}
-.flagpill.red{background:var(--alarm);color:#fff;border-color:var(--alarm)}
-.flagpill.finish{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .conn{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-3)}
 .conn i{width:9px;height:9px;border-radius:50%;background:var(--ink-3);display:inline-block}
 .conn.on i{background:var(--racing);animation:pulse 2s ease-in-out infinite}
@@ -1010,11 +987,10 @@ const carChip = no => `<span class="chip carno">#${esc(no)}</span>`;
  * table says which is which.
  */
 const CLASS_MARKS = ['one', 'two', 'three', 'four'];
-function classOrder(cls) {
-  const known = (D.classes && D.classes.length ? D.classes : CLASS_SEEN[D.key] || []);
-  const i = known.indexOf(cls);
-  return i < 0 ? known.length : i;
-}
+
+/** The suffix that makes a position a place: 1st, 2nd, 11th. */
+const ordinal = n => (n % 100 >= 11 && n % 100 <= 13) ? 'th'
+  : ['th', 'st', 'nd', 'rd'][n % 10] || 'th';
 /* Whatever classes this series' own results actually carry, in a stable order:
    several of them award no class title and still print one on the sheet. */
 const CLASS_SEEN = {};
@@ -1370,6 +1346,7 @@ function champTable(rows, split) {
   tb.append(thead);
 
   const tbody = el('tbody');
+  const used = new Set();
   rows.forEach(t => {
     const tr = el('tr', t.registered ? '' : 'guest');
     const pos = split ? t.cls_pos : t.pos;
@@ -1380,13 +1357,10 @@ function champTable(rows, split) {
     // a class table the class chip says nothing, so the overall championship
     // position takes its place.
     const chip = !t.registered
-        ? `<span class="chip chip-meta">${esc(grads() && t.cls ? t.cls : 'Guest')}</span>`
-      : split ? `<span class="chip chip-meta">P${t.pos || '—'} overall</span>`
-      : (t.cls && t.cls !== 'Championship'
-         ? `<span class="chip chip-meta${t.cls === 'Pro Am' ? ' pro' : ''}">${esc(t.cls)}</span>` : '');
-    nm.innerHTML = `<span class="rowhead"><b><span class="name-full">${esc(t.driver)}</span>`
-      + `<span class="name-init">${esc(shortName(t.driver))}</span></b>${chip}`
-      + `<span class="chip carno">#${esc(t.no)}</span></span>`;
+        ? metaChip(grads() && t.cls ? t.cls : 'Guest')
+      : split ? metaChip(`P${t.pos || '—'} overall`)
+      : (t.cls && t.cls !== 'Championship' ? (used.add(t.cls), classMark(t.cls)) : '');
+    nm.innerHTML = driverCell(t.driver, [chip, carChip(t.no)]);
     tr.append(nm);
     for (let r = 1; r <= D.roundsTotal; r++) {
       const key = String(r), s = t.rounds[key];
@@ -1459,7 +1433,13 @@ function champTable(rows, split) {
     tbody.append(tr);
   });
   tb.append(tbody); sc.append(tb);
-  return sc;
+  // What the marks in the class column mean, across the foot of the table.
+  const legend = classLegend(used);
+  if (!legend) return sc;
+  const box = el('div');
+  box.append(sc);
+  box.insertAdjacentHTML('beforeend', legend);
+  return box;
 }
 
 /**
@@ -1582,14 +1562,6 @@ function standings() {
   p.append(howToRead);
 }
 
-/**
- * What this is, in one place.
- *
- * The championship's own description, and everything that explains rather than
- * reports: where the numbers come from, what is provisional about them, and
- * what the live view is doing while a race is running. It is all here so that
- * the pages which show the racing can get on with showing it.
- */
 /** The championship itself: what it is, and where it stands. */
 function about() {
   const p = $('#p-about');
@@ -1801,7 +1773,7 @@ function chartPoints(c, withInts) {
 /** Seconds as a clock: 4:07 inside an hour, 2:34:16 beyond one. */
 const hms = s => {
   if (s == null || !isFinite(s)) return '';
-  const t = Math.max(0, Math.round(s));
+  const t = Math.max(0, Math.floor(s));
   const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), sec = t % 60;
   return (h ? `${h}:${String(m).padStart(2, '0')}` : `${m}`)
     + ':' + String(sec).padStart(2, '0');
@@ -2111,7 +2083,8 @@ function races() {
     sel.value = String(r.round);
     [...picks.children].forEach(x => x.setAttribute('aria-pressed', x.dataset.round === String(r.round)));
   }
-  D.races.forEach(r => {
+  // Newest first: the race that has just run is the one being looked for.
+  [...D.races].reverse().forEach(r => {
     const label = `R${r.round} · ${r.eventName.split(' ')[0]}`;
     sel.append(Object.assign(el('option', null, label), { value: String(r.round) }));
     const b = el('button', null, label);
@@ -2315,7 +2288,7 @@ function qualifying() {
     [...picks.children].forEach(x =>
       x.setAttribute('aria-pressed', x.dataset.ev === q.event));
   };
-  sessions.forEach(q => {
+  [...sessions].reverse().forEach(q => {
     const ev = D.events.find(e => e.key === q.event);
     const label = `${ev ? 'R' + ev.rounds[0] : 'Q'} · ${q.eventName.split(' ')[0]}`;
     sel.append(Object.assign(el('option', null, label), { value: q.event }));
@@ -2794,7 +2767,6 @@ function qualLapTable(row, sectors) {
   const sBest = Array.from({ length: sectors }, (_, i) =>
     Math.min(...laps.map(l => (l.s && l.s[i] ? secsOf(l.s[i]) : Infinity))));
   const best = secsOf(counted[0].time);
-  const ord = k => `${k}${[, 'st', 'nd', 'rd'][k] || 'th'}`;
 
   const sc = el('div', 'scroller'), tb = el('table', 'results');
   const head = ['Lap', 'Lap time', 'Gap']
@@ -2813,7 +2785,7 @@ function qualLapTable(row, sectors) {
       const v = l.s && l.s[i] ? l.s[i] : null;
       cells.push([v || '—', 'num mono' + (v && secsOf(v) === sBest[i] ? ' qmark' : '')]);
     }
-    cells.push([dead ? qualVoid(l) : (l.rank ? `${ord(l.rank)} best` : ''),
+    cells.push([dead ? qualVoid(l) : (l.rank ? `${l.rank}${ordinal(l.rank)} best` : ''),
                 'num' + (dead ? ' void' : '')]);
     cells.forEach(([v, c]) => tr.append(el('td', c, String(v))));
     body.append(tr);
@@ -3614,10 +3586,7 @@ function graduatesRules() {
     <span class="reg">1.6.4</span>.</p>`;
 }
 
-const ordinal = n => (n % 100 >= 11 && n % 100 <= 13) ? 'th'
-  : ['th', 'st', 'nd', 'rd'][n % 10] || 'th';
 
-/* ------------------------------------------------------------ series bar */
 /* ---------------------------------------------------------------- live */
 /**
  * The meeting as it happens, from whoever is timing it.
@@ -3834,9 +3803,7 @@ function liveClockNow() {
   const running = LIVE.clockRunning && liveOn();
   const gone = running ? (Date.now() - LIVE.clockAt) / 1000 * (LIVE.clockRate || 1) : 0;
   const left = Math.max(0, LIVE.clockSecs - gone);
-  const h = Math.floor(left / 3600), m = Math.floor(left % 3600 / 60), s = Math.floor(left % 60);
-  return (h ? h + ':' + String(m).padStart(2, '0') : String(m))
-    + ':' + String(s).padStart(2, '0');
+  return hms(left);
 }
 
 function liveMessage(text) {
@@ -4426,7 +4393,6 @@ function pointsForStatus(base, status) {
   return status === 'DNS' ? 1 : 2;
 }
 
-/** This series' cars, in the order the feed has them. */
 /** That meeting's qualifying, best first - the grid, as the build read it. */
 function liveQualifying(base, eventKey) {
   if (!base._quals) {
@@ -4699,14 +4665,8 @@ const SIM = {
 
 const shuffled = a => a.map(x => [Math.random(), x]).sort((p, q) => p[0] - q[0])
   .map(p => p[1]);
-const lapTime = s => {
-  const m = Math.floor(s / 60), r = s - m * 60;
-  return (m ? m + ':' + (r < 10 ? '0' : '') : '') + r.toFixed(3);
-};
-const raceTime = s => {
-  const m = Math.floor(s / 60), r = s - m * 60;
-  return m + ':' + (r < 10 ? '0' : '') + r.toFixed(3);
-};
+/* A race time always carries its minutes, even inside the first one. */
+const raceTime = s => (s < 60 ? '0:' : '') + lapText(s);
 const hhmmss = s => {
   s = Math.max(0, s);
   const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60;
@@ -4802,10 +4762,10 @@ function simRow(c, leader, ahead) {
     vehicle: 'Caterham', sponsor: '', nationality: 'GBR', manufacturer: 'Caterham',
     result: { position: c.pos, pic: c.pic, posChange: c.pos - c.was, laps: c.laps,
               raceTime: c.laps ? raceTime(c.total) : '',
-              fastLapTime: c.best ? lapTime(c.best) : '',
+              fastLapTime: c.best ? lapText(c.best) : '',
               gap: c.laps ? gapTo(leader) : '', diff: c.laps ? gapTo(ahead) : '',
               pitStops: c.stops },
-    lastLapTime: c.last ? lapTime(c.last) : '', state: c.state,
+    lastLapTime: c.last ? lapText(c.last) : '', state: c.state,
   };
 }
 
@@ -4836,13 +4796,13 @@ const simLeft = gone => hhmmss(Math.max(0, SIM.duration - gone * SIM.speed));
 function simAnnounce() {
   SIM.session.track.sectors.forEach(x => {
     const b = SIM.bests[x.key];
-    x.sessionBest = b ? { id: b.by, time: lapTime(b.secs) } : undefined;
+    x.sessionBest = b ? { id: b.by, time: lapText(b.secs) } : undefined;
   });
   SIM.session.fastestLap = (() => {
     const run = SIM.cars.filter(c => c.best);
     if (!run.length) return null;
     const c = run.reduce((a, b) => (a.best <= b.best ? a : b));
-    return { id: c.id, lapTime: lapTime(c.best) };
+    return { id: c.id, lapTime: lapText(c.best) };
   })();
   simSend('SessionUpdated', SIM.session);
 }
@@ -4868,7 +4828,7 @@ function simQualifying(base, event) {
       // A sheet has to hold together: pole is the quickest time on it, and
       // every slot below is a little slower. The grid is shuffled rather than
       // ordered on pace, so that a race is not a procession.
-      time: lapTime(Math.min(...SIM.cars.map(x => x.pace)) + i * 0.22
+      time: lapText(Math.min(...SIM.cars.map(x => x.pace)) + i * 0.22
                     + Math.random() * 0.09),
     })),
   });
@@ -4969,7 +4929,7 @@ function simTick() {
       if (pb) mine[x.sector] = x.took;
       if (!was.secs || x.took < was.secs) SIM.bests[x.sector] = { secs: x.took, by: c.id };
       simSend('CompetitorIntermediate', {
-        id: c.id, sectorKey: x.sector, time: lapTime(x.took), timePB: pb,
+        id: c.id, sectorKey: x.sector, time: lapText(x.took), timePB: pb,
         speedTrapKey: x.sector === 'S1Time' ? 'Int1Speed' : 'Int2Speed',
         speed: 44 + Math.random() * 9, speedPB: false });
       continue;
@@ -4985,7 +4945,7 @@ function simTick() {
     }
 
     const moved = simRenumber();
-    simSend('CompetitorLapCompleted', { id: c.id, lap: x.lap, time: lapTime(x.took) });
+    simSend('CompetitorLapCompleted', { id: c.id, lap: x.lap, time: lapText(x.took) });
     const order = simOrder();
     // The car that crossed, and anyone its crossing moved - which is what a
     // timing screen does, and why a page that joins late fills in over a lap.
@@ -5382,15 +5342,15 @@ function liveImpact(base, v, d) {
       + `<td class="stick2" data-c="driver">`
       + `${driverCell(t.driver, [carChip(t.no)])}</td>`
       + `<td class="num mono" data-c="before">${b.gross == null ? '—' : b.gross}</td>`
-      + `<td class="num mono">${!s ? '—'
+      + `<td class="num mono" data-c="race">${!s ? '—'
           : s.status === 'classified' ? '+' + s.score
           : s.status.toLowerCase() + (s.score ? ' +' + s.score : '')}</td>`
-      + `<td class="num mono"><b>${t.gross}</b></td>`
-      + `<td class="num mono">${t.net}</td>`
-      + `<td class="num mono proj" data-tip="${esc(t.driver)} cannot finish below `
+      + `<td class="num mono" data-c="total"><b>${t.gross}</b></td>`
+      + `<td class="num mono" data-c="net">${t.net}</td>`
+      + `<td class="num mono proj" data-c="min" data-tip="${esc(t.driver)} cannot finish below `
       + `${floor}: nothing scored in this race or in the ${left} after it. A race `
       + `that is still running can still be scored nothing in.">${floor}</td>`
-      + `<td class="num mono proj" data-tip="${esc(t.driver)} cannot finish above `
+      + `<td class="num mono proj" data-c="max" data-tip="${esc(t.driver)} cannot finish above `
       + `${ceiling}: this race won with the fastest lap, and every one of the `
       + `${left} after it the same. The race running now is still to win, so it `
       + `counts here as one of them.">${ceiling}</td></tr>`;
@@ -5400,9 +5360,9 @@ function liveImpact(base, v, d) {
       + `<th class="num stick1" data-c="pos">${ICON_POS}</th>`
       + '<th class="num" data-c="move">Move</th>'
       + '<th class="stick2" data-c="driver">Driver</th>'
-      + '<th class="num" data-c="before">Before</th><th class="num">This race</th>'
-      + '<th class="num">Total</th><th class="num">Net</th>'
-      + '<th class="num">Min</th><th class="num">Max</th>'
+      + '<th class="num" data-c="before">Before</th><th class="num" data-c="race">This race</th>'
+      + '<th class="num" data-c="total">Total</th><th class="num" data-c="net">Net</th>'
+      + '<th class="num" data-c="min">Min</th><th class="num" data-c="max">Max</th>'
       + `</tr></thead><tbody>${rows}</tbody></table></div>` };
 }
 
@@ -5516,21 +5476,19 @@ function livePanel(base, v) {
       LIVE.ended && !LIVE.ws ? 'finished, as the last snapshot saw it' : '',
     ].filter(Boolean);
     if (about.length) body += `<p class="sub" style="margin-top:0">${about.join(' · ')}</p>`;
-    {
-      // A car that has not come past yet is shown in the slot it starts from,
-      // which the table says for itself. What is worth a note is a car that
-      // started and has not been seen since.
-      gridNote = (v.missing ? ''
-        + (`${v.missing} car${v.missing === 1 ? '' : 's'} on the grid `
-            + `${v.missing === 1 ? 'has' : 'have'} not been seen since the start, so `
-            + `${v.missing === 1 ? 'it is' : 'they are'} listed with no time and scored `
-            + 'as having qualified and not started.')
-        : '');
-      // Its own element, because how much of the grid is still standing changes
-      // every time a car comes past and the rest of the page does not.
-      body += `<div class="livenote" id="liveGridNote"${gridNote ? '' : ' hidden'}>`
-        + `${gridNote}</div>`;
-    }
+    // A car that has not come past yet is shown in the slot it starts from,
+    // which the table says for itself. What is worth a note is a car that
+    // started and has not been seen since.
+    gridNote = (v.missing ? ''
+      + (`${v.missing} car${v.missing === 1 ? '' : 's'} on the grid `
+          + `${v.missing === 1 ? 'has' : 'have'} not been seen since the start, so `
+          + `${v.missing === 1 ? 'it is' : 'they are'} listed with no time and scored `
+          + 'as having qualified and not started.')
+      : '');
+    // Its own element, because how much of the grid is still standing changes
+    // every time a car comes past and the rest of the page does not.
+    body += `<div class="livenote" id="liveGridNote"${gridNote ? '' : ' hidden'}>`
+      + `${gridNote}</div>`;
     if (v.mixed) {
       body += '<div class="livenote">This grid is shared by both classes and the feed '
         + 'does not say which class each car is in, so every car on it is listed and '
