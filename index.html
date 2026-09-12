@@ -557,7 +557,8 @@ table.livetab .chip{font-size:10px;padding:0 4px;letter-spacing:.05em}
      under every table in a scroller is what was keeping this one at 720 pixels
      however many columns were taken out of it, so the space went into the name
      column and a clipped name sat in the middle of it looking like a fault. */
-  .scroller table.livetab,.scroller table.deltatab,.scroller table.results{min-width:0}
+  .scroller table.livetab,.scroller table.deltatab,.scroller table.results,
+  .scroller table.ttab{min-width:0}
 
   /* max-width on a cell is advisory in an auto-laid-out table, so the name
      itself is what gets bounded, and the class chip goes: on a phone the name
@@ -671,7 +672,7 @@ table.ttab tr.next td.st{color:var(--flag-ink);font-weight:600}
 /* On the live view the player sits above the timing rather than beside a chart,
    so on a wide screen it is held to about half the window's height and centred:
    full width would put the running order a screen and a half down. */
-#leStream .vid{width:min(100%,calc(min(56vh,540px) * 16 / 9));margin:0 auto}
+#leStream .vid{width:min(100%,calc(min(60vh,560px) * 16 / 9));margin:0 auto}
 .watch .vid a.out{position:absolute;inset:0;display:flex;flex-direction:column;gap:6px;
   align-items:center;justify-content:center;padding:14px;text-align:center;
   color:#F1F3F0;text-decoration:none;background:linear-gradient(160deg,#1c2a24,#0b120f);
@@ -679,6 +680,35 @@ table.ttab tr.next td.st{color:var(--flag-ink);font-weight:600}
   text-transform:uppercase}
 .watch .vid a.out small{font-family:"IBM Plex Sans",Arial,sans-serif;font-size:13px;
   letter-spacing:0;text-transform:none;opacity:.75;max-width:52ch}
+/* The meeting page: the stream and the timing down the main column, the
+   timetable beside them on a wide screen, where it stays in view as the running
+   order scrolls under it; on a phone there is one column, and the timetable
+   goes to the foot so the stream and the timing come first. The parts keep the
+   same order in the document either way - the grid places them. */
+#p-liveevent.on{display:grid;gap:14px 22px;align-items:start;
+  grid-template-columns:minmax(0,1fr) minmax(300px,360px);
+  grid-template-areas:"head head" "stream times" "live times" "extra times"}
+#leHead{grid-area:head}
+#leStream{grid-area:stream}
+#leLive{grid-area:live;min-width:0}
+#leExtra{grid-area:extra;min-width:0}
+#leTimes{grid-area:times;min-width:0;position:sticky;top:calc(var(--topbar-h) + 10px);
+  max-height:calc(100vh - var(--topbar-h) - 20px);overflow:auto}
+#leTimes h2{margin-top:0}
+/* A side column is narrow: the cells close up, and the timetable's own name for
+   a race ("Race 4") goes, since the round is the name that matters here. */
+@media (min-width:768px){
+  #leTimes table.ttab th,#leTimes table.ttab td{padding:4px 6px}
+  #leTimes table.ttab td small{display:none}
+}
+#leTimes:empty,#leStream:empty,#leExtra:empty{display:none}
+#leHead .radarhead{margin-bottom:0}
+#leHead .evlinks{margin-top:10px}
+@media (max-width:767px){
+  #p-liveevent.on{grid-template-columns:minmax(0,1fr);gap:12px;
+    grid-template-areas:"head" "stream" "live" "extra" "times"}
+  #leTimes{position:static;max-height:none;overflow:visible}
+}
 /* The tables of the other championships sharing a qualifying session, under
    the one being scored. */
 .leq{margin-top:22px}
@@ -6781,7 +6811,11 @@ function liveEventTimetable(ev, focus) {
     }
     let cls = '', st = '';
     if (onRow ? r === onRow : (r.at != null && r.end != null && r.at <= now && now <= r.end)) {
-      cls = 'now'; st = onRow && r === onRow ? 'on now, from the timing' : 'on now';
+      cls = 'now';
+      st = onRow && r === onRow
+        ? '<span data-tip="The timing feed has named this session as the one running, '
+          + 'whatever the timetable says">on now</span>'
+        : '<span data-tip="Inside its timetabled slot; the feed has not named it yet">on now</span>';
     } else if (r.a && r.a.start) {
       cls = 'done'; st = `ran ${r.a.start}`;
     } else if (r.end != null && now > r.end) {
