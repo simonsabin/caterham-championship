@@ -6823,10 +6823,12 @@ function liveEventTimetable(ev, focus) {
     let cls = '', st = '';
     if (onRow ? r === onRow : (r.at != null && r.end != null && r.at <= now && now <= r.end)) {
       cls = 'now';
-      st = onRow && r === onRow
-        ? '<span data-tip="The timing feed has named this session as the one running, '
-          + 'whatever the timetable says">on now</span>'
-        : '<span data-tip="Inside its timetabled slot; the feed has not named it yet">on now</span>';
+      // Reachable from the keyboard, and read out in full: the tooltip is the
+      // only place the marker says where it came from.
+      const why = onRow && r === onRow
+        ? 'The timing feed has named this session as the one running, whatever the timetable says'
+        : 'Inside its timetabled slot; the feed has not named it yet';
+      st = `<span tabindex="0" data-tip="${esc(why)}" aria-label="On now. ${esc(why)}">on now</span>`;
     } else if (r.a && r.a.start) {
       cls = 'done'; st = `ran ${r.a.start}`;
     } else if (r.end != null && now > r.end) {
@@ -6949,7 +6951,10 @@ function liveEventDraw(base, v) {
     return true;
   }
   if (p.dataset.event !== ev.slug) {
-    p.innerHTML = ['leHead', 'leStream', 'leTimes', 'leLive', 'leExtra']
+    // In the order a phone reads them, which is also the order a screen reader
+    // does: the stream, the timing, then the plan for the day. The grid puts
+    // the timetable beside the rest on a wide screen without moving it here.
+    p.innerHTML = ['leHead', 'leStream', 'leLive', 'leExtra', 'leTimes']
       .map(id => `<div id="${id}"></div>`).join('');
     p.dataset.event = ev.slug;
     LIVE_STREAM.slug = null;
