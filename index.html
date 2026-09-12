@@ -5423,7 +5423,15 @@ function liveTable(base, v, live, id = 'liveOrderTab') {
   const head = cols.map(c => c[1]);
   const used = new Set();
   const rows = v.rows.map(r => {
-    const t = liveWho(base, r);
+    // A session that is nobody's is nobody's driver by driver too. `liveWho`
+    // matches on the car number first, and a number is only this
+    // championship's inside this championship's own session: the support race
+    // on the same feed has a 7 and a 23 of its own, and resolving them against
+    // the table would put registered drivers' names - and their class marks
+    // and their links - against cars belonging to somebody else entirely. So
+    // a foreign running order is shown as the timekeepers have it, under the
+    // names the feed itself gives.
+    const t = v.foreign ? null : liveWho(base, r);
     const s = scored && t ? scored.get(t.driver) : null;
     const gain = nets && t && nets.has(t.driver) ? nets.get(t.driver) : null;
     const cls = r.state === CAR_GONE || r.state === CAR_DSQ ? 'gone'
