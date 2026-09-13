@@ -244,6 +244,8 @@ function linkRegs(root) {
 let runSet, scoring, eventOf, raceOf, REMAINING;
 /* The best a race can be worth: a win plus the fastest lap point. */
 const maxRace = d => (d || D).scale + 1;
+/** "the 3 races left", and "the one race left" rather than "the 1 race left". */
+const racesLeft = (n = REMAINING) => n === 1 ? 'the one race left' : `the ${n} races left`;
 /* Not every championship publishes its own table under the same name. */
 const officialName = () => (D.official_source && D.official_source.name)
   || 'Caterham\u2019s published leaderboard';
@@ -515,29 +517,34 @@ function champTable(rows, split) {
     th.colSpan = e.rounds.length; th.title = e.dates;
     band.append(th);
   });
-  // Where a driver could still finish, from the same projection the title run-in
-  // draws: both ends of it, beside the total they have now. There is nothing to
-  // project once every round has been run.
-  // A race that is running is one still to win, so there is something to project
-  // even when it is the last of the season and REMAINING has already counted it.
-  const ends = REMAINING > 0 || !!D.live;
+  // Where a driver could still finish, beside the total they have now, projected
+  // over exactly the rounds this table counts - a race that is running included,
+  // as it stands, the same as in Total and Net. There is nothing to project once
+  // every round has been run.
+  const ends = REMAINING > 0;
   ['Pen', 'Total', 'Drops', 'Net'].concat(ends ? ['Min', 'Max'] : [])
     .concat(['W', 'FL']).forEach(h => {
     const th = el('th', null, h); th.rowSpan = 2; th.style.background = 'var(--surface-2)';
     th.style.color = 'var(--ink-2)'; band.append(th);
     if (h === 'Min' || h === 'Max') {
       th.style.color = 'var(--ink-3)';
-      const open = D.live ? 1 : 0;         // a race running is a race still to win
-      const n = REMAINING + open;
-      const also = open ? ' — the race running now among them, because it can still '
-        + 'be won and can still be scored nothing in' : '';
+      const n = REMAINING;
+      // Both are projected over the rounds this table counts, so a race that is
+      // running counts in them as it counts in Net - which is what stops a Min
+      // coming out below the number beside it. The title run-in asks the other
+      // question, and says so there.
+      const also = D.live ? `<br>Round ${D.live.round} is running now and is counted here `
+        + `as it stands, the same as in Total and Net, so neither of these can come out `
+        + `below the Net beside them. The title run-in puts that race back among the ones `
+        + `still to be won, and its two ends are wider apart for it.` : '';
       th.dataset.tip = h === 'Min'
-        ? `<b>Lowest they can finish on</b><br>Scores nothing in the ${n} `
-          + `race${n === 1 ? '' : 's'} left${also}, with the drop scores applied to `
-          + `what that leaves. Nobody can end up below their own Min.`
-        : `<b>Highest they can finish on</b><br>Wins all ${n} `
-          + `race${n === 1 ? '' : 's'} left${also} with the fastest lap in each, drop `
-          + `scores applied. Only one driver can actually have this.`;
+        ? `<b>Lowest they can finish on</b><br>Scores nothing in ${racesLeft()}, with the `
+          + `drop scores applied to what that leaves. Never below the Net they have now: a `
+          + `round nobody has driven yet is a zero the drops can take instead of a real `
+          + `result.${also}`
+        : `<b>Highest they can finish on</b><br>Wins ${n === 1 ? 'the one race left, with '
+            + 'the fastest lap in it' : `all ${n} races left with the fastest lap in each`}, `
+          + `drop scores applied. Only one driver can actually have this.${also}`;
     }
   });
   thead.append(band);
@@ -634,20 +641,26 @@ function champTable(rows, split) {
       pen.style.color = 'var(--ink-3)';
     }
     tr.append(pen);
+    // Which end this is, rather than which number: a guest's two ends are the
+    // same figure, and comparing the value with the floor would put the wrong
+    // sentence in one of the cells.
+    const projTip = top => `<b>${esc(t.driver)}</b><br>`
+      + (t.registered
+         ? (top
+            ? `Cannot finish above <b>${ceiling}</b>: ${REMAINING === 1 ? 'the one race left'
+                : `every one of the ${REMAINING} races left`} won with the fastest lap`
+            : `Cannot finish below <b>${floor}</b>: nothing more scored`)
+           + `, drop scores applied`
+           + (D.live ? `, and round ${D.live.round} counted as it stands.` : '.')
+         : 'A guest entry scores nothing at all, so both ends of the projection are the '
+           + 'total it has.');
     [[t.gross, 'tot'], [drops, 'num'], [t.net, 'num']]
-      .concat(ends ? [[floor, 'num proj'], [ceiling, 'num proj']] : [])
+      .concat(ends ? [[floor, 'num proj', projTip(false)], [ceiling, 'num proj', projTip(true)]]
+                   : [])
       .concat([[t.wins, 'num'], [t.fastest_laps, 'num']])
-      .forEach(([v, c]) => {
+      .forEach(([v, c, tip]) => {
         const td = el('td', c, String(v));
-        if (c === 'num proj') {
-          td.dataset.tip = `<b>${esc(t.driver)}</b><br>`
-            + (v === floor
-               ? `Cannot finish below <b>${floor}</b>: nothing more scored, drop scores `
-                 + `applied.`
-               : `Cannot finish above <b>${ceiling}</b>: every one of the ${REMAINING} `
-                 + `race${REMAINING === 1 ? '' : 's'} left won with the fastest lap.`)
-            + (t.registered ? '' : '<br>A guest entry scores nothing at all.');
-        }
+        if (tip) td.dataset.tip = tip;
         tr.append(td);
       });
     tbody.append(tr);
@@ -726,12 +739,17 @@ function standings() {
       + `hatched, and carry a driver's qualifying position where that meeting has qualified `
       + `and not yet raced. Hover any cell for the finishing position behind the number.`
       + (REMAINING > 0
-         ? ` Min and Max are the two ends of the title run-in's projection: where a driver `
-           + `ends up scoring nothing more, and where they end up winning everything left, `
-           + `fastest lap point included. Both are after drop scores.`
-           + (D.live ? ` A race that is running counts as one still to win in both, so a `
-             + `driver leading it has a Max that allows for taking the win and the fastest `
-             + `lap point off it, and a Min that allows for losing the lot.` : '')
+         ? ` Min and Max are the two ends of the season from here: where a driver ends up `
+           + `scoring nothing more, and where they end up winning everything left, fastest `
+           + `lap point included. Both are after drop scores, and both are projected over `
+           + `the rounds this table counts - so Min sits above Net rather than below it, `
+           + `because a round still to run is a zero the drops can take instead of a real `
+           + `result.`
+           + (D.live ? ` The race running now is counted in them as it is counted in Total `
+             + `and Net: as it stands. The title run-in is the other question - it puts a `
+             + `race nobody has finished back among the ones still to be won, so its floor `
+             + `allows for losing the lot and its ceiling for taking the win and the `
+             + `fastest lap point off the car leading it.` : '')
          : '')
       + (classed.length
          ? ` ${D.short} awards a title in ${classed.join(' and ')}, so the table is split into `
@@ -2527,6 +2545,22 @@ function roundScores(t, rounds, dropComponent) {
 /**
  * Projected final total, with `v` scored in each round still to run.
  *
+ * The rounds it counts are the rounds the table it is shown beside counts. A
+ * race that is running is counted into the standings as it stands, because that
+ * is the best account there is of where the championship is, so it is counted
+ * here as it stands too - which is what keeps Min from coming out below the Net
+ * in the same row. What a round still to run does to a total is only ever to
+ * raise it: the rounds nobody has driven yet are zeros the drop scores can take
+ * instead of a real result, so scoring nothing more cannot cost a driver points.
+ *
+ * `open` asks it the other way round, and is the title run-in's question rather
+ * than the default: a round that has started and not finished, handed back to
+ * the rounds still to come. Contention is about what can still happen, and what
+ * can still happen in a race nobody has finished is everything - the win, the
+ * fastest lap point with it, or nothing at all - so that tab projects a running
+ * race as unrun. The standings and the live view's own table, which print a Net
+ * with it counted, do not.
+ *
  * A penalty comes off the championship total rather than off a round, so it is
  * added after the drop rather than being discarded with a bad round. What the
  * drop itself discards differs by championship: the whole round score for the
@@ -2537,15 +2571,11 @@ function project(t, v, d, open) {
   // Against the series being shown, unless another is handed in: the live view
   // projects a table with the running race counted whether or not the page as a
   // whole is counting it.
-  //
-  // `open` is a round that has started and not finished. It is counted with the
-  // rest of the season everywhere else, because it is the best account there is
-  // of where the championship stands - but a floor and a ceiling are about what
-  // can still happen, and what can still happen in a race that is running is
-  // everything: the win, the fastest lap point with it, or nothing at all. So
-  // the projection puts it back among the rounds still to come.
   d = d || D;
-  open = open === undefined ? (d.live ? d.live.round : null) : open;
+  // A guest entry is invisible for the allocation of points (reg 1.3.5) and
+  // scores nothing whatever it does in the races left, so both ends of its
+  // projection are the total it already has.
+  if (!t.registered) v = 0;
   const run = d === D && open == null ? runSet : new Set(d.roundsRun);
   if (open != null) run.delete(open);
   const partOnly = d.dropComponent === 'race_points';
@@ -2573,19 +2603,29 @@ function quantile(arr, q) {
 
 /** The projection for one set of drivers; `split` ranks them by class. */
 function runInModel(rows, split) {
+  // This tab is the one that puts a running race back among the races still to
+  // win: who can still take the title turns on what is still to be won, not on
+  // where the cars happen to be on the lap they are on. Everywhere a Net is
+  // printed beside these numbers the round is counted as it stands instead.
+  const open = D.live ? D.live.round : null;
   return rows.map(t => {
     // form band is about race pace, so it uses the round score rather than the
-    // penalty-adjusted total
-    const entered = D.roundsRun.map(r => t.rounds[String(r)])
+    // penalty-adjusted total - and not a race still running, whose score is
+    // where a car has got to rather than how it went.
+    const entered = D.roundsRun.filter(r => r !== open).map(r => t.rounds[String(r)])
       .filter(Boolean).map(x => x.score);
-    const q1 = Math.round(quantile(entered, .25));
-    const q3 = Math.round(quantile(entered, .75));
-    const med = Math.round(quantile(entered, .5));
+    // A driver whose only round is the one being run has no finished race to
+    // read a form band off; nothing scored is the honest stand-in for it.
+    const band = entered.length ? entered : [0];
+    const q1 = Math.round(quantile(band, .25));
+    const q3 = Math.round(quantile(band, .75));
+    const med = Math.round(quantile(band, .5));
     return {
       t, entered, rank: (split ? t.cls_pos : t.pos) || t.pos,
-      floor: project(t, 0),             // scores nothing in the remaining races
-      ceiling: project(t, maxRace()),   // wins every remaining race with fastest lap
-      bodyLo: project(t, q1), bodyHi: project(t, q3), mid: project(t, med),
+      floor: project(t, 0, D, open),            // scores nothing in the races left
+      ceiling: project(t, maxRace(), D, open),  // wins them all, with fastest lap
+      bodyLo: project(t, q1, D, open), bodyHi: project(t, q3, D, open),
+      mid: project(t, med, D, open),
       formLo: q1, formHi: q3, formMid: med,
     };
   });
@@ -2629,10 +2669,15 @@ function runin() {
          + `has to beat the class they are in.`
        : '') }));
 
+  // Where the races left are, by meeting rather than by round - and a meeting
+  // counts as having races left if it has a round nobody has run, which is not
+  // the same as having no results yet: the Snetterton sheet carries three races
+  // and the last of them is still to come.
+  const where = D.events.filter(e => e.rounds.some(r => !runSet.has(r))).map(e => e.name);
   const cells = [
     ['Races remaining', togo,
-     (open ? 'the one running, then ' : '')
-     + D.events.filter(e => !e.source).map(e => e.name).join(' and ')],
+     (open ? 'the one running now' + (where.length ? ', then ' : '') : '')
+     + where.join(' and ')],
     ['Maximum still available', togo * maxRace(),
      `${togo} × ${D.scale} for a win + 1 fastest lap`],
   ];
@@ -4629,16 +4674,19 @@ function liveImpact(base, v, d) {
   // that skips has to explain itself; the whole championship is a dozen rows
   // more and explains itself.
   const reg = d.table.filter(t => t.registered);
-  // Both ends of the season with this race counted, from the same projection the
-  // title run-in draws - so the question that tab answers can be asked of a race
-  // that is still running.
+  // Both ends of the season with this race counted as it stands, which is what
+  // this table is: where the championship ends up if it finishes like this. The
+  // Net beside them counts the race the same way, so neither end can come out on
+  // the wrong side of it. The title run-in asks it of a race still to be won.
   const left = d.roundsTotal - d.roundsRun.length;
+  // "the one race after it", and nothing at all where this is the last round.
+  const after = left === 1 ? 'the one race after it' : `the ${left} races after it`;
   const rows = reg.map(t => {
     const b = before.get(t.driver) || {};
     const s = t.rounds[String(v.scored.round)];
     const move = (b.pos || 0) - (t.pos || 0);
-    const floor = project(t, 0, d, v.scored.round);
-    const ceiling = project(t, maxRace(d), d, v.scored.round);
+    const floor = project(t, 0, d);
+    const ceiling = project(t, maxRace(d), d);
     return `<tr><td class="stick1 num mono" data-c="pos">${t.pos}</td>`
       + `<td class="mv" data-c="move">${move ? liveMove(-move)
           : '<span style="color:var(--ink-3)">·</span>'}</td>`
@@ -4650,13 +4698,21 @@ function liveImpact(base, v, d) {
           : s.status.toLowerCase() + (s.score ? ' +' + s.score : '')}</td>`
       + `<td class="num mono" data-c="total"><b>${t.gross}</b></td>`
       + `<td class="num mono" data-c="net">${t.net}</td>`
-      + `<td class="num mono proj" data-c="min" data-tip="${esc(t.driver)} cannot finish below `
-      + `${floor}: nothing scored in this race or in the ${left} after it. A race `
-      + `that is still running can still be scored nothing in.">${floor}</td>`
+      + `<td class="num mono proj" data-c="min" data-tip="${esc(t.driver)} ends the season on `
+      + `${floor} if this race finishes as it stands`
+      // With nothing after this race there is no zero left for the drops to take,
+      // so the floor is the Net itself rather than something above it.
+      + (left
+         ? ` and they score nothing in ${after}. It is never below the Net beside it `
+           + `because a round still to run is a zero the drop scores can take instead of a `
+           + `real result.`
+         : ', the last round of the season - so it is the Net beside it, with nothing '
+           + 'left to project.')
+      + `">${floor}</td>`
       + `<td class="num mono proj" data-c="max" data-tip="${esc(t.driver)} cannot finish above `
-      + `${ceiling}: this race won with the fastest lap, and every one of the `
-      + `${left} after it the same. The race running now is still to win, so it `
-      + `counts here as one of them.">${ceiling}</td></tr>`;
+      + `${ceiling} from here: this race as it stands`
+      + `${left ? `, and ${after} won with the fastest lap` : ', the last round of the '
+          + 'season'}.">${ceiling}</td></tr>`;
   }).join('');
   return { rows,
     html: `<div class="scroller"><table class="deltatab" id="liveImpactTab"><thead><tr>`
@@ -4823,10 +4879,13 @@ function livePanel(base, v, p) {
         + `<details class="tv"><summary>How this is worked out</summary>`
         + `<p class="sub" style="margin:8px 0 0">Round ${v.scored.round} scored under `
         + `<span class="reg">1.6.1</span> from the order above, with the fastest lap point `
-        + `and the drop scores applied. Min and Max carry it into the title run-in: where `
-        + `each driver ends the season if they score nothing after this race, and where they `
-        + `end it if they win everything left. Provisional in every sense — the race is still `
-        + `running, and the classification is the stewards' to write.</p></details>`;
+        + `and the drop scores applied. Min and Max carry it to the end of the season: where `
+        + `each driver ends up if this race finishes as it stands and they score nothing after `
+        + `it, and where they end up if it finishes as it stands and they win everything left. `
+        + `Both count this race exactly as Total and Net do, so Min is never below the Net `
+        + `beside it. The title run-in asks the other question, of a race still to be won. `
+        + `Provisional in every sense — the race is still running, and the classification is `
+        + `the stewards' to write.</p></details>`;
     }
     if (LIVE.rc.length) {
       body += '<h2>Race control</h2><div class="notes">'
