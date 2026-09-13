@@ -5,10 +5,12 @@ timings for the 2026 Caterham championships: the five BARC series
 (Seven UK, 310R, 270R, Roadsport and Academy) and the two Caterham
 Graduates classes run by the BRSCC.
 
-**This repository is generated.** `index.html` is a single
-self-contained page published automatically from a private repository
-that holds the scrapers and the source documents. Edits here will be
-overwritten on the next publish.
+**This repository is generated.** It is published automatically from
+a private repository that holds the scrapers and the source documents:
+`index.html` is the page, and the files under `assets/` are the
+stylesheet, the script and the data it loads, each named by a hash of
+its own content so that a browser keeps the ones that have not
+changed. Edits here will be overwritten on the next publish.
 
 Results come from the meetings' timekeepers - [TSL Timing](https://www.tsl-timing.com/),
 the [Spa Euro Race](https://ser2026.racspa.be/) (Alkamel Systems) and

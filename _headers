@@ -1,0 +1,9 @@
+# Written by scripts/build_app.py - see the docstring there. Read by Netlify
+# and Cloudflare; GitHub Pages ignores this file and serves its own ten
+# minutes on everything.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+/
+  Cache-Control: public, max-age=0, must-revalidate
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
