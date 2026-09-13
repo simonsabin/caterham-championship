@@ -176,6 +176,11 @@ const ordinal = n => (n % 100 >= 11 && n % 100 <= 13) ? 'th'
 const CLASS_SEEN = {};
 function classesHere(d) {
   if (CLASS_SEEN[d.key]) return CLASS_SEEN[d.key];
+  // A championship whose races have not arrived - the split build asks for
+  // them when it is read, and the live view waits on every championship at a
+  // meeting before drawing one - can answer only with the classes it awards a
+  // title in. That answer is not kept: the rest of them come off the sheets.
+  if (!d.races) return (d.classes || []).slice();
   const seen = [];
   (d.classes || []).forEach(c => seen.push(c));      // the ones it awards a title in
   const rest = [];
@@ -187,18 +192,22 @@ function classesHere(d) {
   rest.sort((a, b) => a.localeCompare(b));
   return (CLASS_SEEN[d.key] = seen.concat(rest));
 }
-function classMark(cls) {
+/* `base` is the championship the mark belongs to: which shape a class gets is
+   that championship's own order, and the live view draws a table for every
+   championship at a meeting at once. It defaults to the one on show, which is
+   what the tabs that draw only that one want. */
+function classMark(cls, base) {
   if (!cls) return '';
-  const i = classesHere(D).indexOf(cls);
+  const i = classesHere(base || D).indexOf(cls);
   return `<span class="cmark ${CLASS_MARKS[i] || 'other'}" data-tip="${esc(cls)}" `
     + `role="img" aria-label="${esc(cls)}"></span>`;
 }
 /** The marks used in a table, spelled out underneath it. */
-function classLegend(used) {
-  const list = classesHere(D).filter(c => used.has(c));
+function classLegend(used, base) {
+  const list = classesHere(base || D).filter(c => used.has(c));
   if (list.length < 2) return '';
   return '<div class="legend classlegend">'
-    + list.map(c => `<span>${classMark(c)}${esc(c)}</span>`).join('')
+    + list.map(c => `<span>${classMark(c, base)}${esc(c)}</span>`).join('')
     + '</div>';
 }
 
@@ -1812,8 +1821,12 @@ function qualFieldChart(rows, cols, picked, onPick, refresh) {
  * which lap it is ordered on: "who was quickest on their third-best lap" is a
  * question about how much of a session a car had in it, and it is the same
  * question the chart's third column is drawing.
+ *
+ * `base` is the championship whose sheet this is, for the class marks: the
+ * live view puts the other championships' published qualifying under a shared
+ * session, and those are not the one on show.
  */
-function qualTable(q, rows, picked, onPick) {
+function qualTable(q, rows, picked, onPick, base) {
   const laps = rows.length;
   const rank = laps ? Math.min(qualRank, Math.max(...rows.map(r => r.best.length)) - 1) : 0;
   const lap = r => (r ? r.best[rank] : null);
@@ -1871,7 +1884,7 @@ function qualTable(q, rows, picked, onPick) {
       const td = el('td', c, String(v));
       if (i === 2) td.innerHTML = driverCell(String(v), r
         ? [`<span class="swatch" style="background:${r.colour}"></span>`] : []);
-      if (i === 3 && e.cls) { td.innerHTML = classMark(e.cls); used.add(e.cls); }
+      if (i === 3 && e.cls) { td.innerHTML = classMark(e.cls, base); used.add(e.cls); }
       tr.append(td);
     });
     if (r && onPick) tr.addEventListener('click', () => onPick(e.no));
@@ -1880,7 +1893,7 @@ function qualTable(q, rows, picked, onPick) {
   tb.append(body); sc.append(tb);
   const out = el('div');
   out.append(sc);
-  const legend = classLegend(used);
+  const legend = classLegend(used, base);
   if (legend) { const l = el('div'); l.innerHTML = legend; out.append(l.firstChild); }
   if (laps) out.append(Object.assign(el('p', 'sub'), { textContent:
     (rank ? `Ranked on each car’s ${QUAL_PLACE[rank].toLowerCase()}-best counting lap, `
@@ -4475,10 +4488,18 @@ function liveTable(base, v, live, id = 'liveOrderTab') {
     const gain = nets && t && nets.has(t.driver) ? nets.get(t.driver) : null;
     const cls = r.state === CAR_GONE || r.state === CAR_DSQ ? 'gone'
       : r.state === CAR_PIT ? 'pit' : r.missing ? 'gone' : r.onGrid ? 'ongrid' : '';
-    if (r.cls) used.add(r.cls);
+    // Which class a car is in is its championship's answer, off the same table
+    // the standings mark, and not what the feed prints in its own class
+    // column: that is the championship's name - "Caterham 270R" - which is no
+    // class of that championship's at all, so every row in the running order
+    // came out as the blank outline that stands for a class nothing is known
+    // about. A driver in no class but the championship itself is unmarked
+    // here for the same reason the standings leave them unmarked.
+    const mark = t && t.cls && t.cls !== 'Championship' ? t.cls : '';
+    if (mark) used.add(mark);
     const who = t
       ? driverCell(t.driver, [t.registered ? '' : metaChip('Guest'),
-                              classMark(r.cls), carChip(r.no)])
+                              classMark(mark, base), carChip(r.no)])
       : driverCell(r.name || '—', [v.foreign ? '' : metaChip('Not in the table'), carChip(r.no)]);
     const fastest = quickest != null && r.id === quickest;
     const point = v.scored && v.scored.flDriver && t && t.driver === v.scored.flDriver;
@@ -4546,7 +4567,7 @@ function liveTable(base, v, live, id = 'liveOrderTab') {
     html: `<div class="scroller"><table class="livetab" id="${id}"><thead><tr>`
       + cols.map(([k, h]) => `<th data-c="${k}" class="${h && h !== 'Driver' ? 'num' : ''}`
         + `${k === 'pos' ? ' stick1' : k === 'driver' ? ' stick2' : ''}">${h}</th>`).join('')
-      + `</tr></thead><tbody>${rows}</tbody></table></div>${classLegend(used)}` };
+      + `</tr></thead><tbody>${rows}</tbody></table></div>${classLegend(used, base)}` };
 }
 
 /**
@@ -6190,7 +6211,7 @@ function liveEventExtra(p, ev, focus, v, watching) {
       + `<p class="sub" style="margin-top:0">${esc(timerName())}’s classification of this session, `
       + `read by the build${q.start ? ` — ran ${esc(q.start)}${q.finish ? '–' + esc(q.finish) : ''}` : ''}. `
       + `The <a href="#${SEASON.year}/${b.key}/qualifying">Qualifying</a> page has it lap by lap.</p>`;
-    d.append(qualTable(q, [], null, null));
+    d.append(qualTable(q, [], null, null, b));
     node.append(d);
   });
   linkRegs(node);
