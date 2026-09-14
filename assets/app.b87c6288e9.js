@@ -275,6 +275,16 @@ function penaltyWords(d) {
   return d.imposed_by && d.imposed_by !== 'clerk' ? `${words} (${d.imposed_by})` : words;
 }
 
+/**
+ * What the link under a decision goes to, which is not always a decision.
+ *
+ * A penalty applied in the classification has no decision sheet behind it -
+ * the results are where it is published and the only place it is - so the link
+ * says so rather than promising a document that was never written.
+ */
+const sourceWords = d => grads() ? 'table'
+  : d.imposed_by === 'race direction' ? 'classification' : 'decision sheet';
+
 /** The article breached. A bare number is Motorsport UK's; Spa names its own. */
 function articleWords(d) {
   if (!d.offence) return '';
@@ -309,7 +319,7 @@ function decisionLine(d, withCar = true) {
     + (d.offence ? `, <span class="mono ncr">${esc(articleWords(d))}</span>` : '')
     + (cost ? `. ${cost}` : '')
     + (d.what ? `. ${esc(d.what)}` : '')
-    + (d.source ? ` <a href="${esc(d.source)}">${grads() ? 'table' : 'decision sheet'}</a>` : '');
+    + (d.source ? ` <a href="${esc(d.source)}">${sourceWords(d)}</a>` : '');
 }
 
 /**
@@ -853,8 +863,9 @@ function deductions() {
       td: d => d.deduction ? '−' + d.deduction : '—' },
     { th: 'BWP', cls: 'num mono', show: !!D.behaviour && some(d => d.bwp),
       td: d => d.bwp || '—' },
-    { th: grads() ? 'Table' : 'Sheet', cls: '', show: true,
-      td: d => (d.source ? `<a href="${esc(d.source)}">${grads() ? 'table' : 'sheet'}</a>` : '—')
+    { th: grads() ? 'Table' : 'Source', cls: '', show: true,
+      td: d => (d.source
+          ? `<a href="${esc(d.source)}">${sourceWords(d).replace('decision ', '')}</a>` : '—')
         + (d.provisional ? ' <span class="chip">provisional</span>' : '') },
   ].filter(c => c.show);
 
