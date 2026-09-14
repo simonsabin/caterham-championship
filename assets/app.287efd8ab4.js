@@ -439,6 +439,159 @@ document.addEventListener('click', e => {
 addEventListener('scroll', hideTip, true);
 addEventListener('resize', hideTip);
 
+/* ---------------------------------------------------------- components */
+/**
+ * The two things a tab on this page is nearly always made of: a table, and a
+ * row of buttons that says which one.
+ *
+ * 01-util.js already holds what a *cell* is made of - a driver, a class mark,
+ * a chip - and that is why a column of names is the same width wherever it
+ * appears. What was never written down is what a *table* is made of, so each
+ * tab derived it again: eight places built a `.scroller` around a `<table>`
+ * and worked out the column classes from the column's position, `i > 3` for
+ * the ones that are numbers and `i === 2` for the one that sticks. Add a
+ * column in the middle of such a table and every rule after it means
+ * something else, silently, with the table still looking almost right.
+ *
+ * The picker had gone further: three copies of the same twenty lines, in
+ * Races, Qualifying and Radar, which had already drifted apart over which of
+ * them marks the chosen button as it builds and which waits until it draws.
+ *
+ * So: a column says what it is, and a picker is asked for rather than built.
+ * Neither of these is a framework and neither owns any state - they are the
+ * same DOM these tabs were writing by hand, written once.
+ */
+
+/**
+ * A row of choices: a button each on a screen with room, the same list as a
+ * select on one without (which is the stylesheet's doing, not this file's).
+ *
+ * `value` names an item and `text` labels it. `option` labels it differently
+ * in the select where a tab wants that - a session that is running says so in
+ * a word there and with a dot on the button, which is `adorn`. `attr` is the
+ * data attribute the buttons carry the value in: `data-round` for a race,
+ * because the standings reach a race by that button and so do the tests.
+ *
+ * Nothing is drawn until `show` is called, and `show` is what keeps the two
+ * controls saying the same thing. Both it and a click reach `onPick`, which
+ * is told which it was: a reader choosing a race writes that race into the
+ * address, and a tab opening on the newest one does not, and the difference
+ * between those two is not something the picker can work out for itself.
+ */
+function picker({ items, value, text, option, adorn, label, attr = 'key', onPick }) {
+  const node = el('div', 'picker');
+  const sel = el('select', 'picker-select');
+  if (label) sel.setAttribute('aria-label', label);
+  const picks = el('div', 'picker-buttons');
+  const byValue = new Map();
+
+  items.forEach(item => {
+    const v = String(value(item));
+    byValue.set(v, item);
+    sel.append(Object.assign(el('option', null, (option || text)(item)), { value: v }));
+    const b = el('button', null, text(item));
+    const mark = adorn && adorn(item);
+    if (mark) b.append(mark);
+    b.dataset[attr] = v;
+    b.addEventListener('click', () => show(item, true));
+    picks.append(b);
+  });
+  sel.addEventListener('change', () => {
+    const item = byValue.get(sel.value);
+    if (item) show(item, true);
+  });
+  node.append(sel, picks);
+
+  /** Draw one of them. `chosen` says a reader asked for it rather than the tab. */
+  function show(item, chosen) {
+    const v = String(value(item));
+    sel.value = v;
+    [...picks.children].forEach(b =>
+      b.setAttribute('aria-pressed', b.dataset[attr] === v));
+    if (onPick) onPick(item, !!chosen);
+  }
+  return { node, show };
+}
+
+/* What a column's own description is worth to the cells under it: a column of
+   numbers is centred and monospaced, and the one or two that hold their place
+   while the rest of the table scrolls under them are the sticky ones. Said by
+   the column rather than by its position, so that a column inserted in the
+   middle of a table takes its own rules with it. */
+const colClasses = c => [c.num ? 'num' : '', c.stick === 1 ? 'stick1' : '',
+                         c.stick === 2 ? 'stick2' : ''].filter(Boolean).join(' ');
+
+/**
+ * A table, as this page writes one: the scroller that caps its height, the
+ * head that says what the columns are, and a row per entry.
+ *
+ * A column is `{ head, num, stick, cls, cell, html, tint, bold }` - `cell`
+ * for text, `html` where the cell is one of the pieces from 01-util.js, and
+ * `tint` for the handful that are coloured by what they hold. Where a head is
+ * a drawing rather than a word it has `headHtml` and a `headCls` of its own:
+ * the judicial record's running total heads its column with the scale reg 4.3
+ * is read against.
+ *
+ * A row carries whatever it has to be found by later - `rowData` becomes the
+ * row's data attributes, which is how a tooltip is hung on it, how the Pen
+ * column finds a driver's decisions, and how `.said` rows pair up. `rowAfter`
+ * is the sentence under the facts: the judicial record's decisions are a row
+ * of numbers and then what the Clerk actually said, which is prose and cannot
+ * be a column without pushing every number off a phone.
+ *
+ * `legend` is drawn under the table and outside the scroller, because a
+ * legend that scrolls away with the rows explains nothing.
+ *
+ * The `.scroller` is the whole reason to hand back a fragment rather than a
+ * table: `capTables()` in 90-layout.js finds it by walking the page, so a
+ * table built here is capped without this file or its caller asking.
+ */
+function dataTable({ cols, rows, table, rowClass, rowData, rowAfter, legend }) {
+  const out = document.createDocumentFragment();
+  const sc = el('div', 'scroller'), tb = el('table', table || null);
+  tb.innerHTML = '<thead><tr>'
+    + cols.map(c => {
+      const cls = c.headCls || colClasses(c);
+      // A column with nothing to say about itself writes no attribute at all,
+      // rather than an empty one.
+      return `<th${cls ? ` class="${cls}"` : ''}>${c.headHtml || esc(c.head)}</th>`;
+    }).join('')
+    + '</tr></thead>';
+
+  const body = el('tbody');
+  rows.forEach(row => {
+    const tr = el('tr', (rowClass && rowClass(row)) || null);
+    Object.entries((rowData && rowData(row)) || {}).forEach(([k, v]) => {
+      if (v != null) tr.dataset[k] = v;
+    });
+    cols.forEach(c => {
+      const extra = typeof c.cls === 'function' ? c.cls(row) : c.cls;
+      const td = el('td', [colClasses(c), extra || ''].filter(Boolean).join(' '));
+      if (c.html) td.innerHTML = c.html(row);
+      else if (c.cell) td.textContent = String(c.cell(row));
+      const tint = c.tint && c.tint(row);
+      if (tint) td.style.color = tint;
+      if (c.bold) td.style.fontWeight = 600;
+      tr.append(td);
+    });
+    body.append(tr);
+    // The row's own sentence, which the caller builds because only it knows
+    // what the row is saying; it is handed the width to span.
+    const said = rowAfter && rowAfter(row, cols.length);
+    if (said) body.append(said);
+  });
+  tb.append(body); sc.append(tb); out.append(sc);
+
+  // The legend is built from what the rows turned out to hold - which classes
+  // actually appeared - so it is asked for after they are drawn, not before.
+  const marks = legend && legend();
+  if (marks) {
+    const box = el('div');
+    box.innerHTML = marks;
+    out.append(box.firstChild);
+  }
+  return out;
+}
 /* ----------------------------------------------------------- masthead */
 /** How far this series' table has been checked against Caterham's own. */
 function seriesNote() {
@@ -905,38 +1058,39 @@ function deductions() {
   // Graduates' deductions come off the club's table with no car number, no
   // article and no reg 4.3 behind them, which is three of these.
   const cols = [
-    { th: 'Rd', cls: 'num mono', show: true,
+    { head: 'Rd', num: true, cls: 'mono', show: true,
       // The round is the one thing here a reader might want to go and look at:
       // a decision is about a race, and the race is a tab away on this site.
-      td: d => d.round == null ? '—'
+      html: d => d.round == null ? '—'
         : `<a href="#${SEASON.year}/${D.key}/races/${d.round}"`
           + ` title="Round ${d.round} — ${esc((eventOf[d.round] || {}).name || '')}">`
           + `${d.round}</a>` },
-    { th: 'Car', cls: 'num mono', show: some(d => d.car),
-      td: d => d.car ? esc(d.car) : '—' },
-    { th: 'Driver', cls: '', show: true, td: d => esc(d.named || d.driver) },
-    { th: 'Penalty', cls: '', show: some(d => d.penalty),
-      td: d => esc(penaltyWords(d)) },
+    { head: 'Car', num: true, cls: 'mono', show: some(d => d.car),
+      cell: d => d.car || '—' },
+    { head: 'Driver', show: true, cell: d => d.named || d.driver },
+    { head: 'Penalty', show: some(d => d.penalty), cell: penaltyWords },
     // Its size, in the currency the penalty is charged in: seconds for a time
     // penalty, places for a grid or a position one.
-    { th: 'How much', cls: 'num mono', show: some(d => d.amount != null),
-      td: d => penaltySize(d) ? esc(penaltySize(d)) : '—' },
-    { th: 'Offence', cls: 'mono ncr', show: some(d => d.offence),
-      td: d => d.offence ? esc(articleWords(d)) : '—' },
-    { th: 'Lic', cls: 'num mono', show: some(d => d.licence_points != null),
-      td: d => d.licence_points == null ? '—' : d.licence_points },
-    { th: 'Pts', cls: 'num mono', show: true, alarm: true,
-      td: d => d.deduction ? '−' + d.deduction : '—' },
-    { th: 'BWP', cls: 'num mono', show: !!D.behaviour && some(d => d.bwp),
-      td: d => d.bwp || '—' },
+    { head: 'How much', num: true, cls: 'mono', show: some(d => d.amount != null),
+      cell: d => penaltySize(d) || '—' },
+    { head: 'Offence', cls: 'mono ncr', show: some(d => d.offence),
+      cell: d => d.offence ? articleWords(d) : '—' },
+    { head: 'Lic', num: true, cls: 'mono', show: some(d => d.licence_points != null),
+      cell: d => d.licence_points == null ? '—' : d.licence_points },
+    { head: 'Pts', num: true, cls: 'mono', show: true,
+      cell: d => d.deduction ? '−' + d.deduction : '—',
+      tint: d => (d.deduction ? 'var(--alarm)' : null) },
+    { head: 'BWP', num: true, cls: 'mono', show: !!D.behaviour && some(d => d.bwp),
+      cell: d => d.bwp || '—' },
     // Where that left them. The record is in the order the decisions were
     // taken, so this column read downwards is a driver's season against reg
     // 4.3's thresholds - climbing as points land, falling back as they lapse.
-    { th: `Running total${bwpAxis((D.behaviour || {}).thresholds || [])}`,
-      cls: '', thCls: 'bwp-head', show: !!D.behaviour && some(d => d.running != null),
-      td: d => d.running == null ? '' : bwpMeter(d.running, D.behaviour.thresholds) },
-    { th: grads() ? 'Table' : 'Source', cls: '', show: true,
-      td: d => (d.source
+    { head: 'Running total', headCls: 'bwp-head',
+      headHtml: `Running total${bwpAxis((D.behaviour || {}).thresholds || [])}`,
+      show: !!D.behaviour && some(d => d.running != null),
+      html: d => d.running == null ? '' : bwpMeter(d.running, D.behaviour.thresholds) },
+    { head: grads() ? 'Table' : 'Source', show: true,
+      html: d => (d.source
           ? `<a href="${esc(d.source)}">${sourceWords(d).replace('decision ', '')}</a>` : '—')
         + (d.provisional ? ' <span class="chip">provisional</span>' : '') },
   ].filter(c => c.show);
@@ -953,21 +1107,24 @@ function deductions() {
     + ` (<span class="reg">${D.penaltyReg}</span>), which a drop score cannot cancel.`
     + (D.behaviour ? ' Most of them carry Behaviour Warning Points as well, below.' : '')
     + '</p>';
-  const psc = el('div', 'scroller'), ptb = el('table', 'judicial');
-  ptb.innerHTML = '<thead><tr>'
-    + cols.map(c => `<th${c.thCls || c.cls.includes('num') ? ` class="`
-        + `${c.thCls || 'num'}"` : ''}>${c.th}</th>`).join('')
-    + '</tr></thead><tbody>'
-    + D.decisions.map(d => `<tr data-driver="${esc(d.driver)}"${d.what ? ' class="said"' : ''}>`
-      + cols.map(c => `<td class="${c.cls}"`
-        + `${c.alarm && d.deduction ? ' style="color:var(--alarm)"' : ''}>${c.td(d)}</td>`).join('')
-      + '</tr>'
-      // What the sheet actually says, under the row it belongs to: it is the
-      // part a reader came for, and it is a sentence rather than a column.
-      + (d.what ? `<tr class="why" data-driver="${esc(d.driver)}">`
-          + `<td colspan="${cols.length}"><div>${esc(d.what)}</div></td></tr>` : ''))
-      .join('') + '</tbody>';
-  psc.append(ptb); pen.append(psc);
+  pen.append(dataTable({
+    table: 'judicial',
+    cols,
+    rows: D.decisions,
+    rowClass: d => (d.what ? 'said' : ''),
+    // The Pen column in the table above scrolls to a driver's decisions and
+    // lights them up, which is what it looks for them by.
+    rowData: d => ({ driver: d.driver }),
+    // What the sheet actually says, under the row it belongs to: it is the
+    // part a reader came for, and it is a sentence rather than a column.
+    rowAfter: (d, width) => {
+      if (!d.what) return null;
+      const tr = el('tr', 'why');
+      tr.dataset.driver = d.driver;
+      tr.innerHTML = `<td colspan="${width}"><div>${esc(d.what)}</div></td>`;
+      return tr;
+    },
+  }));
   const bwp = behaviourPoints();
   if (bwp) pen.append(bwp);
   return pen;
@@ -1039,23 +1196,27 @@ function behaviourPoints() {
           + ` with it.` : '')
     + ` Caterham keep this register and publish none of it, so this is rebuilt`
     + ` from the sheets above and is not the official one.</p>`;
-  const sc = el('div', 'scroller'), tb = el('table', 'judicial');
-  tb.innerHTML = '<thead><tr><th class="num">Car</th><th>Driver</th>'
-    + '<th class="num">Now</th><th class="num">Peak</th>'
-    + '<th>Consequence</th></tr></thead><tbody>'
-    + b.drivers.map(r => `<tr data-driver="${esc(r.driver)}">`
-      + `<td class="num mono">${r.car ? esc(r.car) : '—'}</td>`
-      + `<td>${esc(r.driver)}</td>`
-      + `<td class="num mono"${r.active >= 3 ? ' style="color:var(--alarm)"' : ''}>`
-      + `${r.active}</td>`
-      + `<td class="num mono">${r.peak}</td>`
-      + `<td>${r.consequences.length
+  wrap.append(dataTable({
+    table: 'judicial',
+    rows: b.drivers,
+    // The same handle the record above carries, so a driver can be found in
+    // both by the one name.
+    rowData: r => ({ driver: r.driver }),
+    cols: [
+      { head: 'Car', num: true, cls: 'mono', cell: r => r.car || '—' },
+      { head: 'Driver', cell: r => r.driver },
+      // Three is where reg 4.3 starts to bite, so that is where the number
+      // starts to look like it.
+      { head: 'Now', num: true, cls: 'mono', cell: r => r.active,
+        tint: r => (r.active >= 3 ? 'var(--alarm)' : null) },
+      { head: 'Peak', num: true, cls: 'mono', cell: r => r.peak },
+      { head: 'Consequence', html: r => (r.consequences.length
           ? r.consequences.map(c => `<b>${c.bwp}</b> at round ${c.round}: ${esc(c.penalty)}`
               + (c.due === c.round ? ' — the final round of the year'
                  : c.due ? `, due round ${c.due}` : ', no further race yet')).join('<br>')
-          : '<span class="sub" style="margin:0">—</span>'}</td></tr>`)
-      .join('') + '</tbody>';
-  sc.append(tb); wrap.append(sc);
+          : '<span class="sub" style="margin:0">—</span>') },
+    ],
+  }));
   return wrap;
 }
 
@@ -1752,51 +1913,37 @@ function races() {
     + 'worth. Guest entries are shown greyed — they take no points and the drivers behind them '
     + 'move up a place for scoring. Where the timing company published a lap chart, the race is '
     + 'drawn lap by lap above it: click any point of it to play the broadcast from that moment.' }));
-  const pick = el('div', 'picker');
-  const sel = el('select', 'picker-select');
-  sel.setAttribute('aria-label', 'Select race');
-  const picks = el('div', 'picker-buttons');
   const host = el('div');
   const latest = D.races[D.races.length - 1];
-  function chooseRace(r, chosen) {
-    renderRace(host, r);
-    raceRound = chosen ? r.round : null;
-    sel.value = String(r.round);
-    [...picks.children].forEach(x => x.setAttribute('aria-pressed', x.dataset.round === String(r.round)));
-    if (chosen && currentTab === 'races') writeHash();
-  }
+  const pick = picker({
+    // Newest first: the race that has just run is the one being looked for.
+    items: [...D.races].reverse(),
+    value: r => r.round,
+    text: r => `R${r.round} · ${r.eventName.split(' ')[0]}`,
+    label: 'Select race',
+    // The standings reach a race by this attribute, and so do the tests.
+    attr: 'round',
+    onPick: (r, chosen) => {
+      renderRace(host, r);
+      raceRound = chosen ? r.round : null;
+      if (chosen && currentTab === 'races') writeHash();
+    },
+  });
   // Arriving on a link that names a race is a choice too - it just does not
   // need writing back into the address it came out of.
   showRace = round => {
     const r = D.races.find(x => x.round === Number(round));
-    if (r) chooseRace(r, true);
+    if (r) pick.show(r, true);
     return !!r;
   };
-  // Newest first: the race that has just run is the one being looked for.
-  [...D.races].reverse().forEach(r => {
-    const label = `R${r.round} · ${r.eventName.split(' ')[0]}`;
-    sel.append(Object.assign(el('option', null, label), { value: String(r.round) }));
-    const b = el('button', null, label);
-    b.dataset.round = String(r.round);
-    b.setAttribute('aria-pressed', r.round === latest.round);
-    b.addEventListener('click', () => chooseRace(r, true));
-    picks.append(b);
-  });
-  sel.value = String(latest.round);
-  sel.addEventListener('change', () => {
-    const r = D.races.find(x => String(x.round) === sel.value);
-    if (!r) return;
-    chooseRace(r, true);
-  });
-  pick.append(sel, picks);
-  p.append(pick, host);
+  p.append(pick.node, host);
   // Whatever the address asked for while the races were still on their way -
   // and if it asked for a round this championship does not have, the tab keeps
   // the newest race and the address is rewritten without it.
   const asked = wantedRace;
   wantedRace = null;
   if (asked == null || !showRace(asked)) {
-    chooseRace(latest, false);
+    pick.show(latest, false);
     if (asked != null && currentTab === 'races') writeHash();
   }
 }
@@ -1837,55 +1984,52 @@ function renderRace(host, r) {
     if (row.children.length) host.append(row);
   }
 
-  const sc = el('div', 'scroller'), tb = el('table', 'results');
-  tb.innerHTML = '<thead><tr>'
-    + ['Pos', 'No', 'Driver', 'Class', 'Laps', 'Race time', 'Best lap', 'On', 'Grid',
-       'Race pts', 'FL', 'Pen', 'Round total']
-      .map((x, i) => `<th class="${i > 3 ? 'num' : ''}`
-        + `${i === 0 ? ' stick1' : i === 2 ? ' stick2' : ''}">${x}</th>`).join('')
-    + '</tr></thead>';
-  const body = el('tbody');
+  // Which classes these rows turned out to hold, for the legend under them.
   const used = new Set();
   // Which cars the Clerk looked at on this round. A classification says where a
   // car finished and not that its finish was argued over, so the rows that were
   // are marked, and the decisions themselves are under the table.
   const onThisRace = decisionsOn(r.round);
   const judgedCars = new Set(onThisRace.map(d => d.car).filter(Boolean));
-  r.entries.forEach(e => {
-    const tr = el('tr', (e.pos === 1 ? 'win ' : '') + (e.status !== 'classified' ? 'dnf' : '')
-      + (e.guest ? ' guest' : '') + (judgedCars.has(e.no) ? ' judged' : ''));
-    if (judgedCars.has(e.no)) {
-      tr.dataset.tip = `<b>${esc(e.driver)}</b> — a judicial decision on this race`
+  // A guest is said so beside the name - except where the class column is
+  // already saying it, which is what a series that prints Trophy or Guest on
+  // its own sheet does.
+  const guestName = e => e.driver
+    + (e.guest && !(grads() && e.cls) ? ' (guest)' : '');
+  const scored = e => e.status === 'classified' || e.pts;
+  host.append(dataTable({
+    table: 'results',
+    rows: r.entries,
+    rowClass: e => (e.pos === 1 ? 'win ' : '') + (e.status !== 'classified' ? 'dnf' : '')
+      + (e.guest ? ' guest' : '') + (judgedCars.has(e.no) ? ' judged' : ''),
+    rowData: e => ({ tip: judgedCars.has(e.no)
+      ? `<b>${esc(e.driver)}</b> — a judicial decision on this race`
         + `<br>${onThisRace.filter(d => d.car === e.no)
             .map(d => esc(penaltyWords(d)) + (penaltySize(d) ? ` ${esc(penaltySize(d))}` : ''))
-            .join('<br>')}<br>Listed in full under the classification.`;
-    }
-    const cells = [
-      [e.pos ?? e.status, 'stick1'], [e.no, 'num'],
-      // the class column already says Trophy or Guest where a series prints it
-      [e.driver + (e.guest && !(grads() && e.cls) ? ' (guest)' : ''), 'stick2 driver'],
-      [e.cls || '—', 'num cls'],
-      [e.laps ?? '—', 'num'], [e.time || '—', 'num'], [e.best || '—', 'num'],
-      [e.on ?? '—', 'num'], [e.grid ?? '—', 'num'],
-      [e.status === 'classified' || e.pts ? e.pts : '—', 'num'],
-      [e.fl ? '+1' : '', 'num'], [e.pen || '', 'num'],
-      [e.status === 'classified' || e.pts || e.fl || e.pen ? e.total : '—', 'num'],
-    ];
-    cells.forEach(([v, c], i) => {
-      const td = el('td', c, String(v));
+            .join('<br>')}<br>Listed in full under the classification.`
+      : null }),
+    cols: [
+      { head: 'Pos', stick: 1, cell: e => e.pos ?? e.status },
+      { head: 'No', num: true, cell: e => e.no },
       // The driver column is written the way every other table writes one.
-      if (i === 2) td.innerHTML = driverCell(String(v), []);
-      if (i === 3 && e.cls) { td.innerHTML = classMark(e.cls); used.add(e.cls); }
-      if (i === 11 && e.pen) td.style.color = 'var(--alarm)';
-      if (i === 12) { td.style.fontWeight = 600; td.classList.add('mono'); }
-      tr.append(td);
-    });
-    body.append(tr);
-  });
-  tb.append(body); sc.append(tb); host.append(sc);
-  // What the marks in the class column mean, across the foot of the table.
-  const legend = classLegend(used);
-  if (legend) { const l = el('div'); l.innerHTML = legend; host.append(l.firstChild); }
+      { head: 'Driver', stick: 2, cls: 'driver', html: e => driverCell(guestName(e), []) },
+      { head: 'Class', num: true, cls: 'cls',
+        html: e => { if (!e.cls) return '—'; used.add(e.cls); return classMark(e.cls); } },
+      { head: 'Laps', num: true, cell: e => e.laps ?? '—' },
+      { head: 'Race time', num: true, cell: e => e.time || '—' },
+      { head: 'Best lap', num: true, cell: e => e.best || '—' },
+      { head: 'On', num: true, cell: e => e.on ?? '—' },
+      { head: 'Grid', num: true, cell: e => e.grid ?? '—' },
+      { head: 'Race pts', num: true, cell: e => (scored(e) ? e.pts : '—') },
+      { head: 'FL', num: true, cell: e => (e.fl ? '+1' : '') },
+      { head: 'Pen', num: true, cell: e => e.pen || '',
+        tint: e => (e.pen ? 'var(--alarm)' : null) },
+      { head: 'Round total', num: true, cls: 'mono', bold: true,
+        cell: e => (scored(e) || e.fl || e.pen ? e.total : '—') },
+    ],
+    // What the marks in the class column mean, across the foot of the table.
+    legend: () => classLegend(used),
+  }));
 
   if (r.notes && r.notes.length) {
     const n = el('div', 'notes');
@@ -2008,41 +2152,34 @@ function qualifying() {
       'No qualifying session of this championship has been published yet.' }));
     return;
   }
-  const pick = el('div', 'picker');
-  const sel = el('select', 'picker-select');
-  sel.setAttribute('aria-label', 'Select qualifying session');
-  const picks = el('div', 'picker-buttons');
   const host = el('div');
   const latest = sessions[sessions.length - 1];
-  const choose = q => {
-    renderQual(host, q);
-    sel.value = q.event;
-    [...picks.children].forEach(x =>
-      x.setAttribute('aria-pressed', x.dataset.ev === q.event));
-  };
-  [...sessions].reverse().forEach(q => {
+  const sessionText = q => {
     const ev = D.events.find(e => e.key === q.event);
-    const label = `${ev ? 'R' + ev.rounds[0] : 'Q'} · ${q.eventName.split(' ')[0]}`;
-    sel.append(Object.assign(el('option', null, label + (q.live ? ' · live' : '')),
-                             { value: q.event }));
-    const b = el('button', null, label);
+    return `${ev ? 'R' + ev.rounds[0] : 'Q'} · ${q.eventName.split(' ')[0]}`;
+  };
+  const pick = picker({
+    items: [...sessions].reverse(),
+    value: q => q.event,
+    text: sessionText,
+    // The select has no room for a dot, so there it is said in a word.
+    option: q => sessionText(q) + (q.live ? ' · live' : ''),
     // The dot the Live tab wears while a session runs, on the session itself.
-    if (q.live && !q.ended) b.append(el('span', 'livedot'));
-    b.dataset.ev = q.event;
+    adorn: q => (q.live && !q.ended ? el('span', 'livedot') : null),
+    label: 'Select qualifying session',
+    attr: 'ev',
     // A reader's choice is remembered; the tab's own default is not, so that
     // a session which starts running is shown to anyone who has not chosen.
-    b.addEventListener('click', () => { qualPicked = `${D.key}/${q.event}`; choose(q); });
-    picks.append(b);
+    onPick: (q, chosen) => {
+      if (chosen) qualPicked = `${D.key}/${q.event}`;
+      renderQual(host, q);
+    },
   });
-  sel.addEventListener('change', () => {
-    const q = sessions.find(x => x.event === sel.value);
-    if (q) { qualPicked = `${D.key}/${q.event}`; choose(q); }
-  });
-  pick.append(sel, picks);
-  p.append(pick, host);
+  p.append(pick.node, host);
   // The session the reader was on, if it is still here; the newest otherwise -
-  // which, while one is running, is the one running.
-  choose(sessions.find(q => `${D.key}/${q.event}` === qualPicked) || latest);
+  // which, while one is running, is the one running. Not a fresh choice: it is
+  // the one already made, or none, and neither should overwrite what is held.
+  pick.show(sessions.find(q => `${D.key}/${q.event}` === qualPicked) || latest, false);
 }
 
 function renderQual(host, q) {
@@ -2892,24 +3029,13 @@ function radar() {
   }
 
   // Which circuit, in the picker every other tab chooses a race with.
-  const pick = el('div', 'picker');
-  const sel = el('select', 'picker-select');
-  sel.setAttribute('aria-label', 'Select circuit');
-  const picks = el('div', 'picker-buttons');
-  D.events.forEach(e => {
-    sel.append(Object.assign(el('option', null, e.name), { value: e.key }));
-    const b = el('button', null, e.name);
-    b.dataset.key = e.key;
-    b.setAttribute('aria-pressed', e.key === start.key);
-    b.addEventListener('click', () => choose(e));
-    picks.append(b);
+  const pick = picker({
+    items: D.events,
+    value: e => e.key,
+    text: e => e.name,
+    label: 'Select circuit',
+    onPick: radarGoTo,
   });
-  sel.value = start.key;
-  sel.addEventListener('change', () => {
-    const e = D.events.find(x => x.key === sel.value);
-    if (e) choose(e);
-  });
-  pick.append(sel, picks);
 
   const head = el('div', 'radarhead');
   const box = el('div', 'radarmap');
@@ -2939,15 +3065,12 @@ function radar() {
     + 'were on the day is on the classification sheet, which is the only record of it on '
     + 'this site.';
 
-  p.append(pick, head, box, tv, tvnote, legend, note);
+  p.append(pick.node, head, box, tv, tvnote, legend, note);
   RADAR.els = { head, box, tv, tvnote, at: null };
 
-  function choose(e) {
-    sel.value = e.key;
-    [...picks.children].forEach(b => b.setAttribute('aria-pressed', b.dataset.key === e.key));
-    radarGoTo(e);
-  }
-  choose(start);
+  // The map is pointed at a circuit only once there is somewhere to draw it,
+  // which is why this is the last thing the tab does rather than the first.
+  pick.show(start);
 }
 
 /** Point the map at one meeting's circuit, and draw the head above it. */
@@ -3265,19 +3388,21 @@ function runin() {
     const det = el('details', 'tv');
     det.innerHTML = `<summary>Show ${s.name ? esc(s.name) + '’s' : 'the same'} figures as a `
       + `table</summary>`;
-    const sc = el('div', 'scroller'), tb = el('table');
-    tb.innerHTML = '<thead><tr><th>Pos</th><th>Driver</th><th class="num">Now (net)</th>'
-      + '<th class="num">Worst finish</th><th class="num">Form band</th><th class="num">Best finish</th>'
-      + '<th class="num">Form score</th><th>Title</th></tr></thead><tbody>'
-      + s.m.map(d => `<tr class="${d.live ? '' : 'outrow'}"><td class="num mono">${d.rank}</td>`
-        + `<td>${esc(d.t.driver)}</td><td class="num mono">${d.t.net}</td>`
-        + `<td class="num mono">${d.floor}</td>`
-        + `<td class="num mono">${d.bodyLo}–${d.bodyHi}</td>`
-        + `<td class="num mono">${d.ceiling}</td>`
-        + `<td class="num mono">${d.formLo}–${d.formHi}</td>`
-        + `<td>${d.live ? 'In contention' : 'Out'}</td></tr>`).join('')
-      + '</tbody>';
-    sc.append(tb); det.append(sc); p.append(det);
+    det.append(dataTable({
+      rows: s.m,
+      rowClass: d => (d.live ? '' : 'outrow'),
+      cols: [
+        { head: 'Pos', num: true, cls: 'mono', cell: d => d.rank },
+        { head: 'Driver', cell: d => d.t.driver },
+        { head: 'Now (net)', num: true, cls: 'mono', cell: d => d.t.net },
+        { head: 'Worst finish', num: true, cls: 'mono', cell: d => d.floor },
+        { head: 'Form band', num: true, cls: 'mono', cell: d => `${d.bodyLo}–${d.bodyHi}` },
+        { head: 'Best finish', num: true, cls: 'mono', cell: d => d.ceiling },
+        { head: 'Form score', num: true, cls: 'mono', cell: d => `${d.formLo}–${d.formHi}` },
+        { head: 'Title', cell: d => (d.live ? 'In contention' : 'Out') },
+      ],
+    }));
+    p.append(det);
   });
 
   const lg = el('div', 'legend');
@@ -6179,44 +6304,42 @@ function enduroStats(ev) {
 function enduroTable(ev, rows, kind) {
   const race = kind === 'race';
   const mine = D && D.key;
-  const sc = el('div', 'scroller'), tb = el('table', 'results enduro');
-  const cols = race
-    ? ['Pos', 'No', 'Class', 'Team / drivers', 'Laps', 'Race time', 'Gap', 'Diff',
-       'Best lap', 'On', 'Grid', '±']
-    : ['Pos', 'No', 'Class', 'Team / drivers', 'Best lap', 'On', 'Laps', 'Gap', 'Diff', 'MPH'];
-  tb.innerHTML = '<thead><tr>' + cols.map((x, i) =>
-    `<th class="${i > 3 ? 'num' : ''}${i === 0 ? ' stick1' : i === 3 ? ' stick2' : ''}"`
-    + `>${x}</th>`).join('') + '</tr></thead>';
-  const body = el('tbody');
-  rows.forEach(e => {
-    const ours = enduroSeriesOf(ev, e.cls) === mine;
-    const tr = el('tr', (e.pos === 1 ? 'win ' : '')
-      + (e.status && e.status !== 'classified' ? 'dnf ' : '') + (ours ? 'ours' : ''));
-    const cells = race
-      ? [[e.pos ?? e.status ?? '—', 'stick1'], [e.no, 'num'], [e.cls, 'cls'],
-         [e.team, 'stick2 crewcell'],
-         [e.laps ?? '—', 'num'], [e.time || '—', 'num'], [e.gap || '—', 'num'],
-         [e.diff || '—', 'num'], [e.best || '—', 'num'], [e.best_on ?? '—', 'num'],
-         [e.grid ?? '—', 'num'], [e.gained ?? '—', 'num gained']]
-      : [[e.pos ?? '—', 'stick1'], [e.no, 'num'], [e.cls, 'cls'],
-         [e.team, 'stick2 crewcell'],
-         [e.time || '—', 'num'], [e.best_on ?? '—', 'num'], [e.laps ?? '—', 'num'],
-         [e.gap || '—', 'num'], [e.diff || '—', 'num'], [e.mph ?? '—', 'num']];
-    cells.forEach(([v, c], i) => {
-      const td = el('td', c, String(v));
-      if (i === 2) td.innerHTML = enduroClassMark(ev, e.cls);
-      if (i === 3) td.innerHTML = enduroCrew(e);
-      // A car that gained places went forward; one that lost them went back.
-      if (c && c.indexOf('gained') >= 0 && typeof e.gained === 'number' && e.gained) {
-        td.textContent = (e.gained > 0 ? '+' : '') + e.gained;
-        td.style.color = e.gained > 0 ? 'var(--s1)' : 'var(--alarm)';
-      }
-      tr.append(td);
-    });
-    body.append(tr);
+  // The four columns both sheets share, and then the ones that differ: a race
+  // is read by how long it took, qualifying by the one lap that counted.
+  const who = [
+    { head: 'Pos', stick: 1, cell: e => (race ? e.pos ?? e.status ?? '—' : e.pos ?? '—') },
+    { head: 'No', num: true, cell: e => e.no },
+    { head: 'Class', cls: 'cls', html: e => enduroClassMark(ev, e.cls) },
+    { head: 'Team / drivers', stick: 2, cls: 'crewcell', html: enduroCrew },
+  ];
+  // A car that gained places went forward; one that lost them went back.
+  const moved = e => typeof e.gained === 'number' && e.gained;
+  const cols = who.concat(race
+    ? [{ head: 'Laps', num: true, cell: e => e.laps ?? '—' },
+       { head: 'Race time', num: true, cell: e => e.time || '—' },
+       { head: 'Gap', num: true, cell: e => e.gap || '—' },
+       { head: 'Diff', num: true, cell: e => e.diff || '—' },
+       { head: 'Best lap', num: true, cell: e => e.best || '—' },
+       { head: 'On', num: true, cell: e => e.best_on ?? '—' },
+       { head: 'Grid', num: true, cell: e => e.grid ?? '—' },
+       { head: '±', num: true, cls: 'gained',
+         cell: e => (moved(e) ? (e.gained > 0 ? '+' : '') + e.gained : e.gained ?? '—'),
+         tint: e => (moved(e) ? (e.gained > 0 ? 'var(--s1)' : 'var(--alarm)') : null) }]
+    : [{ head: 'Best lap', num: true, cell: e => e.time || '—' },
+       { head: 'On', num: true, cell: e => e.best_on ?? '—' },
+       { head: 'Laps', num: true, cell: e => e.laps ?? '—' },
+       { head: 'Gap', num: true, cell: e => e.gap || '—' },
+       { head: 'Diff', num: true, cell: e => e.diff || '—' },
+       { head: 'MPH', num: true, cell: e => e.mph ?? '—' }]);
+
+  return dataTable({
+    table: 'results enduro',
+    rows,
+    cols,
+    rowClass: e => (e.pos === 1 ? 'win ' : '')
+      + (e.status && e.status !== 'classified' ? 'dnf ' : '')
+      + (enduroSeriesOf(ev, e.cls) === mine ? 'ours' : ''),
   });
-  tb.append(body); sc.append(tb);
-  return sc;
 }
 
 function enduro() {
