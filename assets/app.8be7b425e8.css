@@ -181,6 +181,34 @@ table.champ thead tr.cols th{font-size:11px;letter-spacing:.02em}
    Clerk decided, and the sentence is the part a reader came for. So it gets a
    row of its own under the facts, wrapping where nothing else here wraps, and
    the two are held together by taking the rule off the row above it. */
+/* A result the Clerk looked at. The classification says where a car finished
+   and not that its finish was argued over, so the row is boxed - drawn on the
+   cells, because a table with separated borders will not draw one on the row. */
+tr.judged td{box-shadow:inset 0 1px 0 var(--alarm),inset 0 -1px 0 var(--alarm)}
+tr.judged td:first-child{box-shadow:inset 1px 0 0 var(--alarm),
+  inset 0 1px 0 var(--alarm),inset 0 -1px 0 var(--alarm)}
+tr.judged td:last-child{box-shadow:inset -1px 0 0 var(--alarm),
+  inset 0 1px 0 var(--alarm),inset 0 -1px 0 var(--alarm)}
+tr.judged{cursor:default}
+
+/* ---- behaviour warning points, as a row of points ---------------------- */
+/* Whole numbers with edges that bite, so cells rather than a bar: the question
+   is never "how full" but "how many before the next line". The cells are
+   separated by a gap in the surface rather than by a border - ink that is not
+   data - and the thresholds are marked on the cell that reaches them. */
+.bwp{display:flex;gap:2px;align-items:stretch;height:14px;width:100%;min-width:132px}
+.bwp i{flex:1 1 0;background:var(--sunk);border-radius:1px}
+.bwp i:first-child{border-radius:3px 1px 1px 3px}
+.bwp i:last-child{border-radius:1px 3px 3px 1px}
+.bwp i.on{background:var(--racing)}
+.bwp i.edge{box-shadow:inset -2px 0 0 var(--ink-3)}
+.bwp i.edge:last-child{box-shadow:none}
+.bwp-head{min-width:150px;vertical-align:top}
+.bwp-axis{position:relative;display:block;height:12px;margin-top:2px;
+  font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--ink-3);
+  letter-spacing:0;text-transform:none;font-weight:400}
+.bwp-axis span{position:absolute;transform:translateX(-50%)}
+
 /* The Pen cell is a control - it shows that driver's decisions - so it takes
    focus, and focus has to be visible on it like on any other. */
 td[role="button"]:focus-visible{outline:2px solid var(--racing);outline-offset:-2px}

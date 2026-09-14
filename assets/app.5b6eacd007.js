@@ -295,6 +295,20 @@ function penaltyWords(d) {
 }
 
 /**
+ * How big the penalty was: "5s", "3 places".
+ *
+ * "Time penalty" on its own is the kind of answer that raises the question it
+ * is meant to settle - five seconds and a race disqualification are both on
+ * this list, and one of them decides a championship. A couple have no number
+ * to give, because starting from the back of the grid is not an N-place drop.
+ */
+function penaltySize(d) {
+  if (d.amount == null) return '';
+  if (d.penalty === 'time penalty') return `${d.amount}s`;
+  return `${d.amount} place${d.amount === 1 ? '' : 's'}`;
+}
+
+/**
  * What the link under a decision goes to, which is not always a decision.
  *
  * A penalty applied in the classification has no decision sheet behind it -
@@ -334,7 +348,8 @@ function decisionLine(d, withCar = true) {
   const who = esc(name) + (withCar && d.car && !/car /i.test(name)
     ? ` <span class="mono">#${esc(d.car)}</span>` : '');
   const cost = costWords(d);
-  return `${who} — ${esc(penaltyWords(d))}`
+  const size = penaltySize(d);
+  return `${who} — ${esc(penaltyWords(d))}${size ? ` <b>${esc(size)}</b>` : ''}`
     + (d.offence ? `, <span class="mono ncr">${esc(articleWords(d))}</span>` : '')
     + (cost ? `. ${cost}` : '')
     + (d.what ? `. ${esc(d.what)}` : '')
@@ -889,6 +904,10 @@ function deductions() {
     { th: 'Driver', cls: '', show: true, td: d => esc(d.named || d.driver) },
     { th: 'Penalty', cls: '', show: some(d => d.penalty),
       td: d => esc(penaltyWords(d)) },
+    // Its size, in the currency the penalty is charged in: seconds for a time
+    // penalty, places for a grid or a position one.
+    { th: 'How much', cls: 'num mono', show: some(d => d.amount != null),
+      td: d => penaltySize(d) ? esc(penaltySize(d)) : '—' },
     { th: 'Offence', cls: 'mono ncr', show: some(d => d.offence),
       td: d => d.offence ? esc(articleWords(d)) : '—' },
     { th: 'Lic', cls: 'num mono', show: some(d => d.licence_points != null),
@@ -897,6 +916,12 @@ function deductions() {
       td: d => d.deduction ? '−' + d.deduction : '—' },
     { th: 'BWP', cls: 'num mono', show: !!D.behaviour && some(d => d.bwp),
       td: d => d.bwp || '—' },
+    // Where that left them. The record is in the order the decisions were
+    // taken, so this column read downwards is a driver's season against reg
+    // 4.3's thresholds - climbing as points land, falling back as they lapse.
+    { th: `Running total${bwpAxis((D.behaviour || {}).thresholds || [])}`,
+      cls: '', thCls: 'bwp-head', show: !!D.behaviour && some(d => d.running != null),
+      td: d => d.running == null ? '' : bwpMeter(d.running, D.behaviour.thresholds) },
     { th: grads() ? 'Table' : 'Source', cls: '', show: true,
       td: d => (d.source
           ? `<a href="${esc(d.source)}">${sourceWords(d).replace('decision ', '')}</a>` : '—')
@@ -917,7 +942,8 @@ function deductions() {
     + '</p>';
   const psc = el('div', 'scroller'), ptb = el('table', 'judicial');
   ptb.innerHTML = '<thead><tr>'
-    + cols.map(c => `<th${c.cls.includes('num') ? ' class="num"' : ''}>${c.th}</th>`).join('')
+    + cols.map(c => `<th${c.thCls || c.cls.includes('num') ? ` class="`
+        + `${c.thCls || 'num'}"` : ''}>${c.th}</th>`).join('')
     + '</tr></thead><tbody>'
     + D.decisions.map(d => `<tr data-driver="${esc(d.driver)}"${d.what ? ' class="said"' : ''}>`
       + cols.map(c => `<td class="${c.cls}"`
@@ -932,6 +958,38 @@ function deductions() {
   const bwp = behaviourPoints();
   if (bwp) pen.append(bwp);
   return pen;
+}
+
+/**
+ * Where a driver stands against reg 4.3's thresholds, as a row of points.
+ *
+ * Behaviour Warning Points are whole numbers with edges that bite - three is a
+ * ten-place grid penalty, seven is a suspension - so this is nine cells rather
+ * than a bar: the question is never "how full" but "how many more before the
+ * next line". The lines are drawn where they fall, and the count beside it is
+ * the same fact in a form that needs no colour at all.
+ */
+function bwpMeter(value, thresholds) {
+  const top = thresholds[thresholds.length - 1].bwp;
+  const edge = new Set(thresholds.map(t => t.bwp));
+  const cells = [];
+  for (let n = 1; n <= top; n++) {
+    cells.push(`<i class="${n <= value ? 'on' : ''}${edge.has(n) ? ' edge' : ''}"></i>`);
+  }
+  return `<span class="bwp" role="img" aria-label="${value} of ${top}`
+    + ` behaviour warning points, with thresholds at `
+    + `${thresholds.map(t => t.bwp).join(', ')}">${cells.join('')}</span>`;
+}
+
+/** The scale, named once in a column head rather than under every row. */
+function bwpAxis(thresholds) {
+  // The Graduates run to regulations with no article like reg 4.3, so there is
+  // no scale to draw and the column it would head is not shown either.
+  if (!thresholds || !thresholds.length) return '';
+  const top = thresholds[thresholds.length - 1].bwp;
+  return '<span class="bwp-axis">' + thresholds.map(t =>
+    `<span style="left:${((t.bwp - 0.5) / top) * 100}%"`
+    + ` title="${esc(t.penalty)}">${t.bwp}</span>`).join('') + '</span>';
 }
 
 /**
@@ -1759,9 +1817,20 @@ function renderRace(host, r) {
     + '</tr></thead>';
   const body = el('tbody');
   const used = new Set();
+  // Which cars the Clerk looked at on this round. A classification says where a
+  // car finished and not that its finish was argued over, so the rows that were
+  // are marked, and the decisions themselves are under the table.
+  const onThisRace = decisionsOn(r.round);
+  const judgedCars = new Set(onThisRace.map(d => d.car).filter(Boolean));
   r.entries.forEach(e => {
     const tr = el('tr', (e.pos === 1 ? 'win ' : '') + (e.status !== 'classified' ? 'dnf' : '')
-      + (e.guest ? ' guest' : ''));
+      + (e.guest ? ' guest' : '') + (judgedCars.has(e.no) ? ' judged' : ''));
+    if (judgedCars.has(e.no)) {
+      tr.dataset.tip = `<b>${esc(e.driver)}</b> — a judicial decision on this race`
+        + `<br>${onThisRace.filter(d => d.car === e.no)
+            .map(d => esc(penaltyWords(d)) + (penaltySize(d) ? ` ${esc(penaltySize(d))}` : ''))
+            .join('<br>')}<br>Listed in full under the classification.`;
+    }
     const cells = [
       [e.pos ?? e.status, 'stick1'], [e.no, 'num'],
       // the class column already says Trophy or Guest where a series prints it
@@ -1798,7 +1867,7 @@ function renderRace(host, r) {
   // "no further action" is the answer to the same question a reader of the
   // classification is asking - why that car is where it is - and leaving it out
   // makes the race look unexamined rather than examined and let be.
-  const judged = decisionsOn(r.round);
+  const judged = onThisRace;
   if (judged.length) {
     const n = el('div', 'notes');
     n.innerHTML = `<p><b>Judicial decisions</b> — ${judged.length} on this race`
