@@ -176,6 +176,26 @@ table.champ .chip{font-size:10px;padding:0 4px;letter-spacing:.06em}
 table.champ .rowhead{gap:5px}
 table.champ .rowhead b{overflow:hidden;text-overflow:ellipsis}
 table.champ thead tr.cols th{font-size:11px;letter-spacing:.02em}
+/* The judicial record. Every other table on the site is a grid of numbers, and
+   this one is not: a decision is a row of facts and a sentence saying what the
+   Clerk decided, and the sentence is the part a reader came for. So it gets a
+   row of its own under the facts, wrapping where nothing else here wraps, and
+   the two are held together by taking the rule off the row above it. */
+/* The Pen cell is a control - it shows that driver's decisions - so it takes
+   focus, and focus has to be visible on it like on any other. */
+td[role="button"]:focus-visible{outline:2px solid var(--racing);outline-offset:-2px}
+table.judicial tr.said td{border-bottom:none}
+table.judicial tr.why td{white-space:normal;padding:0 8px 7px}
+/* The facts scroll sideways on a phone; the sentence about them must not have
+   to. It sticks to the left edge of the scrolling box and wraps inside it,
+   the same trick the championship grid uses to keep a driver's name in view. */
+table.judicial tr.why td>div{position:sticky;left:8px;max-width:min(62ch,86vw);
+  color:var(--ink-2);font-size:12.5px;line-height:1.45}
+/* A Motorsport UK article, which is a different rulebook from the championship
+   regulations `.reg` links into - so it is marked as an article without
+   pretending to be a link to one. */
+.ncr{font-size:11.5px;color:var(--ink-2)}
+
 td.pt.win{background:var(--flag-soft);color:var(--flag-ink);font-weight:600}
 td.pt.fl{text-decoration:underline;text-decoration-color:var(--fl);
   text-decoration-thickness:2px;text-underline-offset:3px;font-weight:600}
@@ -264,6 +284,16 @@ tr.outrow td{color:var(--ink-3)}
 .ses .r{color:var(--ink-3);font-family:"IBM Plex Mono",monospace;font-size:12px;text-align:right}
 .meta{margin-top:10px;font-size:12.5px;color:var(--ink-3);border-top:1px dotted var(--line-2);padding-top:8px}
 .meta a{color:var(--racing-ink)}
+/* What the Clerk did over a weekend, folded away: ten decisions will not fit
+   on a card and the count of them will, so the summary carries the count and
+   opening it carries the rest. */
+details.jud{margin-top:8px;font-size:12.5px}
+details.jud summary{cursor:pointer;font-family:"Barlow Condensed",Arial,sans-serif;
+  font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2)}
+details.jud summary:hover{color:var(--ink)}
+details.jud p{margin:7px 0 0;color:var(--ink-2);line-height:1.45}
+details.jud a{color:var(--racing-ink)}
+.rnd-link{font-family:"IBM Plex Mono",monospace;font-size:11.5px}
 
 /* ---- race picker ------------------------------------------------------- */
 .picker{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}

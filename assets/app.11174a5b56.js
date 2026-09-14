@@ -251,6 +251,67 @@ const officialName = () => (D.official_source && D.official_source.name)
   || 'Caterham\u2019s published leaderboard';
 const grads = () => D.scaleType === 'graduates';
 
+/* -------------------------------------------------- the judicial record --
+
+   Three places need it and each wants a different amount: the standings want
+   every decision of the season in a table, a race wants the handful taken on
+   that round, a meeting wants the ones taken over its weekend. What a decision
+   *is* should not be written out three times, so the words for one live here
+   and the three tabs choose how many to show. */
+
+/**
+ * How a decision is described, wherever it is listed.
+ *
+ * "None" and "not recorded" are different answers: the Clerk deciding to take
+ * no further action is a decision, and the Graduates' deductions, which come
+ * off the club's published table rather than off a decision sheet, say only
+ * that points were taken.
+ */
+function penaltyWords(d) {
+  const words = d.penalty === 'none' ? 'no further action' : d.penalty || 'not stated';
+  // Reg 4.3 counts what the Clerk of the Course imposed, and the Spa decisions
+  // came from the RACB stewards under the International Sporting Code. Saying
+  // whose decision it was is also what explains a blank BWP.
+  return d.imposed_by && d.imposed_by !== 'clerk' ? `${words} (${d.imposed_by})` : words;
+}
+
+/** The article breached. A bare number is Motorsport UK's; Spa names its own. */
+function articleWords(d) {
+  if (!d.offence) return '';
+  return /^\d/.test(d.offence) ? `NCR ${d.offence}` : d.offence;
+}
+
+/** What one decision cost, in the currencies it was charged in. */
+function costWords(d) {
+  const bits = [];
+  if (d.licence_points) bits.push(`${d.licence_points} licence point${d.licence_points === 1 ? '' : 's'}`);
+  if (d.deduction) bits.push(`<b>−${d.deduction}</b> championship points`);
+  if (d.bwp) bits.push(`${d.bwp} BWP`);
+  return bits.join(', ');
+}
+
+/** Every decision on one round, in the order they were taken. */
+const decisionsOn = round => (D.decisions || []).filter(d => d.round === round);
+
+/** Every decision taken over one meeting's weekend. */
+const decisionsAt = key => (D.decisions || [])
+  .filter(d => d.round != null && eventOf[d.round] && eventOf[d.round].key === key);
+
+/** One decision as a sentence: who, what, what it cost, and where to read it. */
+function decisionLine(d, withCar = true) {
+  // The canonical name, except where the sheet named a second party to the
+  // incident - a name for one car cannot carry that, and it is worth keeping.
+  const name = d.named || d.driver;
+  const who = esc(name) + (withCar && d.car && !/car /i.test(name)
+    ? ` <span class="mono">#${esc(d.car)}</span>` : '');
+  const cost = costWords(d);
+  return `${who} — ${esc(penaltyWords(d))}`
+    + (d.offence ? `, <span class="mono ncr">${esc(articleWords(d))}</span>` : '')
+    + (cost ? `. ${cost}` : '')
+    + (d.what ? `. ${esc(d.what)}` : '')
+    + (d.source ? ` <a href="${esc(d.source)}">${grads() ? 'table' : 'decision sheet'}</a>` : '');
+}
+
 /**
  * The timekeeper's own results for a meeting, as a link to put under a session.
  *
@@ -478,11 +539,15 @@ function cellTip(t, rd) {
   return `${where}<br>${esc(t.driver)}: ${bits.join('<br>')}`;
 }
 
-/** Tooltip for the Pen column: every deduction the driver has taken. */
+/** Tooltip for the Pen column: every deduction the driver has taken, and what for. */
 function penTip(t) {
   const rows = D.penalties.filter(p => p.driver === t.driver)
     .map(p => `Round ${p.round}: <b>−${p.deduction}</b>`
-      + (p.licence_points ? ` (${p.licence_points} licence points)` : ''));
+      + (p.licence_points ? ` (${p.licence_points} licence points)` : '')
+      // The number on its own says a driver lost points; the offence says why,
+      // which is the question the column actually raises.
+      + (p.penalty ? `<br>${esc(penaltyWords(p))}` : '')
+      + (p.offence ? ` — ${esc(articleWords(p))}` : ''));
   return `<b>${esc(t.driver)}</b> — championship penalties, reg ${D.penaltyReg}`
     + `<br>${rows.join('<br>')}`
     + `<br>Total <b>${t.penalty_points}</b>, deducted from the season total. `
@@ -687,21 +752,31 @@ function champTable(rows, split, posOf, overall) {
       pen.style.fontWeight = 600;
       pen.style.cursor = 'pointer';
       pen.dataset.tip = penTip(t);
-      pen.onclick = () => {
-        currentTab = 'rules';
-        location.hash = `${SEASON.year}/${D.key}/rules`;
-        showTab('rules');
-        // Scroll to and highlight this driver's penalties
-        setTimeout(() => {
-          const penaltyRows = document.querySelectorAll('table tbody tr[data-driver]');
-          penaltyRows.forEach(row => {
-            if (row.dataset.driver === t.driver) {
-              row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              row.classList.add('highlight');
-              setTimeout(() => row.classList.remove('highlight'), 2000);
-            }
-          });
-        }, 100);
+      // The number says a driver has lost points; the judicial record says what
+      // for, and it is on this page, under the table. It used to send the
+      // reader to the Points tab, which explains the article and carries none
+      // of the decisions, so nothing was ever found to highlight there.
+      //
+      // A cell that does something is a control, and a control reachable only
+      // by mouse is reachable by fewer people than read this table: the same
+      // button semantics the two rankable column heads carry.
+      const show = () => {
+        const rows = [...document.querySelectorAll('table.judicial tr[data-driver]')]
+          .filter(row => row.dataset.driver === t.driver);
+        if (!rows.length) return;
+        rows[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        rows.forEach(row => {
+          row.classList.add('highlight');
+          setTimeout(() => row.classList.remove('highlight'), 2000);
+        });
+      };
+      pen.tabIndex = 0;
+      pen.setAttribute('role', 'button');
+      pen.setAttribute('aria-label',
+        `${t.driver}: ${t.penalty_points} championship points deducted — show the decisions`);
+      pen.onclick = show;
+      pen.onkeydown = e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(); }
       };
     } else {
       pen.style.color = 'var(--ink-3)';
@@ -742,30 +817,130 @@ function champTable(rows, split, posOf, overall) {
 }
 
 /**
- * Every championship deduction taken this season, and where each was published.
+ * The judicial record: every decision, not only the ones that cost points.
  *
- * It belongs beside the table it comes off rather than with the article that
- * allows it: the Pen column says a driver has lost points, and this is the only
- * thing on the site that says which race and what for.
+ * `overrides.json` keeps two lists, and the split is about the table rather
+ * than about the decisions - the ones carrying a deduction feed the Pen column
+ * and the others do not. A reader wants neither list: they want every decision
+ * taken on this championship, in the order they were taken, and what each one
+ * cost. Which is three different things, and only one of them is the deduction
+ * this page used to show on its own.
  */
 function deductions() {
-  if (!D.penalties.length) return null;
+  if (!D.decisions || !D.decisions.length) return null;
+  const some = f => D.decisions.some(f);
+  // A column nothing in this championship fills is a column of dashes. The
+  // Graduates' deductions come off the club's table with no car number, no
+  // article and no reg 4.3 behind them, which is three of these.
+  const cols = [
+    { th: 'Rd', cls: 'num mono', show: true,
+      // The round is the one thing here a reader might want to go and look at:
+      // a decision is about a race, and the race is a tab away on this site.
+      td: d => d.round == null ? '—'
+        : `<a href="#${SEASON.year}/${D.key}/races/${d.round}"`
+          + ` title="Round ${d.round} — ${esc((eventOf[d.round] || {}).name || '')}">`
+          + `${d.round}</a>` },
+    { th: 'Car', cls: 'num mono', show: some(d => d.car),
+      td: d => d.car ? esc(d.car) : '—' },
+    { th: 'Driver', cls: '', show: true, td: d => esc(d.named || d.driver) },
+    { th: 'Penalty', cls: '', show: some(d => d.penalty),
+      td: d => esc(penaltyWords(d)) },
+    { th: 'Offence', cls: 'mono ncr', show: some(d => d.offence),
+      td: d => d.offence ? esc(articleWords(d)) : '—' },
+    { th: 'Lic', cls: 'num mono', show: some(d => d.licence_points != null),
+      td: d => d.licence_points == null ? '—' : d.licence_points },
+    { th: 'Pts', cls: 'num mono', show: true, alarm: true,
+      td: d => d.deduction ? '−' + d.deduction : '—' },
+    { th: 'BWP', cls: 'num mono', show: !!D.behaviour && some(d => d.bwp),
+      td: d => d.bwp || '—' },
+    { th: grads() ? 'Table' : 'Sheet', cls: '', show: true,
+      td: d => (d.source ? `<a href="${esc(d.source)}">${grads() ? 'table' : 'sheet'}</a>` : '—')
+        + (d.provisional ? ' <span class="chip">provisional</span>' : '') },
+  ].filter(c => c.show);
+
   const pen = el('div');
+  const costly = D.decisions.filter(d => d.deduction).length;
   pen.innerHTML = '<h3 class="disp" style="margin:26px 0 8px;font-size:18px;text-transform:uppercase;'
-    + 'letter-spacing:.04em">Deductions applied this season</h3>'
-    + `<p class="sub">Three times the licence points for the offence `
-    + `<span class="reg">${D.penaltyReg}</span>, taken off the championship total.</p>`;
-  const psc = el('div', 'scroller'), ptb = el('table');
-  ptb.innerHTML = '<thead><tr><th class="num">Rd</th><th>Driver</th><th class="num">Licence pts</th>'
-    + '<th class="num">Deduction</th><th>Decision</th></tr></thead><tbody>'
-    + D.penalties.map(p => `<tr data-driver="${esc(p.driver)}"><td class="num mono">${p.round}</td><td>${esc(p.driver)}</td>`
-      + `<td class="num mono">${p.licence_points == null ? '—' : p.licence_points}</td>`
-      + `<td class="num mono" style="color:var(--alarm)">−${p.deduction}</td>`
-      + `<td><a href="${esc(p.source)}">${grads() ? 'table' : 'sheet'}</a>`
-      + `${p.provisional ? ' <span class="chip">provisional</span>' : ''}</td></tr>`)
+    + 'letter-spacing:.04em">The judicial record</h3>'
+    + `<p class="sub">Every decision on this championship`
+    + ` ${grads() ? "in the club's published table" : 'the meeting noticeboards published'} —`
+    + ` <b>${D.decisions.length}</b> of them, of which <b>${costly}</b> cost`
+    + ` championship points. A penalty carrying Motorsport UK licence points costs`
+    + ` three times that number off the season total`
+    + ` (<span class="reg">${D.penaltyReg}</span>), which a drop score cannot cancel.`
+    + (D.behaviour ? ' Most of them carry Behaviour Warning Points as well, below.' : '')
+    + '</p>';
+  const psc = el('div', 'scroller'), ptb = el('table', 'judicial');
+  ptb.innerHTML = '<thead><tr>'
+    + cols.map(c => `<th${c.cls.includes('num') ? ' class="num"' : ''}>${c.th}</th>`).join('')
+    + '</tr></thead><tbody>'
+    + D.decisions.map(d => `<tr data-driver="${esc(d.driver)}"${d.what ? ' class="said"' : ''}>`
+      + cols.map(c => `<td class="${c.cls}"`
+        + `${c.alarm && d.deduction ? ' style="color:var(--alarm)"' : ''}>${c.td(d)}</td>`).join('')
+      + '</tr>'
+      // What the sheet actually says, under the row it belongs to: it is the
+      // part a reader came for, and it is a sentence rather than a column.
+      + (d.what ? `<tr class="why" data-driver="${esc(d.driver)}">`
+          + `<td colspan="${cols.length}"><div>${esc(d.what)}</div></td></tr>` : ''))
       .join('') + '</tbody>';
   psc.append(ptb); pen.append(psc);
+  const bwp = behaviourPoints();
+  if (bwp) pen.append(bwp);
   return pen;
+}
+
+/**
+ * Reg 4.3, rebuilt from those decisions.
+ *
+ * The other half of a Caterham penalty, and the half nobody publishes: every
+ * penalty the Clerk imposes also accumulates Behaviour Warning Points, and at
+ * three of them a driver starts ten places further back. Caterham keep that
+ * register themselves, so this is a reconstruction from the decision sheets -
+ * the same standing as the table above it, which is rebuilt from the
+ * classifications rather than copied from the published one.
+ */
+function behaviourPoints() {
+  const b = D.behaviour;
+  if (!b || !b.drivers.length) return null;
+  const wrap = el('div');
+  wrap.innerHTML = '<h3 class="disp" style="margin:26px 0 8px;font-size:18px;'
+    + 'text-transform:uppercase;letter-spacing:.04em">Behaviour Warning Points</h3>'
+    + `<p class="sub">Reg <span class="reg">4.3</span>. A verbal warning or a time or grid`
+    + ` penalty is worth one, a written reprimand two, and an NCR`
+    + ` ${b.offences.map(o => `<span class="mono ncr">${esc(o)}</span>`).join(' or ')}`
+    + ` offence two whatever the penalty was — those two being a collision and`
+    + ` conduct. Exclusion from the event is six. Each point lapses`
+    + ` once the driver has taken part in <b>${b.window}</b> further races.`
+    + ` At <b>3</b> points a driver is dropped ten places on the next grid, at <b>5</b>`
+    + ` ten more, at <b>7</b> their registration is suspended.`
+    // Reg 4.3.4 is where the rulebooks differ again: the Academy's five-point
+    // case bites a round earlier than everyone else's, as a deduction as well
+    // as a grid penalty, and this paragraph would otherwise describe a rule
+    // the register beside it does not follow.
+    + (b.penultimate_five
+        ? ` Five reached in the <em>penultimate</em> round of the Academy's year is`
+          + ` both: ten places on the final grid and a ten-place points deduction`
+          + ` with it.` : '')
+    + ` Caterham keep this register and publish none of it, so this is rebuilt`
+    + ` from the sheets above and is not the official one.</p>`;
+  const sc = el('div', 'scroller'), tb = el('table', 'judicial');
+  tb.innerHTML = '<thead><tr><th class="num">Car</th><th>Driver</th>'
+    + '<th class="num">Now</th><th class="num">Peak</th>'
+    + '<th>Consequence</th></tr></thead><tbody>'
+    + b.drivers.map(r => `<tr data-driver="${esc(r.driver)}">`
+      + `<td class="num mono">${r.car ? esc(r.car) : '—'}</td>`
+      + `<td>${esc(r.driver)}</td>`
+      + `<td class="num mono"${r.active >= 3 ? ' style="color:var(--alarm)"' : ''}>`
+      + `${r.active}</td>`
+      + `<td class="num mono">${r.peak}</td>`
+      + `<td>${r.consequences.length
+          ? r.consequences.map(c => `<b>${c.bwp}</b> at round ${c.round}: ${esc(c.penalty)}`
+              + (c.due === c.round ? ' — the final round of the year'
+                 : c.due ? `, due round ${c.due}` : ', no further race yet')).join('<br>')
+          : '<span class="sub" style="margin:0">—</span>'}</td></tr>`)
+      .join('') + '</tbody>';
+  sc.append(tb); wrap.append(sc);
+  return wrap;
 }
 
 function standings() {
@@ -1387,6 +1562,28 @@ function watchPanel(r, onTime) {
 }
 
 /* --------------------------------------------------------------- races */
+
+/* Which race this tab has been *asked* for, and how to ask it for another.
+
+   A race is a thing on this site with an address of its own - the judicial
+   record links a decision to the round it was taken on - so the choice has to
+   survive being written into the hash and read back out of it, which a value
+   shut inside `races()` cannot do.
+
+   Asked for, not shown: opening the tab shows the newest race without anybody
+   having chosen it, and "the races tab" is the address for that. The round
+   joins the address once a reader has picked one, or arrived on a link that
+   named one, because then it is their choice and not just today's. */
+let raceRound = null;
+let showRace = () => {};
+/* A round asked for by an address the tab was not ready to answer.
+
+   In the split build a championship's races arrive after the page does, so a
+   link straight to `#2026/seven-uk/races/13` reaches `applyHash` while this
+   tab is still an empty panel and `showRace` is still the stub above. The
+   round is kept here instead, and the tab takes it when it draws. */
+let wantedRace = null;
+
 function races() {
   const p = $('#p-races'); p.innerHTML = '';
   p.append(Object.assign(el('p', 'lede'), { textContent:
@@ -1400,11 +1597,20 @@ function races() {
   const picks = el('div', 'picker-buttons');
   const host = el('div');
   const latest = D.races[D.races.length - 1];
-  function chooseRace(r) {
+  function chooseRace(r, chosen) {
     renderRace(host, r);
+    raceRound = chosen ? r.round : null;
     sel.value = String(r.round);
     [...picks.children].forEach(x => x.setAttribute('aria-pressed', x.dataset.round === String(r.round)));
+    if (chosen && currentTab === 'races') writeHash();
   }
+  // Arriving on a link that names a race is a choice too - it just does not
+  // need writing back into the address it came out of.
+  showRace = round => {
+    const r = D.races.find(x => x.round === Number(round));
+    if (r) chooseRace(r, true);
+    return !!r;
+  };
   // Newest first: the race that has just run is the one being looked for.
   [...D.races].reverse().forEach(r => {
     const label = `R${r.round} · ${r.eventName.split(' ')[0]}`;
@@ -1412,18 +1618,26 @@ function races() {
     const b = el('button', null, label);
     b.dataset.round = String(r.round);
     b.setAttribute('aria-pressed', r.round === latest.round);
-    b.addEventListener('click', () => chooseRace(r));
+    b.addEventListener('click', () => chooseRace(r, true));
     picks.append(b);
   });
   sel.value = String(latest.round);
   sel.addEventListener('change', () => {
     const r = D.races.find(x => String(x.round) === sel.value);
     if (!r) return;
-    chooseRace(r);
+    chooseRace(r, true);
   });
   pick.append(sel, picks);
   p.append(pick, host);
-  chooseRace(latest);
+  // Whatever the address asked for while the races were still on their way -
+  // and if it asked for a round this championship does not have, the tab keeps
+  // the newest race and the address is rewritten without it.
+  const asked = wantedRace;
+  wantedRace = null;
+  if (asked == null || !showRace(asked)) {
+    chooseRace(latest, false);
+    if (asked != null && currentTab === 'races') writeHash();
+  }
 }
 
 function renderRace(host, r) {
@@ -1506,14 +1720,17 @@ function renderRace(host, r) {
     n.innerHTML = '<p><b>Officials&rsquo; notes</b></p>' + r.notes.map(x => `<p>${esc(x)}</p>`).join('');
     host.append(n);
   }
-  const pens = D.penalties.filter(p => p.round === r.round);
-  if (pens.length) {
+  // Every decision taken on this race, not only the ones that cost points. A
+  // "no further action" is the answer to the same question a reader of the
+  // classification is asking - why that car is where it is - and leaving it out
+  // makes the race look unexamined rather than examined and let be.
+  const judged = decisionsOn(r.round);
+  if (judged.length) {
     const n = el('div', 'notes');
-    n.innerHTML = `<p><b>Championship point deductions (reg ${D.penaltyReg})</b></p>`
-      + pens.map(p => `<p>${esc(p.driver)} — `
-        + (p.licence_points ? `${p.licence_points} licence points, ` : '')
-        + `<b>−${p.deduction}</b> championship points. ${esc(p.reason)}. `
-        + `<a href="${esc(p.source)}">Where this is published</a></p>`).join('');
+    n.innerHTML = `<p><b>Judicial decisions</b> — ${judged.length} on this race`
+      + `, ${judged.filter(d => d.deduction).length} carrying a championship`
+      + ` deduction (reg ${D.penaltyReg})</p>`
+      + judged.map(d => `<p>${decisionLine(d)}</p>`).join('');
     host.append(n);
   }
   const src = el('p', 'sub');
@@ -2258,6 +2475,22 @@ function calendar() {
     m.innerHTML = (winners.length ? `<b>Winners:</b> ${winners.join(' · ')}<br>` : '')
       + esc(e.meeting);
     b.append(m);
+    // What the Clerk did over the weekend, folded away. A meeting can carry ten
+    // decisions and a card cannot carry ten paragraphs, but a meeting that had
+    // none should say so by having nothing to open rather than by looking the
+    // same as one nobody has read the noticeboard for.
+    const judged = decisionsAt(e.key);
+    if (judged.length) {
+      const det = el('details', 'jud');
+      det.innerHTML = `<summary>${judged.length} judicial decision`
+        + `${judged.length === 1 ? '' : 's'}`
+        + `${judged.some(d => d.deduction)
+            ? ` · ${judged.filter(d => d.deduction).length} deduction`
+              + `${judged.filter(d => d.deduction).length === 1 ? '' : 's'}` : ''}</summary>`
+        + judged.map(d => '<p><a class="rnd-link" href="#' + SEASON.year + '/' + D.key
+          + `/races/${d.round}">R${d.round}</a> ${decisionLine(d)}</p>`).join('');
+      b.append(det);
+    }
     if (e.url) b.append(eventLinks(e));
     c.append(b); g.append(c);
   });
@@ -6688,6 +6921,9 @@ function writeHash() {
   } else {
     parts.push(D.key);
     if (currentTab !== TABS[0][0]) parts.push(currentTab);
+    // A race has an address of its own, so a link to one - the judicial record
+    // makes several - reopens that race rather than the newest.
+    if (currentTab === 'races' && raceRound != null) parts.push(String(raceRound));
   }
   const want = parts.join('/');
   if (location.hash.slice(1) !== want) location.hash = want;
@@ -6706,21 +6942,25 @@ function readHash() {
   }
   const season = ALL.seasons.find(s => s.year === year) || ALL.seasons[0];
 
-  const [rawSeries, rawTab] = parts;
+  const [rawSeries, rawTab, rawAt] = parts;
   if (dated && rawSeries === 'live') {
     return { year: season.year, key: (D || {}).key || season.series[0].key,
-             tab: TABS[0][0], live: rawTab || '' };
+             tab: TABS[0][0], at: null, live: rawTab || '' };
   }
   const found = season.series.find(s => s.key === rawSeries)
     // tolerate a display name or an old tab-only link
     || season.series.find(s => s.short.toLowerCase() === (rawSeries || '').toLowerCase());
   const tab = TABS.some(([t]) => t === rawTab) ? rawTab
     : (TABS.some(([t]) => t === rawSeries) ? rawSeries : TABS[0][0]);
-  return { year: season.year, key: found ? found.key : season.series[0].key, tab, live: null };
+  return { year: season.year, key: found ? found.key : season.series[0].key, tab,
+           at: /^\d+$/.test(rawAt || '') ? Number(rawAt) : null, live: null };
 }
 
 function applyHash() {
-  const { year, key, tab, live } = readHash();
+  const { year, key, tab, at, live } = readHash();
+  // Left for the races tab to pick up when it draws, which in the split build
+  // is after this runs: a championship's races arrive with its body.
+  wantedRace = tab === 'races' ? at : null;
   if (live != null) { showLive(live, year); return; }
   if (MODE === 'live') leaveLive();
   // selectSeason picks the series too, so only one of these should run
@@ -6728,6 +6968,17 @@ function applyHash() {
   else if (!D || D.key !== key) selectSeries(key);
   currentTab = tab;
   showTab(tab);
+  // Only once the championship in the address is the one on the screen. Until
+  // then `showRace` belongs to the one being left, whose round 3 is not the
+  // round 3 that was asked for - so the round waits in `wantedRace` and the
+  // races tab takes it when it draws.
+  if (wantedRace != null && D && D.key === key) {
+    const want = wantedRace;
+    wantedRace = null;
+    // A round that is not in this championship leaves the tab on whichever race
+    // it was already showing, and comes back out of the address.
+    if (!showRace(want)) writeHash();
+  }
 }
 
 addEventListener('hashchange', applyHash);
