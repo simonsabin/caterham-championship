@@ -246,9 +246,28 @@ let runSet, scoring, eventOf, raceOf, REMAINING;
 const maxRace = d => (d || D).scale + 1;
 /** "the 3 races left", and "the one race left" rather than "the 1 race left". */
 const racesLeft = (n = REMAINING) => n === 1 ? 'the one race left' : `the ${n} races left`;
+/* Who publishes a page, read off its address. The clubs are known by their
+   initials rather than by their domains, and anything else is named by the
+   host itself - a link should say where it goes before it is followed. */
+const SITES = [[/(^|\.)barc\.net$/, 'BARC'], [/(^|\.)brscc\.co\.uk$/, 'BRSCC'],
+               [/(^|\.)cgrc\.uk$/, 'CGRC'], [/(^|\.)caterhamcars\.com$/, 'Caterham']];
+function siteName(url) {
+  let host;
+  try { host = new URL(url).hostname; } catch (e) { return ''; }
+  const known = SITES.find(([re]) => re.test(host));
+  return known ? known[1] : host.replace(/^www\./, '');
+}
+/** A row of links off this page: [text, address, class, tooltip] each. */
+const chipRow = chips => chips.map(([name, url, cls, title]) =>
+  `<a class="${cls || ''}" href="${esc(url)}" title="${esc(title || '')}" target="_blank"`
+  + ` rel="noopener">${esc(name)}</a>`).join('');
 /* Not every championship publishes its own table under the same name. */
 const officialName = () => (D.official_source && D.official_source.name)
   || 'Caterham\u2019s published leaderboard';
+/** The same name, as a link to the table itself. */
+const officialLink = () => D.leaderboardUrl
+  ? `<a href="${esc(D.leaderboardUrl)}" target="_blank" rel="noopener">${officialName()}</a>`
+  : officialName();
 const grads = () => D.scaleType === 'graduates';
 
 /* -------------------------------------------------- the judicial record --
@@ -413,7 +432,7 @@ function seriesNote() {
     : '';
   if (!r.differences.length) {
     box.className = 'note';
-    box.innerHTML = `<span class="tag">Checked</span>Matches ${officialName()} `
+    box.innerHTML = `<span class="tag">Checked</span>Matches ${officialLink()} `
       + `exactly, for all <b>${r.checked}</b> drivers listed there, up to <b>round ${r.cutoff}</b>.`
       + basis + tail;
     return;
@@ -421,7 +440,7 @@ function seriesNote() {
   box.className = 'note warn';
   box.innerHTML = `<span class="tag">${r.differences.length} known `
     + `discrepanc${r.differences.length === 1 ? 'y' : 'ies'}</span>`
-    + `Rebuilt from the official results, this table matches ${officialName()} for `
+    + `Rebuilt from the official results, this table matches ${officialLink()} for `
     + `<b>${r.matched} of ${r.checked}</b> drivers up to <b>round ${r.cutoff}</b>.`
     + basis + ` These do not agree:`
     + '<details><summary>Show discrepancies</summary><ul>' + r.differences.map(d =>
@@ -1063,6 +1082,34 @@ function standings() {
   p.append(howToRead);
 }
 
+/**
+ * Where this championship publishes itself: the club's own page for it, and
+ * the leaderboard it puts out.
+ *
+ * Every table on this site is rebuilt from the timing sheets rather than
+ * copied from either, and the note over the standings says how far that
+ * rebuild has been checked against the published leaderboard - which is worth
+ * nothing to a reader who then has to go and find it. So both are a click
+ * away, named by the site they are on, in the one place the championship
+ * introduces itself.
+ */
+function officialPages() {
+  const chips = [];
+  if (D.championshipUrl)
+    chips.push([`${siteName(D.championshipUrl)} championship page`, D.championshipUrl, 'page',
+                `${D.fullName} on ${siteName(D.championshipUrl)}`]);
+  if (D.leaderboardUrl)
+    chips.push([`${siteName(D.leaderboardUrl)} leaderboard`, D.leaderboardUrl, '',
+                officialName()]);
+  if (!chips.length) return '';
+  return '<h2>Published by the championship</h2>'
+    + '<p class="sub">The table on this site is rebuilt from the timing sheets rather than '
+    + 'copied from either of these. How far it has been checked against that leaderboard, '
+    + `and where the two differ, is the note at the top of <a href="#${SEASON.year}/`
+    + `${D.key}/standings">Standings</a>.</p>`
+    + `<p class="evlinks">${chipRow(chips)}</p>`;
+}
+
 /** The championship itself: what it is, and where it stands. */
 function about() {
   const p = $('#p-about');
@@ -1088,6 +1135,7 @@ function about() {
         + `<a href="${esc(D.regsUrl)}" target="_blank" rel="noopener">published here</a> — `
         + 'not from any summary of them.</p>' : '')
     + '</div>'
+    + officialPages()
     + `<p class="sub">Where the numbers come from and what is provisional about them: `
     + `<a href="#${SEASON.year}/${D.key}/faq">FAQ</a>.</p>`;
   linkRegs(p);
@@ -2411,22 +2459,15 @@ const LINK_NAME = { video: 'Video', timetable: 'Timetable',
  * wording, which is the only thing that tells them apart.
  */
 function eventLinks(ev) {
-  let club = '';
-  try {
-    const host = new URL(ev.url).hostname;
-    club = /barc\.net$/.test(host) ? 'BARC ' : /brscc\.co\.uk$/.test(host) ? 'BRSCC ' : '';
-  } catch (e) { /* an address the app cannot parse still makes a link */ }
-
+  const club = siteName(ev.url);
   const links = ev.links || [];
-  const chips = [[`${club}event page`, ev.url, 'page', ev.meeting || '']];
+  const chips = [[`${club ? club + ' ' : ''}event page`, ev.url, 'page', ev.meeting || '']];
   links.forEach(x => chips.push([
     links.filter(y => y.kind === x.kind).length > 1 ? x.label : (LINK_NAME[x.kind] || x.label),
     x.url, '', x.label]));
 
   const p = el('p', 'evlinks');
-  p.innerHTML = chips.map(([name, url, cls, title]) =>
-    `<a class="${cls}" href="${esc(url)}" title="${esc(title)}" target="_blank"`
-    + ` rel="noopener">${esc(name)}</a>`).join('');
+  p.innerHTML = chipRow(chips);
   return p;
 }
 
