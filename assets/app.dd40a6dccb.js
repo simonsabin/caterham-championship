@@ -566,16 +566,29 @@ function qualPos(t, round) {
   return hit ? hit.pos : null;
 }
 
+/* Is that position the feed's rather than the print's? While the session runs
+   - and until the print arrives - the sheet is the one the live view is
+   writing, and a cell that says P3 should say that P3 can still move. */
+function qualLive(round) {
+  const ev = eventOf[round];
+  const q = ev ? liveQualSheetFor(D, ev.key) : null;
+  return !!(q && q.live);
+}
+
 function cellTip(t, rd) {
   const sc = t.rounds[rd], ev = eventOf[rd];
   const where = `<b>Round ${rd}</b> · ${esc(ev.name)}`;
   if (!runSet.has(Number(rd))) {
     const q = qualPos(t, rd);
     const first = ev.rounds[0];
+    const live = q && qualLive(rd);
     return `${where}<br>Not yet run`
-      + (q ? `<br>${esc(t.driver)} qualified <b>P${q}</b> at this meeting`
+      + (q ? `<br>${esc(t.driver)} ${live
+             ? `is <b>P${q}</b> in qualifying as it stands — live from the `
+               + `timekeepers' feed, not the published sheet`
+             : `qualified <b>P${q}</b> at this meeting`}`
            + `${first === Number(rd) ? ', which is the grid for this race'
-              : `, which set the grid for round ${first}`}` : '');
+              : `, which set${live ? 's' : ''} the grid for round ${first}`}` : '');
   }
   if (!sc) return `${where}<br>${esc(t.driver)} did not enter`;
   const bits = [];
@@ -1073,6 +1086,9 @@ function standings() {
   const overall = t => overallPos.get(t) || null;
   const groups = classGroups(order);
   const classed = groups ? groups.filter(g => g.split).map(g => g.name) : [];
+  // The round whose column is being filled in from the feed, while it is.
+  const liveEv = D.liveQual ? D.events.find(e => e.key === D.liveQual.event) : null;
+  const liveRd = liveEv ? liveEv.rounds.find(r => !runSet.has(r)) : null;
   // How to read the table, kept until after it: somebody who wants the numbers
   // should not have to scroll a paragraph to reach them, and somebody who wants
   // the paragraph knows where the bottom of a page is.
@@ -1087,7 +1103,10 @@ function standings() {
       + `whole - the deduction is collected in the Pen column and taken off the total. `
       + `${D.roundsRun.length} of ${D.roundsTotal} races have been run; the remaining columns are `
       + `hatched, and carry a driver's qualifying position where that meeting has qualified `
-      + `and not yet raced. Hover any cell for the finishing position behind the number.`
+      + `and not yet raced`
+      + (liveRd ? ` — or is qualifying now: the positions in the Round ${liveRd} column `
+          + `are the timekeepers' feed as it stands, and move with it` : '')
+      + `. Hover any cell for the finishing position behind the number.`
       + (REMAINING > 0
          ? ` Min and Max are the two ends of the season from here: where a driver ends up `
            + `scoring nothing more, and where they end up winning everything left, fastest `
@@ -1242,6 +1261,14 @@ function faq() {
     + 'it lays the grid out from qualifying, and each slot stands until the timekeepers '
     + 'replace it. ITS answer with the whole timing screen every few seconds instead, so '
     + 'Dijon arrives complete and never fills in.</p>'
+    + '<p><b>Qualifying, while it runs.</b> The sheet a qualifying session produces — the '
+    + 'grid — is written from the feed as the session goes, and goes where the printed one '
+    + 'will: the hatched column of the standings, the <a href="#'
+    + `${SEASON.year}/${D.key}/qualifying">Qualifying</a> page with the dot on it, and the `
+    + 'grid the live view lays the race out from. The order and every car’s best are the '
+    + 'feed’s and complete; the laps behind them are the ones this page has seen since it '
+    + 'connected, and it says so. The timekeepers’ own sheet replaces it once it is '
+    + 'published.</p>'
     + '<p><b>None of it is a result.</b> Points shown while a race is running are what the '
     + 'running order would be worth. The tables themselves are rebuilt from the published '
     + 'classification days later, after the stewards, and that is the only thing that ever '
@@ -1256,7 +1283,9 @@ function faq() {
     + '<p><b>Seeing it out of season.</b> <span class="mono">?demo</span> in the address, or '
     + 'the button on the ' + live + ' page, races a made-up field against the clock in this '
     + 'page — twenty minutes and then the lap they are on, from this series’ own last '
-    + 'race. Nothing is timed and none of those numbers are real.</p></div>'
+    + 'race. <span class="mono">?demo&amp;qual</span>, or the button beside it, qualifies '
+    + 'the same field for a quarter of an hour instead, and the sheet it writes fills in '
+    + 'as the laps land. Nothing is timed and none of those numbers are real.</p></div>'
     + '<h2>The weather over the circuit</h2>'
     + '<div class="prose">'
     + `<p><b>Where it comes from.</b> <a href="https://www.meteoblue.com/" `
@@ -1930,6 +1959,14 @@ let qualCut = 110;
    the question the column itself is drawing. */
 let qualRank = 0;
 
+/* Which session is being read and which car in it, kept here rather than in
+   the render: while a session is running the tab is rebuilt every time a lap
+   lands, and a rebuild that put the reader back on pole every ninety seconds
+   would be a tab nobody could read. Keyed by series and session, so a car
+   picked in one is not looked for in another. */
+let qualPicked = null;
+const QUAL_CAR = {};
+
 /** Seconds as a lap time: 1:37.826 over a minute, 47.826 under one. */
 const lapText = (s, dp = 3) => {
   if (s == null || !isFinite(s)) return '—';
@@ -1961,7 +1998,9 @@ function qualifying() {
     + 'holds the whole field: a line per car through its five quickest laps, quickest '
     + 'first, so a car that found one lap and a car that could do it all session read '
     + 'differently. Pick a car, on the chart or in the table, for its own session lap by '
-    + 'lap and sector by sector.' }));
+    + 'lap and sector by sector.'
+    + (D.liveQual ? ' A session that is running is here too, from the timekeepers’ '
+        + 'feed, and moves as the laps land.' : '') }));
 
   const sessions = D.qualifying || [];
   if (!sessions.length) {
@@ -1984,19 +2023,26 @@ function qualifying() {
   [...sessions].reverse().forEach(q => {
     const ev = D.events.find(e => e.key === q.event);
     const label = `${ev ? 'R' + ev.rounds[0] : 'Q'} · ${q.eventName.split(' ')[0]}`;
-    sel.append(Object.assign(el('option', null, label), { value: q.event }));
+    sel.append(Object.assign(el('option', null, label + (q.live ? ' · live' : '')),
+                             { value: q.event }));
     const b = el('button', null, label);
+    // The dot the Live tab wears while a session runs, on the session itself.
+    if (q.live && !q.ended) b.append(el('span', 'livedot'));
     b.dataset.ev = q.event;
-    b.addEventListener('click', () => choose(q));
+    // A reader's choice is remembered; the tab's own default is not, so that
+    // a session which starts running is shown to anyone who has not chosen.
+    b.addEventListener('click', () => { qualPicked = `${D.key}/${q.event}`; choose(q); });
     picks.append(b);
   });
   sel.addEventListener('change', () => {
     const q = sessions.find(x => x.event === sel.value);
-    if (q) choose(q);
+    if (q) { qualPicked = `${D.key}/${q.event}`; choose(q); }
   });
   pick.append(sel, picks);
   p.append(pick, host);
-  choose(latest);
+  // The session the reader was on, if it is still here; the newest otherwise -
+  // which, while one is running, is the one running.
+  choose(sessions.find(q => `${D.key}/${q.event}` === qualPicked) || latest);
 }
 
 function renderQual(host, q) {
@@ -2008,12 +2054,21 @@ function renderQual(host, q) {
   // slot is worse than a missing one.
   const when = [q.date, q.start ? `${q.start}–${q.finish || ''}` : '']
     .filter(Boolean).join(' · ');
+  // Pole is the classification's, not the chart's: on a printed sheet they are
+  // the same car, and on the feed's sheet the chart holds only the laps this
+  // page has seen, which may not include the one that is on pole.
+  const p1 = qualPole(q, rows);
   h.innerHTML = `<h3>Qualifying — ${esc(q.eventName)}</h3>`
+    + (q.live ? `<span class="f"><span class="livetag${q.ended ? ' done' : ''}">`
+        + `${q.ended ? 'Finished · provisional' : 'Live'}</span></span>` : '')
     + (when ? `<span class="f">${esc(when)}</span>` : '')
     + (ev ? `<span class="f">Grid for round <b>${ev.rounds[0]}</b></span>` : '')
     + (q.weather ? `<span class="f">${esc(q.weather)}</span>` : '')
-    + (rows.length ? `<span class="f">Pole <b>${esc(rows[0].best[0].time)}</b>`
-       + ` — ${esc(rows[0].e.driver)}</span>` : '')
+    + (p1 ? `<span class="f">Pole${q.live && !q.ended ? ' so far' : ''} `
+        + `<b>${esc(p1.time)}</b> — ${esc(p1.driver)}</span>`
+       : q.live ? '<span class="f">No time set yet</span>' : '')
+    // A sheet the feed is writing has neither of these: nobody has issued it,
+    // and what it says last changed a lap ago.
     + (dayText(q.issued) ? `<span class="f">Timekeeper issued <b>${esc(dayText(q.issued))}</b></span>` : '')
     + (changedText(q.updated) ? `<span class="f">Results updated <b>${esc(changedText(q.updated))}</b></span>` : '');
   host.append(h);
@@ -2028,11 +2083,15 @@ function renderQual(host, q) {
 
   if (!rows.length) {
     // The classification alone, which is all a meeting outside the two British
-    // timekeepers' books leaves behind.
-    host.append(Object.assign(el('p', 'sub'), { textContent:
-      'The lap-by-lap analysis of this session was not published: it exists only '
-      + 'inside the meeting’s own book, and not every timekeeper puts one in there. '
-      + 'The times that set the grid are below.' }));
+    // timekeepers' books leaves behind - or all the feed has handed over yet.
+    host.append(Object.assign(el('p', 'sub'), { textContent: q.live
+      ? 'This is the timekeepers’ feed, which says what each lap took as it is done '
+        + 'and nothing about it afterwards — so this page holds the laps set since it '
+        + 'connected, and none has been yet. The order as it stands is below, and the '
+        + 'charts fill in from the first flying lap.'
+      : 'The lap-by-lap analysis of this session was not published: it exists only '
+        + 'inside the meeting’s own book, and not every timekeeper puts one in there. '
+        + 'The times that set the grid are below.' }));
     host.append(qualTable(q, [], null, null));
     host.append(qualSource(q));
     return;
@@ -2041,7 +2100,9 @@ function renderQual(host, q) {
   const chartHost = el('div');
   const tableHost = el('div');
   const detailHost = el('div');
-  let picked = rows[0].e.no;
+  const carKey = `${D.key}/${q.event}`;
+  let picked = rows.some(r => r.e.no === QUAL_CAR[carKey]) ? QUAL_CAR[carKey]
+    : rows[0].e.no;
   // How many of the five laps anybody in this session actually set. A ranking
   // by a lap nobody has is not one to leave selected when the session changes.
   const cols = Math.max(1, Math.min(QUAL_N, Math.max(...rows.map(r => r.best.length))));
@@ -2049,7 +2110,7 @@ function renderQual(host, q) {
 
   function drawChart() {
     chartHost.innerHTML = '';
-    chartHost.append(qualFieldChart(rows, cols, picked, choose, refresh));
+    chartHost.append(qualFieldChart(rows, cols, picked, choose, refresh, !!q.live));
   }
   function drawTable() {
     tableHost.innerHTML = '';
@@ -2059,6 +2120,7 @@ function renderQual(host, q) {
   function refresh() { drawChart(); drawTable(); }
   function choose(no) {
     picked = no;
+    QUAL_CAR[carKey] = no;
     drawChart();
     [...tableHost.querySelectorAll('tbody tr')].forEach(tr =>
       tr.classList.toggle('pick', tr.dataset.no === picked));
@@ -2070,6 +2132,14 @@ function renderQual(host, q) {
   host.append(chartHost, tableHost, detailHost, qualSource(q));
   drawTable();
   choose(picked);
+}
+
+/** The car on pole: the classification's P1, or the chart's quickest failing that. */
+function qualPole(q, rows) {
+  const first = (q.entries || []).find(e => e.pos === 1 && e.time);
+  if (first) return first;
+  return rows.length ? { time: rows[0].best[0].time, driver: rows[0].e.driver,
+                         no: rows[0].e.no } : null;
 }
 
 /**
@@ -2100,7 +2170,7 @@ function qualSource(q) {
  * for: a line that climbs steeply had one lap and nothing behind it, a flat one
  * was there all session.
  */
-function qualFieldChart(rows, cols, picked, onPick, refresh) {
+function qualFieldChart(rows, cols, picked, onPick, refresh, live) {
   const wrap = el('div');
   const box = el('div', 'qbox');
   const pole = secsOf(rows[0].best[0].time);
@@ -2232,8 +2302,8 @@ function qualFieldChart(rows, cols, picked, onPick, refresh) {
 
   const bar = el('div', 'qbar');
   const note = el('span');
-  note.innerHTML = 'Pole is at the top rather than zero at the bottom, and the axis '
-    + 'stops at '
+  note.innerHTML = (live ? 'The quickest lap this page has seen' : 'Pole')
+    + ' is at the top rather than zero at the bottom, and the axis stops at '
     + (qualCut ? `<b>${qualCut}%</b> of it` : 'the slowest lap drawn')
     + ' — a line that leaves the bottom of the chart was slower than that. '
     + (over ? `${over} car${over > 1 ? 's are' : ' is'} off the chart altogether at this cut-off. ` : '')
@@ -2302,8 +2372,12 @@ function qualTable(q, rows, picked, onPick, base) {
     list = has.concat(few).map(r => ({ e: r.e, r }))
       .concat(none.map(e => ({ e })));
   }
+  // The gap on the classification is to the car on pole, which is the same
+  // time the chart's quickest lap is on a printed sheet and need not be on
+  // the feed's - and a sheet with no laps behind it still has a pole.
+  const p1 = qualPole(q, rows);
   const lead = rank && list.length && lap(list[0].r) ? secsOf(lap(list[0].r).time)
-    : (laps ? secsOf(rows[0].best[0].time) : null);
+    : (p1 ? secsOf(p1.time) : null);
 
   const sc = el('div', 'scroller'), tb = el('table', 'results qtab');
   const head = [rank ? '#' : 'Pos', 'No', 'Driver', 'Class',
@@ -2320,6 +2394,11 @@ function qualTable(q, rows, picked, onPick, base) {
     const l = lap(r);
     const t = rank ? (l ? secsOf(l.time) : null) : (e.time ? secsOf(e.time) : null);
     const ranked = rank ? !!l : !!e.pos;
+    // Which lap the time was set on. Off the laps this page holds where the
+    // time is one of them; otherwise off the feed, which says the lap of a
+    // car's best but not the lap itself, and which is all a page that connected
+    // after the lap was set has to go on.
+    const onLap = l && (rank || !q.live || secsOf(l.time) === t) ? l.lap : (e.on || '—');
     if (ranked) place += 1;
     const tr = el('tr', ((rank ? place === 1 : e.pos === 1) ? 'win ' : '')
       + (ranked ? '' : 'dnf') + (r && r.e.no === picked ? ' pick' : ''));
@@ -2331,8 +2410,8 @@ function qualTable(q, rows, picked, onPick, base) {
       [t != null && lead != null ? (t === lead ? '—' : '+' + (t - lead).toFixed(3))
         : '—', 'num mono'],
     ].concat(laps ? [
-      [l ? l.lap : '—', 'num'],
-      [r ? (r.e.laps || []).length : '—', 'num'],
+      [onLap, 'num'],
+      [e.lapsRun != null ? e.lapsRun : r ? (r.e.laps || []).length : '—', 'num'],
       [r ? r.best.length : '—', 'num'],
     ] : []).concat(rank ? [[e.pos ?? '—', 'num']] : []);
     cells.forEach(([v, c], i) => {
@@ -2359,23 +2438,51 @@ function qualTable(q, rows, picked, onPick, base) {
     + 'Laps is every lap the car was timed over; counting is how many of them were laps '
     + 'it is credited with — an out-lap carries the time spent in the pits with it, '
     + 'and a lap the car came into the pits on or that was disallowed is not one either. '
+    + (q.live ? qualLiveSays(q) : '')
     + 'Click a row for that car’s session.' }));
+  else if (q.live) out.append(Object.assign(el('p', 'sub'), { textContent: qualLiveSays(q) }));
   return out;
+}
+
+/** What is different about a sheet the feed is writing, said once under it. */
+function qualLiveSays(q) {
+  const seen = q.seen || 0, all = (q.entries || []).length;
+  return 'This sheet is the timekeepers’ feed as it stands, not their print: the order '
+    + 'and every car’s best are the feed’s and are complete, and the laps behind them '
+    + 'are the ones this page has seen since it connected'
+    + (seen && seen < all ? ` — ${seen} of the ${all} cars so far` : '')
+    + '. A car’s best can be a lap set before that, in which case it is ranked on it '
+    + 'and the chart cannot draw it. An in-lap and an out-lap are told from the pit '
+    + 'lane’s own loops rather than from a sheet’s marks, and the last sector is what '
+    + 'is left of the lap once the splits are taken off. '
+    + (q.ended ? 'The session is over; the print replaces this when it is published. '
+       : 'It moves as the laps land. ');
 }
 
 /** One car's session: what it was timed over, and what each lap was made of. */
 function qualDetail(q, row, poleRow) {
   const out = el('div');
   const e = row.e, laps = e.laps || [];
-  const best = secsOf(row.best[0].time), pole = secsOf(poleRow.best[0].time);
+  // On the feed's sheet a car's best is the feed's, and the best lap this page
+  // holds may be a slower one set since it connected; the sheet's wins, and the
+  // lap it was set on is then the feed's word for it, if it has one.
+  const seen = row.best[0];
+  const bestTime = q.live && e.time ? e.time : seen.time;
+  const best = secsOf(bestTime);
+  const bestOn = best === secsOf(seen.time) ? seen.lap : (e.on || null);
+  const p1 = qualPole(q, [poleRow]);
+  const pole = secsOf(p1.time);
+  const onPole = q.live ? e.pos === 1 : e.no === poleRow.e.no;
   const h = el('div', 'qhead');
   h.innerHTML = `<h4><span class="swatch" style="background:${row.colour}"></span>`
     + `${esc(e.no)} — ${esc(e.driver)}</h4>`
     + (e.cls ? `<span class="f">${esc(e.cls)}</span>` : '')
-    + `<span class="f">Qualified <b>P${e.pos ?? '—'}</b></span>`
-    + `<span class="f">Best <b>${esc(row.best[0].time)}</b> on lap `
-    + `<b>${row.best[0].lap}</b></span>`
-    + (e.no === poleRow.e.no ? '<span class="f">Pole</span>'
+    + `<span class="f">${q.live ? (q.ended ? 'Provisionally' : 'Currently') : 'Qualified'} `
+    + `<b>P${e.pos ?? '—'}</b></span>`
+    + `<span class="f">Best <b>${esc(bestTime)}</b>`
+    + (bestOn ? ` on lap <b>${bestOn}</b>` : ' — set before this page connected')
+    + '</span>'
+    + (onPole ? '<span class="f">Pole</span>'
        : `<span class="f"><b>+${(best - pole).toFixed(3)}</b> off pole</span>`)
     + `<span class="f"><b>${laps.length}</b> laps, `
     + `<b>${row.best.length}</b> counting</span>`;
@@ -3402,6 +3509,12 @@ const LIVE_SITE = LIVE_BASE + '/';
    wanted in a hurry. Every screen it feeds says loudly that it is not timing. */
 let LIVE_DEMO = new URLSearchParams(location.search).get('demo');
 let LIVE_FAKE = LIVE_DEMO !== null;
+/* `?demo&qual` runs the demonstration as a qualifying session rather than a
+   race: fifteen minutes of out-laps, flying laps and a stop, reported the way
+   the feed reports them, so the sheet the feed writes - the provisional grid in
+   the standings, the session on the Qualifying tab - can be watched filling in
+   on a day nobody is qualifying. */
+let LIVE_DEMO_QUAL = new URLSearchParams(location.search).has('qual');
 const RS = '\u001e';   // SignalR ends every frame with a record separator
 const SESSION_TYPE = { 1: 'Practice', 2: 'Qualifying', 3: 'Race', 4: 'RX', 5: 'Sprint' };
 /* What a car is doing, as the feed numbers it. */
@@ -3426,6 +3539,12 @@ const LIVE = {
 
 /** Is anything feeding this - the socket, or the simulation standing in for it? */
 const liveOn = () => LIVE.status === 'live' || LIVE.status === 'demo';
+
+/* Is this session qualifying? TSL type a session, and 2 is qualifying; ITS
+   Chrono only name one, and a session of theirs called Qualifying is typed as
+   practice, so the name is read where the type does not settle it. */
+const liveIsQual = s => !!s && (s.type === 2
+  || (s.type !== 3 && /qualif/i.test(String(s.name || ''))));
 
 /* -------------------------------------------------------- the feed --- */
 
@@ -3461,9 +3580,13 @@ function liveSessionOf(s) {
 
 function liveSetSession(s) {
   const next = liveSessionOf(s);
-  // A new session is a new grid: nothing from the last one survives it.
+  // A new session is a new grid: nothing from the last one survives it - and
+  // that includes its being over. `ended` comes off a baked snapshot or ITS's
+  // stop, and left standing it would put "finished" on a session that has only
+  // just gone green.
   if (LIVE.session && LIVE.session.id !== next.id) {
     LIVE.cars.clear(); LIVE.rc = []; LIVE.sectorBest = {};
+    LIVE.ended = false;
   }
   LIVE.session = next;
   // A session that arrives with its field in it is a snapshot, and a page that
@@ -3541,6 +3664,43 @@ function liveSector(car, msg) {
   });
 }
 
+/**
+ * A lap done, kept.
+ *
+ * The feed says a lap is complete and what it took, and nothing more about it
+ * afterwards. A page that wants a car's session lap by lap - which is what the
+ * Qualifying tab draws - has to keep each one as it lands, so this does: the
+ * lap, the time, and the splits the car put in on the way round. The last
+ * sector is never sent as a split, because the line is where it ends, so it is
+ * what is left of the lap once the others are taken off it.
+ *
+ * Whether the lap counts is the other thing kept. A published sheet marks an
+ * in-lap and an out-lap; the feed does not, but it does say when a car enters
+ * the pit lane and when it leaves, so a lap that ends while the car is in the
+ * lane came in, and the first lap after it leaves went out - the sheet's marks,
+ * arrived at from the other end. A page that connects mid-session has seen
+ * neither loop for a car already out, and a lap it cannot place counts; such a
+ * lap is a flying lap far more often than not.
+ */
+function liveLapDone(car, lap, time, flags) {
+  if (!car || !lap) return;
+  const hist = car.history || (car.history = []);
+  if (hist.some(h => h.lap === lap)) return;
+  const keys = ((LIVE.session || {}).sectors || []).slice(0, -1).map(x => x.key);
+  let s;
+  if (keys.length) {
+    s = keys.map(k => ((car.sectors || {})[k] || {}).time || null);
+    const whole = secsOf(time), parts = s.map(secsOf);
+    const rest = whole != null && parts.every(p => p != null)
+      ? whole - parts.reduce((a, b) => a + b, 0) : null;
+    s.push(rest > 0 ? lapText(rest) : null);
+    if (!s.some(Boolean)) s = undefined;
+  }
+  hist.push({ lap, time: time || null, s,
+              pit: !!(flags || {}).pit, out: !!(flags || {}).out });
+  car.outNext = false;
+}
+
 /** The session's own sector bests, where it has told us any. */
 function liveSectorBests(sess) {
   (sess.sectors || []).forEach(x => {
@@ -3595,12 +3755,16 @@ function liveMessage(text) {
       const row = liveCar(a);
       if (held) {
         row.sectors = held.sectors; row.bests = held.bests; row.speed = held.speed;
+        row.history = held.history; row.outNext = held.outNext;
       }
       LIVE.cars.set(a.id, row);
       break;
     }
     case 'competitorpitin': if (held) held.state = CAR_PIT; break;
-    case 'competitorpitout': if (held) held.state = CAR_RUNNING; break;
+    case 'competitorpitout':
+      // Out of the lane: the next lap this car completes is its out-lap.
+      if (held) { held.state = CAR_RUNNING; held.outNext = true; }
+      break;
     case 'competitorintermediate':
       // A car's split, part way round. It is the only thing the feed says about
       // a car between one crossing of the line and the next, a minute and a half
@@ -3610,7 +3774,12 @@ function liveMessage(text) {
     case 'competitorlapcompleted':
       // Past the line and into a new lap: the splits of the last one are done
       // with, and the columns fill again as the car goes round.
-      if (held) { held.laps = a.lap; held.last = a.time || held.last; held.sectors = {}; }
+      if (held) {
+        // Kept before the splits are cleared, because they are part of it.
+        liveLapDone(held, a.lap, a.time || held.last,
+                    { pit: held.state === CAR_PIT, out: !!held.outNext });
+        held.laps = a.lap; held.last = a.time || held.last; held.sectors = {};
+      }
       break;
     case 'vehicledeleted': LIVE.cars.delete(a.id); break;
     case 'rcmsgreceived':
@@ -3849,12 +4018,23 @@ function itsApply(info, id, cars, cfg) {
   const quickest = cars.filter(c => c.best)
     .sort((a, b) => (a.best < b.best ? -1 : 1))[0];
   next.fastestLap = quickest ? quickest.best : null;
+  // ITS send the screen rather than the crossings, so the laps this page has
+  // kept for a car are carried over from the last look, and a lap count that
+  // has gone up since is a lap done - the last lap time is what it took.
+  const kept = LIVE.session && LIVE.session.id === next.id ? new Map(LIVE.cars) : new Map();
   if (LIVE.session && LIVE.session.id !== next.id) {
     LIVE.cars.clear(); LIVE.rc = []; LIVE.sectorBest = {};
   }
   LIVE.session = next;
   LIVE.cars.clear();
-  cars.forEach(c => LIVE.cars.set(c.id, c));
+  cars.forEach(c => {
+    const was = kept.get(c.id);
+    if (was) {
+      c.history = was.history;
+      if ((c.laps || 0) > (was.laps || 0) && c.last) liveLapDone(c, c.laps, c.last, {});
+    }
+    LIVE.cars.set(c.id, c);
+  });
   LIVE.fromSeed = false; LIVE.seedIds = null; LIVE.stale = false;
   LIVE.ended = ended;
 }
@@ -4171,13 +4351,33 @@ function pointsForStatus(base, status) {
   return status === 'DNS' ? 1 : 2;
 }
 
-/** That meeting's qualifying, best first - the grid, as the build read it. */
-function liveQualifying(base, eventKey) {
+/**
+ * That meeting's qualifying sheet: the print, or the feed's while there is
+ * no print.
+ *
+ * The build reads the timekeepers' sheet a quarter of an hour after the flag
+ * and this page carries it from then on. Before then there is the sheet the
+ * feed is writing (liveQualSheet, folded in by liveDress), and after the
+ * session there is the last state of it, held: the race it is the grid for
+ * starts an hour later, and a page that has been open since the morning has
+ * no print in it until it is reloaded.
+ */
+function liveQualSheetFor(base, eventKey) {
   if (!base._quals) {
     base._quals = {};
-    (base.qualifying || []).forEach(q => { base._quals[q.event] = q.entries || []; });
+    (base.qualifying || []).forEach(q => { base._quals[q.event] = q; });
   }
-  return (base._quals[eventKey] || []).filter(e => e.pos)
+  const q = base._quals[eventKey];
+  if (q && (q.entries || []).length) return q;
+  const held = LIVE.qualHeld;
+  return held && held.series === base.key && held.sheet.event === eventKey
+    ? held.sheet : null;
+}
+
+/** That meeting's qualifying, best first - the grid, as the build read it. */
+function liveQualifying(base, eventKey) {
+  const q = liveQualSheetFor(base, eventKey);
+  return ((q && q.entries) || []).filter(e => e.pos)
     .slice().sort((a, b) => a.pos - b.pos);
 }
 
@@ -4408,11 +4608,110 @@ function liveView(base) {
   return { forKey, meet, session, kind, rows, mixed, fromGrid, missing, round, scored };
 }
 
+/* ---------------------------------------------- qualifying, as it runs --- */
+/**
+ * The qualifying sheet the feed is writing, as it stands.
+ *
+ * A qualifying session is a timing screen like any other and the Live tab
+ * shows it as one. But what the session is *for* is a sheet: the classification
+ * that sets the grid, which the build reads off the timekeepers' print a
+ * quarter of an hour after the flag and puts in three places - the Qualifying
+ * tab, the hatched columns of the standings, and the grid the live view lays
+ * the race out from. This is the same sheet in the same shape, made from the
+ * feed while the session is still running, so that all three have it from the
+ * first flying lap rather than from the print.
+ *
+ * The order is the times. The feed carries every car's best, so the
+ * classification is complete from the moment the page connects; the laps
+ * behind it are the ones the page has seen since, marked the way the sheet
+ * marks them, so the tab can draw the session lap by lap. What the page has
+ * not seen it cannot draw, and says so. Nothing is made where the print
+ * already exists: a build that has read the sheet has read the stewards'
+ * version, and the feed's is not shown over it.
+ */
+function liveQualSheet(base, v) {
+  const sess = v.session, ev = v.meet && v.meet.event;
+  if (!sess || !v.kind || !ev || v.mixed || !liveIsQual(sess)) return null;
+  if ((base.qualifying || []).some(q => q.event === ev.key)) return null;
+  const secs = r => secsOf(r.best);
+  const rows = v.rows.slice().sort((a, b) => {
+    const x = secs(a), y = secs(b);
+    if ((x == null) !== (y == null)) return x == null ? 1 : -1;
+    if (x != null && x !== y) return x - y;
+    return (a.pos || 99) - (b.pos || 99) || String(a.no).localeCompare(String(b.no));
+  });
+  let place = 0;
+  const entries = rows.map(r => {
+    const t = liveWho(base, r);
+    const timed = secs(r) != null;
+    if (timed) place += 1;
+    const laps = liveLapSheet(r);
+    return Object.assign({
+      // A sheet prints the class the championship puts a car in - "Am", not
+      // the feed's heading of "Caterham 310R" - so it comes off the table
+      // where the car is known, and off the feed's subclass where it is not.
+      pos: timed ? place : null, no: String(r.no), cls: (t ? t.cls : r.sub) || '',
+      driver: t ? t.driver : liveDriverName(r.name), time: r.best || null,
+      on: r.bestOn || null, lapsRun: r.laps || 0, state: r.state, id: r.id,
+    }, laps.length ? { laps } : {});
+  });
+  const splits = (sess.sectors || []).slice(0, -1);
+  return {
+    event: ev.key, eventName: ev.name, date: isoDay(new Date()), live: true,
+    session: sess.name || sess.typeName, flag: sess.flag,
+    ended: String(sess.flag || '').toLowerCase() === 'finish' || !!LIVE.ended,
+    sectors: splits.length ? splits.length + 1 : 0,
+    seen: entries.filter(e => e.laps).length, entries,
+  };
+}
+
+/** One car's laps, as a published sheet would print them. */
+function liveLapSheet(r) {
+  const laps = (r.history || []).slice().sort((a, b) => a.lap - b.lap)
+    .map(h => ({ lap: h.lap, time: h.time, s: h.s, pit: h.pit, out: h.out }));
+  // TSL mark each car's three best counting laps on the sheet; the feed does
+  // not, so the same marks are put on here.
+  laps.filter(qualValid).sort((a, b) => secsOf(a.time) - secsOf(b.time)).slice(0, 3)
+    .forEach((l, i) => { l.rank = i + 1; });
+  return laps;
+}
+
+/* A name off the feed for a car the table does not know, with the shouting
+   taken out of it: a sheet prints Harry Smith, and so does this page. */
+const liveDriverName = raw => String(raw || '').replace(/\s*\(.*\)\s*$/, '')
+  .split(/\s+/).filter(Boolean)
+  .map(w => (/^[A-ZÀ-Þ'’-]{2,}$/.test(w) ? w.charAt(0) + w.slice(1).toLowerCase() : w))
+  .join(' ');
+
 /** The series object the rest of the page should be drawing right now. */
 function liveDress(base) {
   const v = liveView(base);
   LIVE.view = v;
-  return (LIVE.applied && v.scored && v.scored.scored.size) ? withLive(base, v.scored) : base;
+  let d = (LIVE.applied && v.scored && v.scored.scored.size) ? withLive(base, v.scored) : base;
+  // Qualifying, while it runs: the sheet the feed is writing goes where the
+  // print will go, so the standings' hatched columns, the Qualifying tab and
+  // the grid for the race all read it the same way they will read the print.
+  const sheet = liveQualSheet(base, v);
+  if (sheet) LIVE.qualHeld = { series: base.key, sheet };
+  // And once the feed has moved on to the race, the last state of that sheet
+  // stays where it was put until the print arrives: a page open since the
+  // morning is the one page that has it, and the Qualifying tab losing it
+  // while the standings still read it would be the page disagreeing with
+  // itself. Held rather than running, so it is marked as over.
+  const held = !sheet && LIVE.qualHeld && LIVE.qualHeld.series === base.key
+    && !(base.qualifying || []).some(q => q.event === LIVE.qualHeld.sheet.event)
+    ? Object.assign({}, LIVE.qualHeld.sheet, { ended: true }) : null;
+  const use = sheet || held;
+  if (use) {
+    if (d === base) d = Object.assign({}, base);
+    d.qualifying = (base.qualifying || []).concat([use]);
+    // Only a session that is actually running is one the rest of the page
+    // should be calling live: the note under the standings says the column
+    // moves with the feed, and after the flag it does not.
+    if (sheet) d.liveQual = sheet;
+    delete d._quals;               // the index is built from that list once
+  }
+  return d;
 }
 
 /* ------------------------------------------------- the stand-in race --- */
@@ -4440,6 +4739,7 @@ function liveDress(base) {
 const SIM = {
   speed: 1, key: null, cars: [], plan: [], next: 0, t0: 0, timer: null,
   duration: 0, flagAt: 0, laps: 0, flag: null, session: null, held: null,
+  qual: false,       // a qualifying session rather than a race (see simQualPlan)
   bests: {},         // quickest anybody has gone in each sector
   sc: [0, 0], retire: null, retireOn: 0, pit: null, pitOn: 0,
 };
@@ -4535,14 +4835,19 @@ function simPlan(cars, duration, quickest) {
 
 /** One car, in the shape the feed sends it. */
 function simRow(c, leader, ahead) {
-  const gapTo = other => !other || other === c ? ''
-    : c.laps < other.laps ? `+${other.laps - c.laps} lap${other.laps - c.laps > 1 ? 's' : ''}`
-    : `+${(c.total - other.total).toFixed(3)}`;
+  // In a race a gap is where the cars are; in qualifying it is between their
+  // best laps, and a car without one has no gap to anybody.
+  const gapTo = SIM.qual
+    ? other => (!other || other === c || c.best == null || other.best == null) ? ''
+      : `+${(c.best - other.best).toFixed(3)}`
+    : other => !other || other === c ? ''
+      : c.laps < other.laps ? `+${other.laps - c.laps} lap${other.laps - c.laps > 1 ? 's' : ''}`
+      : `+${(c.total - other.total).toFixed(3)}`;
   return {
     id: c.id, no: c.no, name: c.name, team: null, primaryClass: c.cls, subClass: '',
     vehicle: 'Caterham', sponsor: '', nationality: 'GBR', manufacturer: 'Caterham',
     result: { position: c.pos, pic: c.pic, posChange: c.pos - c.was, laps: c.laps,
-              raceTime: c.laps ? raceTime(c.total) : '',
+              raceTime: c.laps && !SIM.qual ? raceTime(c.total) : '',
               fastLapTime: c.best ? lapText(c.best) : '',
               gap: c.laps ? gapTo(leader) : '', diff: c.laps ? gapTo(ahead) : '',
               pitStops: c.stops },
@@ -4550,9 +4855,10 @@ function simRow(c, leader, ahead) {
   };
 }
 
-const simOrder = () => SIM.cars.slice().sort((a, b) =>
-  (a.state === CAR_GONE) - (b.state === CAR_GONE) || b.laps - a.laps
-  || a.total - b.total || a.grid - b.grid);
+const simOrder = () => SIM.cars.slice().sort((a, b) => SIM.qual
+  ? (a.best == null) - (b.best == null) || (a.best - b.best) || a.grid - b.grid
+  : (a.state === CAR_GONE) - (b.state === CAR_GONE) || b.laps - a.laps
+    || a.total - b.total || a.grid - b.grid);
 
 /** Renumber everyone, and hand back whoever moved. */
 function simRenumber() {
@@ -4616,15 +4922,64 @@ function simQualifying(base, event) {
   delete base._quals;                // the index is built from that list once
 }
 
-/** Set a race up: the grid, the plan, and the session it is run under. */
+/* A demonstration qualifying session is a quarter of an hour, which is what
+   the timetables give these grids, and a stop in it costs what a look at the
+   tyres costs. */
+const SIM_QUAL_MINUTES = 15, SIM_QUAL_STOP = 50;
+
+/**
+ * A qualifying session, planned the same way: every crossing, before any of
+ * it is shown.
+ *
+ * Nobody is racing anybody. Each car leaves the pit lane in its own time, puts
+ * in an out-lap, and goes round until the flag - a little quicker each lap as
+ * the track comes to it - and a lap begun before the flag is finished and
+ * counts. One car comes in for a stop mid-session and goes out again, and one
+ * comes in and stays there, because that is what a sheet looks like, and the
+ * marks a sheet puts on those laps are what the live sheet has to work out for
+ * itself from the pit lane's loops.
+ */
+function simQualPlan(cars, duration, quickest) {
+  const out = [];
+  cars.forEach((c, i) => {
+    c.total = 6 * i + Math.random() * 4;             // out of the lane
+    out.push({ when: c.total, car: c, pitOut: true });
+    for (let lap = 1; c.total < duration; lap++) {
+      const stop = c === SIM.pit && lap === SIM.pitOn;
+      const park = c === SIM.retire && lap === SIM.retireOn;
+      let t = wobble(c.pace + 0.3, 0.5) - Math.min(0.6, 0.1 * (lap - 1));
+      if (lap === 1) t = c.pace + 9 + Math.random() * 3;     // from the pit exit
+      if (stop || park) t += 7;                              // in through the lane
+      t = Math.max(t, quickest * 0.97);
+      // The out-lap after a stop carries the time spent in the lane with it,
+      // which is exactly why a sheet does not count one.
+      const extra = c === SIM.pit && lap === SIM.pitOn + 1 ? SIM_QUAL_STOP + 8 : 0;
+      const from = c.total + extra;
+      c.total = from + t;
+      const s1 = t * (0.28 + Math.random() * 0.02);
+      const s2 = t * (0.45 + Math.random() * 0.02);
+      out.push({ when: from + s1, car: c, lap, sector: 'S1Time', took: s1 });
+      out.push({ when: from + s1 + s2, car: c, lap, sector: 'S2Time', took: s2 });
+      if (stop || park) out.push({ when: c.total - 5, car: c, pitIn: true });
+      out.push({ when: c.total, car: c, lap, took: t + extra });
+      if (park) break;
+      if (stop) out.push({ when: c.total + SIM_QUAL_STOP, car: c, pitOut: true });
+    }
+  });
+  out.sort((a, b) => a.when - b.when);
+  return { plan: out, flagAt: duration, laps: 0 };
+}
+
+/** Set a session up: the grid, the plan, and the session it is run under. */
 function simSetUp(base) {
   const grid = simGrid(base);
   if (!grid) return false;
   SIM.key = base.key;
   SIM.cars = grid.cars;
-  SIM.duration = grid.duration;
+  SIM.qual = LIVE_DEMO_QUAL;
+  SIM.duration = SIM.qual ? SIM_QUAL_MINUTES * 60 : grid.duration;
 
-  const about = Math.max(3, Math.floor(grid.duration / grid.quickest));
+  const about = Math.max(3, Math.floor(SIM.duration / grid.quickest));
   const from = 2 + Math.floor(Math.random() * Math.max(1, about - 4));
   SIM.sc = [from, from + 1];
   SIM.retire = SIM.cars[Math.floor(Math.random() * SIM.cars.length)];
@@ -4632,7 +4987,9 @@ function simSetUp(base) {
   SIM.pit = SIM.cars.find(c => c !== SIM.retire) || null;
   SIM.pitOn = 2 + Math.floor(Math.random() * Math.max(1, about - 2));
 
-  const made = simPlan(SIM.cars, grid.duration, grid.quickest);
+  if (SIM.qual) SIM.sc = [-1, -1];                 // nothing to neutralise
+  const made = SIM.qual ? simQualPlan(SIM.cars, SIM.duration, grid.quickest)
+    : simPlan(SIM.cars, SIM.duration, grid.quickest);
   SIM.plan = made.plan; SIM.flagAt = made.flagAt; SIM.laps = made.laps;
   SIM.cars.forEach(c => { c.laps = 0; c.total = 0; c.best = c.last = null;
                           c.state = CAR_RUNNING; c.stops = 0;
@@ -4645,17 +5002,19 @@ function simSetUp(base) {
   const meet = liveMeeting(base);
   const rounds = (meet.event && meet.event.rounds) || [];
   const nth = Math.max(1, rounds.findIndex(r => !base.roundsRun.includes(r)) + 1);
-  if (meet.event) simQualifying(base, meet.event);
+  // A demonstration race needs a morning it never had; a demonstration
+  // qualifying is that morning, and writes the sheet itself as it runs.
+  if (meet.event && !SIM.qual) simQualifying(base, meet.event);
   SIM.session = {
     sessionFlag: 'Green',
     sessionClock: { timeToGo: simLeft(0), running: true },
     id: 'sim-' + Date.now(),
     series: base.fullName,
-    name: 'RACE ' + nth,
-    type: 3,
+    name: SIM.qual ? 'QUALIFYING' : 'RACE ' + nth,
+    type: SIM.qual ? 2 : 3,
     plannedStart: new Date().toISOString(),
     weatherConditions: 'Dry', trackConditions: 'Dry', units: 1,
-    duration: { time: hhmmss(grid.duration), laps: 0 },
+    duration: { time: hhmmss(SIM.duration), laps: 0 },
     fastestLap: null,
     track: { name: meet.event ? meet.event.name : '',
              displayName: meet.event ? meet.event.name : '', length: 3000,
@@ -4701,6 +5060,19 @@ function simTick() {
     }
 
     const c = x.car;
+    // The pit lane's loops, which in qualifying are what tell an in-lap and an
+    // out-lap from a flying one: the entry before the crossing, the exit after
+    // the stop.
+    if (x.pitIn) {
+      c.state = CAR_PIT; c.stops = (c.stops || 0) + 1;
+      simSend('CompetitorPitIn', { id: c.id });
+      continue;
+    }
+    if (x.pitOut) {
+      c.state = CAR_RUNNING;
+      simSend('CompetitorPitOut', { id: c.id });
+      continue;
+    }
     if (x.sector) {
       // Part way round: the two intermediates a lap is cut at, which is all a
       // car says about itself between one crossing of the line and the next.
@@ -4716,10 +5088,15 @@ function simTick() {
       continue;
     }
     c.laps = x.lap; c.last = x.took; c.total = x.when;
-    c.best = c.best === null ? x.took : Math.min(c.best, x.took);
-    if (c === SIM.pit && x.lap === SIM.pitOn) { c.stops = 1; simSend('CompetitorPitIn', { id: c.id }); }
-    else if (c === SIM.pit && x.lap === SIM.pitOn + 1) simSend('CompetitorPitOut', { id: c.id });
-    if (c === SIM.retire && x.lap === SIM.retireOn) {
+    // A best in qualifying is a best flying lap: the feed's own screen does not
+    // credit a car with a lap it came in on or went out on, and nor does the
+    // sheet, so the demonstration does not either.
+    const flying = !SIM.qual || !(x.lap === 1 || c.state === CAR_PIT
+      || (c === SIM.pit && x.lap === SIM.pitOn + 1));
+    if (flying) c.best = c.best === null ? x.took : Math.min(c.best, x.took);
+    if (!SIM.qual && c === SIM.pit && x.lap === SIM.pitOn) { c.stops = 1; simSend('CompetitorPitIn', { id: c.id }); }
+    else if (!SIM.qual && c === SIM.pit && x.lap === SIM.pitOn + 1) simSend('CompetitorPitOut', { id: c.id });
+    if (!SIM.qual && c === SIM.retire && x.lap === SIM.retireOn) {
       c.state = CAR_GONE;
       simSend('RCMsgReceived', { lineNo: 2, urgent: false,
         timestamp: new Date().toISOString(), text: `CAR ${c.no} ${c.name} - RETIRED` });
@@ -4743,13 +5120,16 @@ function simTick() {
 }
 
 /** Start a demonstration from the page, and leave the address saying so. */
-function liveDemoOn(speed) {
+function liveDemoOn(speed, qual) {
   LIVE_DEMO = String(speed || 25);
+  LIVE_DEMO_QUAL = !!qual;
   LIVE_FAKE = true;
   LIVE.cars.clear(); LIVE.session = null; LIVE.rc = []; LIVE.sig = null;
   LIVE.seededAt = null; LIVE.fromSeed = false; LIVE.seedIds = null;
+  LIVE.qualHeld = null;                    // a made-up sheet is not a grid
   const u = new URL(location.href);
   u.searchParams.set('demo', LIVE_DEMO);
+  if (qual) u.searchParams.set('qual', ''); else u.searchParams.delete('qual');
   history.replaceState(null, '', u);       // a refresh keeps the demonstration
   liveStart();
   liveRefresh();
@@ -4759,7 +5139,11 @@ function liveDemoOn(speed) {
 function liveDemoOff() {
   simStop();
   LIVE_DEMO = null;
+  LIVE_DEMO_QUAL = false;
   LIVE_FAKE = false;
+  // The sheet the demonstration qualifying wrote goes with it: it is nobody's
+  // grid.
+  LIVE.qualHeld = null;
   // The made-up qualifying goes with the made-up race that needed it.
   SEASON.series.forEach(s => {
     if (!(s.qualifying || []).some(q => q.demo)) return;
@@ -4770,6 +5154,7 @@ function liveDemoOff() {
   LIVE.status = 'idle'; LIVE.wanted = false; LIVE.declined = true;
   const u = new URL(location.href);
   u.searchParams.delete('demo');
+  u.searchParams.delete('qual');
   history.replaceState(null, '', u);
   liveRefresh();
 }
@@ -5030,7 +5415,7 @@ function liveTable(base, v, live, id = 'liveOrderTab') {
       + `<td class="num mono${fastest || point ? ' fl' : ''}" data-c="best"`
       + (fastest || point
          ? ` data-tip="${esc(
-             (fastest ? (v.session && v.session.type === 2
+             (fastest ? (liveIsQual(v.session)
                 ? 'Quickest lap of qualifying so far — provisional pole'
                 : 'Quickest lap of the session so far') : '')
              + (fastest && point ? '. ' : '')
@@ -5195,18 +5580,25 @@ function livePanel(base, v, p) {
     `<button class="livebtn quiet" id="${id}" data-tip="${esc(tip)}">${label}</button>`;
   const items = [];
   if (LIVE_FAKE) {
+    const what = SIM.qual ? 'session' : 'race';
     items.push(LIVE.wanted
-      ? item('liveStop', 'Stop the race',
+      ? item('liveStop', `Stop the ${what}`,
              'Stop the simulation and leave the table where it got to')
-      : item('liveGo', 'Run the race',
-             'Run twenty minutes of a made-up race, in real time, against this '
-             + 'championship’s own scoring'));
-    items.push(item('livePause', LIVE.paused ? 'Let it go' : 'Hold the race',
+      : item('liveGo', `Run the ${what}`,
+             SIM.qual
+               ? 'Run a quarter of an hour of made-up qualifying, in real time, '
+                 + 'and watch the sheet it writes fill in'
+               : 'Run twenty minutes of a made-up race, in real time, against this '
+                 + 'championship’s own scoring'));
+    items.push(item('livePause', LIVE.paused ? 'Let it go' : `Hold the ${what}`,
                     'Stop the simulation where it is — the clock stops with '
                     + 'it — or let it go again'));
-    items.push(item('liveReset', 'Restart the race',
-                    'Send the simulation back to the grid and run it again from '
-                    + 'lights out'));
+    items.push(item('liveReset', `Restart the ${what}`,
+                    SIM.qual
+                      ? 'Send everyone back to the pit lane and run the session '
+                        + 'again from the green light'
+                      : 'Send the simulation back to the grid and run it again from '
+                        + 'lights out'));
     items.push(item('liveDemoOff', 'Done',
                     `Stop the demonstration and put this tab back on `
                     + `${timerName()}’s own feed`));
@@ -5229,6 +5621,12 @@ function livePanel(base, v, p) {
                     + 'time, to show what this tab does while a meeting is '
                     + 'running: twenty minutes of it, a lap every minute and a '
                     + 'half. Nothing is timed and none of the numbers are real.'));
+    items.push(item('liveDemoQual', 'Show a demonstration qualifying',
+                    'Qualify a made-up field in this page, in real time, to show '
+                    + 'what this page does while a grid is being set: a quarter '
+                    + 'of an hour of it, with the sheet it writes filling in on '
+                    + 'the Qualifying tab and in the standings as the laps land. '
+                    + 'Nothing is timed and none of the numbers are real.'));
   }
   const fakes = '<details class="fakes icon"><summary aria-label="What this tab can do"'
     + ' data-tip="Watch the feed, stop watching, and the handles on the '
@@ -5269,7 +5667,7 @@ function livePanel(base, v, p) {
       + `${liveAgo(LIVE.seededAt)}${liveOn() ? ', and live since' : ''}</span>`);
   }
 
-  let body = '', order = null, impact = null, gridNote = '';
+  let body = '', order = null, impact = null, gridNote = '', qualNote = '';
   if (sess && v.kind) {
     // The meeting and the session are in the box above; what is left to say is
     // what this session is worth.
@@ -5280,7 +5678,7 @@ function livePanel(base, v, p) {
       // when a session does not count at all.
       v.scored ? ''
         : sess.type === 3 ? 'already classified — the tables use that, not this'
-        : sess.type === 2 ? 'qualifying — no championship points, but this is the '
+        : liveIsQual(sess) ? 'qualifying — no championship points, but this is the '
             + 'sheet the grid for the race is laid out from'
         : 'practice carries no championship points',
       LIVE.ended && !LIVE.ws ? 'finished, as the last snapshot saw it' : '',
@@ -5299,6 +5697,11 @@ function livePanel(base, v, p) {
     // every time a car comes past and the rest of the page does not.
     body += `<div class="livenote" id="liveGridNote"${gridNote ? '' : ' hidden'}>`
       + `${gridNote}</div>`;
+    // Likewise the sheet qualifying is writing: who is on pole moves with the
+    // laps, and where the sheet has gone on this page does not.
+    qualNote = liveQualNote(base, v);
+    body += `<div class="livenote" id="liveQualNote"${qualNote ? '' : ' hidden'}>`
+      + `${qualNote}</div>`;
     if (v.mixed) {
       body += '<div class="livenote">This grid is shared by both classes and the feed '
         + 'does not say which class each car is in, so every car on it is listed and '
@@ -5415,10 +5818,10 @@ function livePanel(base, v, p) {
   let head = `<div class="livehead"><div class="who">${where}</div>`;
   head += '<div class="right">'
     + (LIVE_FAKE ? `<span class="flagpill" data-tip="Nothing is being timed: this `
-        + `page is racing a made-up field against the clock to show what the live `
-        + `view does`
+        + `page is ${SIM.qual ? 'qualifying' : 'racing'} a made-up field against the `
+        + `clock to show what the live view does`
         + `${SIM.speed > 1 ? `, at ${SIM.speed} times life` : `, in real time`}. `
-        + `None of these numbers are real.">Simulated race</span>` : '')
+        + `None of these numbers are real.">Simulated ${SIM.qual ? 'qualifying' : 'race'}</span>` : '')
     + `<span class="conn ${cc}"><i></i>${ctext}</span>`
     + '</div>'
     // The two buttons are a child of the box rather than of the status group,
@@ -5428,6 +5831,7 @@ function livePanel(base, v, p) {
     + '</div>';
 
   const shell = [base.key, LIVE.status, LIVE.wanted, LIVE.paused, LIVE.key, LIVE_FAKE,
+                 SIM.qual,
                  sess && sess.id, sess && sess.flag, v.scored && v.scored.round,
                  LIVE.applied, LIVE.seededAt, meet.event && meet.event.key,
                  soon && soon.name, order && order.cols].join('|');
@@ -5457,6 +5861,8 @@ function livePanel(base, v, p) {
     };
     const demoOn = $('#liveDemoOn', p);
     if (demoOn) demoOn.onclick = () => liveDemoOn(1);
+    const demoQual = $('#liveDemoQual', p);
+    if (demoQual) demoQual.onclick = () => liveDemoOn(1, true);
     const demoOff = $('#liveDemoOff', p);
     if (demoOff) demoOff.onclick = () => liveDemoOff();
   }
@@ -5476,6 +5882,8 @@ function livePanel(base, v, p) {
     liveRows2(into, '#liveImpactTab', impact);
     const note = $('#liveGridNote', into);
     if (note) { note.innerHTML = gridNote; note.hidden = !gridNote; }
+    const qn = $('#liveQualNote', into);
+    if (qn) { qn.innerHTML = qualNote; qn.hidden = !qualNote; }
   } else {
     into.innerHTML = body + why;
     into.dataset.shape = shape;
@@ -5514,10 +5922,37 @@ function liveRows2(into, sel, made) {
   if (body && body.innerHTML !== made.rows) body.innerHTML = made.rows;
 }
 
+/**
+ * What qualifying is doing to the rest of the page, under its running order.
+ *
+ * The order above is the grid as it stands; what a reader cannot see from the
+ * table is that it has already gone where the print goes - the hatched column
+ * of the standings and the Qualifying tab - and who is on pole is the one
+ * number on a qualifying screen worth saying in words.
+ */
+function liveQualNote(base, v) {
+  const sheet = D && D.key === base.key ? D.liveQual : null;
+  if (!sheet || !v.session) return '';
+  const ev = v.meet.event;
+  const rd = ev && ev.rounds.find(r => !base.roundsRun.includes(r));
+  const pole = sheet.entries.find(e => e.pos === 1);
+  const done = sheet.ended;
+  const yr = SEASON.year;
+  return (pole ? `Provisional pole <b>${esc(pole.time)}</b> — ${esc(pole.driver)}. `
+          : 'Nobody has set a time yet. ')
+    + `This order is the grid for ${rd ? `round ${rd}` : 'the first race'}`
+    + `${done ? ' as the flag left it' : ' as it stands'}, and it is already where `
+    + `the print will go: ${rd ? `the Round ${rd} column of the ` : 'the '}`
+    + `<a href="#${yr}/${base.key}/standings">Standings</a>, and lap by lap on the `
+    + `<a href="#${yr}/${base.key}/qualifying">Qualifying</a> tab. The timekeepers' `
+    + `sheet replaces it when it is published.`;
+}
+
 /** The line under the tabs, on every tab, when a live round is being counted. */
 function liveNote(base, v) {
   const box = $('#liveNote');
-  if (!(D && D.live)) { box.innerHTML = ''; box.className = ''; return; }
+  if (!(D && (D.live || D.liveQual))) { box.innerHTML = ''; box.className = ''; return; }
+  if (!D.live) { liveQualLine(box, base, v); return; }
   const s = D.live;
   const connected = liveOn();
   box.className = 'note';
@@ -5542,6 +5977,34 @@ function liveNote(base, v) {
     + `<a href="#${SEASON.year}/${D.key}/live">the live timing</a>`;
   const off = $('#liveOff', box);
   if (off) off.onclick = e => { e.preventDefault(); LIVE.applied = false; liveRefresh(); };
+}
+
+/** The same line while it is qualifying that is running: no points, a grid. */
+function liveQualLine(box, base, v) {
+  const q = D.liveQual;
+  const connected = liveOn();
+  const yr = SEASON.year;
+  box.className = 'note';
+  const where = v.meet.event ? v.meet.event.name : '';
+  const ev = v.meet.event;
+  const rd = ev && ev.rounds.find(r => !base.roundsRun.includes(r));
+  const tag = `<span class="tag">${connected ? 'Live' : 'Provisional'}</span>`;
+  if (innerWidth < 768) {
+    box.innerHTML = `${tag}<b>Qualifying</b> at ${esc(where)}`
+      + `${q.ended ? ' has just finished' : ' is running'}: the grid it sets is in the `
+      + `standings and on the <a href="#${yr}/${D.key}/qualifying">Qualifying</a> tab as `
+      + 'it stands.';
+    return;
+  }
+  box.innerHTML = `${tag}<b>Qualifying</b> `
+    + (q.ended ? 'has just finished at ' : connected ? 'is running at ' : 'was running at ')
+    + `${esc(where)}, and the grid it ${q.ended ? 'set' : 'is setting'} is on this page as `
+    + `${connected ? 'it stands' : `the snapshot taken ${liveAgo(LIVE.seededAt)} left it`}: `
+    + `${rd ? `in the Round ${rd} column of the ` : 'in the '}`
+    + `<a href="#${yr}/${D.key}/standings">standings</a>, and lap by lap on the `
+    + `<a href="#${yr}/${D.key}/qualifying">Qualifying</a> tab. It scores nothing, and `
+    + `it is provisional: the sheet is the timekeepers' to print. · `
+    + `<a href="#${yr}/${D.key}/live">the live timing</a>`;
 }
 
 /** A dot on the tab while a session of this series is actually running. */
@@ -5574,8 +6037,12 @@ function liveDraw() {
    who is still in the race, not every lap time that lands. */
 function liveSig() {
   const s = LIVE.session || {};
+  // In qualifying the order is the times, and the sheet the tab draws from
+  // grows a lap at a time, so both are part of what the page is redrawn for.
+  const qual = liveIsQual(s);
   return [s.id, s.flag,
-          ...[...LIVE.cars.values()].map(r => `${r.no}:${r.pos}:${r.state}`)].join('|');
+          ...[...LIVE.cars.values()].map(r => `${r.no}:${r.pos}:${r.state}`
+            + (qual ? `:${r.best}:${r.laps}` : ''))].join('|');
 }
 
 function liveTick() {
@@ -5587,7 +6054,8 @@ function liveTick() {
 
 /* Tabs whose contents the points have moved on from. */
 const LIVE_STALE = {};
-const LIVE_TABS = { standings: () => standings(), runin: () => runin() };
+const LIVE_TABS = { standings: () => standings(), runin: () => runin(),
+                    qualifying: () => qualifying() };
 
 /** Rebuild a tab if it is on screen; otherwise remember that it needs it. */
 function liveStale(tab) {
@@ -6996,6 +7464,11 @@ function liveRefresh() {
   // are next shown, which saves the work and, more to the point, stops a table
   // being pulled out from under somebody who is reading it on another tab.
   liveStale('standings'); liveStale('runin');
+  // The Qualifying tab holds the session being qualified, so it moves with
+  // the feed while there is one - and once more when it ends, to take the
+  // feed's sheet down again.
+  if (D.liveQual || LIVE.qualShown) liveStale('qualifying');
+  LIVE.qualShown = !!D.liveQual;
   liveDraw();
 }
 
@@ -7032,6 +7505,7 @@ function liveSwitch(base) {
       ? [meet.seed.session.id] : [];
     LIVE.session = null; LIVE.cars = new Map();
     LIVE.rc = []; LIVE.seededAt = null; LIVE.sig = null; LIVE.view = null;
+    LIVE.qualHeld = null;       // that meeting's grid, not this one's
     LIVE.declined = false;      // a different meeting is a fresh decision
   }
   liveAdopt(meet.seed);

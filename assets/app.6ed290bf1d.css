@@ -676,8 +676,16 @@ table.livetab .down{color:var(--alarm);font-weight:600}
   border-left:3px solid var(--flag);background:var(--flag-soft);color:var(--flag-ink)}
 .livenote b{color:inherit}
 .livenote a{color:inherit}
+/* A session that is running now, on the tab and in the qualifying picker. */
 .livedot{display:inline-block;width:7px;height:7px;border-radius:50%;
   background:var(--alarm);margin-left:7px;vertical-align:middle;animation:pulse 2s ease-in-out infinite}
+/* The feed's sheet rather than the print, in the head of a qualifying session:
+   the same tag the note under the tabs uses, so it reads as the same thing. */
+.racehead .livetag{font-family:"Barlow Condensed",Arial,sans-serif;font-size:11.5px;
+  letter-spacing:.1em;text-transform:uppercase;padding:1px 6px;border-radius:2px;
+  background:var(--band);color:var(--band-ink)}
+.racehead .livetag.done{background:var(--surface-2);color:var(--ink-2);
+  border:1px solid var(--line-2)}
 /* ---- the live view ------------------------------------------------------- */
 /* Live is the last choice in the championship strip and is not a championship:
    it is the meeting, whatever is on at it, whoever's session that is. Set apart
