@@ -1008,6 +1008,17 @@ table.enduro tr.win.ours td{background:var(--flag-soft)}
 .sc-head b{font-size:15px;font-weight:600;flex:1 1 auto;min-width:0}
 .sc-head .who{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3)}
 .sc-note{margin:6px 0 0;font-size:12.5px;color:var(--ink-2);line-height:1.45}
+/* Which meeting the post is of, in the band a card head already uses. */
+.sc-meet{flex:none;font-family:"Barlow Condensed",Arial,sans-serif;font-size:11.5px;
+  letter-spacing:.08em;text-transform:uppercase;padding:1px 7px;border-radius:2px;
+  background:var(--band);color:var(--band-ink);cursor:help}
+/* Who the post names. A driver the standings know is marked; one they do not is
+   still printed, because the post still names them. */
+.sc-drivers{display:flex;flex-wrap:wrap;gap:4px 5px;margin:7px 0 0}
+.sc-driver{font-family:"IBM Plex Mono",monospace;font-size:11px;padding:1px 6px;
+  border-radius:2px;border:1px solid var(--line-2);color:var(--ink-3);cursor:help}
+.sc-driver.known{border-color:var(--racing);color:var(--racing-ink);
+  background:var(--racing-soft)}
 /* Whatever the platform puts here has to stay inside the card on a phone, and
    an embed that never loads leaves only its fallback link, which should not
    be holding open an empty box the height of a photograph. */
@@ -1016,8 +1027,26 @@ table.enduro tr.win.ours td{background:var(--flag-soft)}
 .sc-embed iframe{max-width:100%!important;min-width:0!important}
 .sc-embed .instagram-media{min-width:0!important;border-radius:3px!important}
 
+/* ---- found rather than kept -------------------------------------------- */
+/* A news card carries no embed and asks nobody for anything, so it packs
+   tighter than a post and the grid can be narrower. */
+.newsgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  margin-top:12px;align-items:start}
+.newscard{background:var(--surface-2);border-radius:3px;padding:10px 13px 12px;
+  border-left:3px solid var(--line-2);min-width:0}
+.newscard.mine{border-left-color:var(--racing)}
+.plat.news{color:var(--ink-2)}
+.nc-title{display:block;margin:5px 0 0;font-size:13.5px;line-height:1.4;
+  font-weight:600;color:var(--ink);text-decoration:none}
+.nc-title:hover{text-decoration:underline}
+/* A machine kept this item, so it shows its working rather than asking to be
+   believed. Quiet by default - it is for the reader who doubts a card. */
+.nc-why{display:inline-block;margin-top:8px;font-family:"Barlow Condensed",Arial,sans-serif;
+  font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-3);border-bottom:1px dotted var(--line-2);cursor:help}
+
 @media (max-width:767px){
-  .accounts,.socialgrid{grid-template-columns:1fr}
+  .accounts,.socialgrid,.newsgrid{grid-template-columns:1fr}
 }
 
 /* ---- tooltip ----------------------------------------------------------- */

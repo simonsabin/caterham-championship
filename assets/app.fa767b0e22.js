@@ -383,6 +383,21 @@ function showTipFor(t) {
   showTip(t.dataset.tip, r.left + r.width / 2, r.top);
 }
 const hideTip = () => { tip.style.opacity = 0; tipTarget = null; };
+
+/* A tooltip the keyboard can reach.
+ *
+ * The tip goes up on focus as well as on hover, but a <span> takes no focus of
+ * its own and a reader that is not looking at the screen is told the chip's
+ * text and nothing else. So anything whose detail lives only in its tooltip is
+ * given both: a tab stop, and the same words as its accessible name. `html` is
+ * what the tooltip draws, `label` the plain sentence that says the same thing.
+ */
+function tipped(node, html, label) {
+  node.dataset.tip = html;
+  node.tabIndex = 0;
+  node.setAttribute('aria-label', label);
+  return node;
+}
 /* A tooltip belongs to the thing it is about. Press a button that rebuilds the
    page around it - start the demonstration, stop it - and that thing is gone
    without ever being moved off, so nothing takes the tooltip down with it. */
@@ -5885,6 +5900,41 @@ function socialAccounts(host, data) {
  * markup, because what is inside it is what a reader sees if the script never
  * runs, and that has to be a sentence and a link rather than an empty box.
  */
+/**
+ * The meeting a post is tagged with, as the calendar knows it.
+ *
+ * A circuit key alone does not name a meeting - eight of the twelve are visited
+ * more than once in a season, and Donington is the GP layout for one series and
+ * the National for another. The post's own `series` is what settles it, because
+ * a series visits a circuit once. Resolved against the series being read where
+ * that is one of them, so the dates shown are the ones the reader is looking at.
+ */
+function socialMeeting(x) {
+  if (!x.meeting || !x.series) return null;
+  const mine = x.series.indexOf(D.key) >= 0;
+  for (const key of mine ? [D.key] : x.series) {
+    const ser = SEASON.series.find(s => s.key === key);
+    const ev = ser && (ser.events || []).find(e => e.key === x.meeting);
+    // Which series the meeting was read off comes back with it: the same post
+    // is drawn on every tab, and on a tab whose championship does not go to
+    // that meeting the rounds belong to somebody else and have to say so.
+    if (ev) return { ev: ev, ser: ser, mine: mine };
+  }
+  return null;
+}
+
+/**
+ * Whether a tagged driver is someone the series being read has on its grid.
+ *
+ * A name that does not resolve is still printed. The 2025 270R podium names a
+ * driver who is not on a 2026 grid; dropping him would make the page disagree
+ * with the photograph it is showing, which is the wrong way round.
+ */
+function socialDriver(name) {
+  return scoring.some(t => t.driver === name)
+    || D.table.some(t => t.driver === name);
+}
+
 function socialCard(x) {
   const card = el('article', 'socialcard' + (socialMine(x) ? ' mine' : ''));
   const head = el('div', 'sc-head');
@@ -5895,7 +5945,40 @@ function socialCard(x) {
     + (x.date ? `<span class="who">${esc(x.date)}</span>` : '');
   card.append(head);
 
+  const meet = socialMeeting(x);
+  if (meet) {
+    const ev = meet.ev;
+    const rounds = ev.rounds && ev.rounds.length
+      ? `Round${ev.rounds.length > 1 ? 's' : ''} ${ev.rounds.join(', ')} of `
+        + (meet.mine ? 'this championship' : (meet.ser.short || meet.ser.name))
+      : '';
+    const chip = el('span', 'sc-meet');
+    chip.textContent = ev.name;
+    tipped(chip,
+           `${esc(ev.name)} \u00b7 ${esc(ev.dates)}`
+             + (rounds ? `<br>${esc(rounds)}` : ''),
+           `${ev.name} \u00b7 ${ev.dates}` + (rounds ? `. ${rounds}` : ''));
+    head.append(chip);
+  }
+
   if (x.note) card.append(Object.assign(el('p', 'sc-note'), { textContent: x.note }));
+
+  // Who the post identifies. A name the standings know is marked as one; a name
+  // they do not is still shown, because the post still names them.
+  if ((x.drivers || []).length) {
+    const row = el('p', 'sc-drivers');
+    x.drivers.forEach(name => {
+      const known = socialDriver(name);
+      const chip = el('span', 'sc-driver' + (known ? ' known' : ''));
+      chip.textContent = shortName(name);
+      const says = known
+        ? `${name} \u2014 on this championship's grid`
+        : `${name} \u2014 named in the post, not on this championship's grid`;
+      tipped(chip, esc(says), says);
+      row.append(chip);
+    });
+    card.append(row);
+  }
 
   const holder = el('div', 'sc-embed');
   if (x.platform === 'instagram') {
@@ -5929,6 +6012,9 @@ function socials() {
   if (!data || (!(data.accounts || []).length && !(data.posts || []).length)) {
     p.append(Object.assign(el('p', 'sub'), { textContent:
       'No accounts or posts are recorded for this season yet.' }));
+    // The found items still stand on their own: nobody has to have kept a post
+    // for something to have been written about the racing.
+    newsSection(p);
     return;
   }
 
@@ -5936,7 +6022,7 @@ function socials() {
   socialAccounts(p, data);
 
   const posts = data.posts || [];
-  if (!posts.length) return;
+  if (!posts.length) { newsSection(p); return; }
   p.append(Object.assign(el('h4', 'enduro-h'), { textContent: 'Posts worth keeping' }));
   p.append(Object.assign(el('p', 'sub'), { textContent:
     'Both platforms put an account’s feed behind a login, so this is a list '
@@ -5946,6 +6032,8 @@ function socials() {
   const grid = el('div', 'socialgrid');
   posts.forEach(x => grid.append(socialCard(x)));
   p.append(grid);
+
+  newsSection(p);
 }
 
 /**
@@ -6655,6 +6743,126 @@ function liveMarks() {
 
 /* A countdown and a timetable move with the clock, feed or no feed. */
 setInterval(() => { if (MODE === 'live') liveDraw(); }, 60000);
+/* ------------------------------------------------------------- news */
+/* What has been written about these championships, found rather than kept.
+ *
+ * The posts above this are a list somebody made: somebody saw an Instagram
+ * post and wrote it down, because an account's feed is behind a login and
+ * there is nothing to enumerate. This is the other half of the same question
+ * and it needs no reader at all - scripts/fetch_news.py searches Google News
+ * every day and keeps what is about this racing, which is why the list below
+ * grows on its own and the one above does not.
+ *
+ * Nothing here is copied. An item is a headline, a date, a publisher and a
+ * link - what a search result is - and the reader goes to the publisher for
+ * the piece. That also means there is nothing to load: no embed, no script,
+ * no request to anybody. The cards are the data.
+ *
+ * A machine made this list, so every card carries its own reasoning. `why` is
+ * the words that made the run keep it, in the tooltip, so an item that does
+ * not belong can be argued with instead of just looking like a mistake.
+ */
+
+/** Is this item about the championship being read? Same rule as a post. */
+function newsMine(x) {
+  return !!D && !!(x.series || []).length && x.series.indexOf(D.key) >= 0;
+}
+
+/** The meeting an item is tagged with, and whose it is: as a post's. */
+function newsMeeting(x) {
+  return socialMeeting(x);
+}
+
+/** A date as the rest of the page writes one. */
+function newsDate(iso) {
+  const d = new Date(iso + 'T00:00:00Z');
+  return isNaN(d) ? iso : d.toLocaleDateString('en-GB',
+    { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
+function newsCard(x) {
+  const card = el('article', 'newscard' + (newsMine(x) ? ' mine' : ''));
+
+  const head = el('div', 'sc-head');
+  head.innerHTML = `<span class="plat news">${esc(x.source || 'News')}</span>`
+    + `<span class="who">${esc(newsDate(x.date))}</span>`;
+  card.append(head);
+
+  const a = el('a', 'nc-title');
+  a.href = x.url;
+  a.rel = 'noopener';
+  a.target = '_blank';
+  a.textContent = x.title || x.url;
+  card.append(a);
+
+  const meet = newsMeeting(x);
+  if (meet) {
+    const ev = meet.ev;
+    // Whose meeting it is, where it is not this championship's: an item is
+    // drawn on every tab, so the name alone would read as this one's.
+    const whose = meet.mine ? '' : (meet.ser.short || meet.ser.name);
+    const chip = el('span', 'sc-meet');
+    chip.textContent = ev.name;
+    tipped(chip,
+           `${esc(ev.name)} · ${esc(ev.dates)}`
+             + (whose ? `<br>${esc(whose)}` : ''),
+           `${ev.name} · ${ev.dates}` + (whose ? `. ${whose}` : ''));
+    head.append(chip);
+  }
+
+  // The drivers the headline names, marked the way a post's are: known to the
+  // standings, or named anyway.
+  if ((x.drivers || []).length) {
+    const row = el('p', 'sc-drivers');
+    x.drivers.forEach(name => {
+      const known = socialDriver(name);
+      const chip = el('span', 'sc-driver' + (known ? ' known' : ''));
+      chip.textContent = shortName(name);
+      const says = known
+        ? `${name} — on this championship's grid`
+        : `${name} — named in the headline, not on this grid`;
+      tipped(chip, esc(says), says);
+      row.append(chip);
+    });
+    card.append(row);
+  }
+
+  // Why a machine kept it. Not decoration: it is the only thing that makes an
+  // automatic list reviewable rather than something to be trusted or deleted.
+  if ((x.why || []).length) {
+    const mark = el('span', 'nc-why');
+    mark.textContent = 'why this is here';
+    tipped(mark, x.why.map(w => esc(w)).join('<br>'), x.why.join('. '));
+    card.append(mark);
+  }
+  return card;
+}
+
+/**
+ * The found items, under the kept ones.
+ *
+ * Sorted newest first and not filtered to the series being read - an item
+ * about the championship is marked, the way a post is, and the rest are still
+ * worth seeing. A season's press is thin enough that hiding most of it would
+ * leave an empty tab.
+ */
+function newsSection(host) {
+  const data = ALL.news || {};
+  const items = data.items || [];
+  if (!items.length) return;
+
+  host.append(Object.assign(el('h4', 'enduro-h'), { textContent: 'Written about it' }));
+  host.append(Object.assign(el('p', 'sub'), { textContent:
+    'Found by searching rather than by anybody keeping a list — the headlines '
+    + 'are checked for a driver on a grid, a championship, or a circuit near '
+    + 'the date this season went there, and every card says which of those it '
+    + 'was. Headlines and links only; the pieces stay with whoever wrote them.'
+    + (data.read ? ` Last looked ${newsDate(data.read)}.` : '') }));
+
+  const grid = el('div', 'newsgrid');
+  items.forEach(x => grid.append(newsCard(x)));
+  host.append(grid);
+}
 /* ---------------------------------------------------------- table height */
 /* A table twenty rows deep can be read; one sixty rows deep is read by
    scrolling the page through it, which takes the head that says what the
