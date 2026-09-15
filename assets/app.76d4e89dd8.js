@@ -441,8 +441,9 @@ addEventListener('resize', hideTip);
 
 /* ---------------------------------------------------------- components */
 /**
- * The two things a tab on this page is nearly always made of: a table, and a
- * row of buttons that says which one.
+ * The three things a tab on this page is nearly always made of: a table, a
+ * row of buttons that says which one, and the sentence or two explaining what
+ * is in it.
  *
  * 01-util.js already holds what a *cell* is made of - a driver, a class mark,
  * a chip - and that is why a column of names is the same width wherever it
@@ -457,9 +458,14 @@ addEventListener('resize', hideTip);
  * Races, Qualifying and Radar, which had already drifted apart over which of
  * them marks the chosen button as it builds and which waits until it draws.
  *
- * So: a column says what it is, and a picker is asked for rather than built.
- * Neither of these is a framework and neither owns any state - they are the
- * same DOM these tabs were writing by hand, written once.
+ * The explaining had gone the other way: not duplicated, but grown. Every tab
+ * opened on a paragraph, and the paragraph was between the reader and the
+ * numbers on every visit, including the ones where they had read it already.
+ *
+ * So: a column says what it is, a picker is asked for rather than built, and
+ * an explanation costs one line until somebody wants it. None of these is a
+ * framework and only the last owns any state - the reader's answer to whether
+ * they want the words, which is theirs and not this page's to guess.
  */
 
 /**
@@ -591,6 +597,93 @@ function dataTable({ cols, rows, table, rowClass, rowData, rowAfter, legend }) {
     out.append(box.firstChild);
   }
   return out;
+}
+
+/**
+ * The prose that explains a table, kept out of the way of it.
+ *
+ * Every tab had grown the same shape: a heading, then four or five sentences
+ * saying how to read what is underneath, then the thing the reader came for.
+ * On a phone that paragraph is most of a screen, and it is between the reader
+ * and the numbers every single time they open the tab - including the
+ * hundredth time, when they have long since read it. Put enough of them on one
+ * page and the page is prose with tables in it.
+ *
+ * The answer is not to delete the words. Somebody meeting the Behaviour
+ * Warning Points register for the first time needs reg 4.3 spelled out, and
+ * `Hover any cell for the finishing position` is not something a table can say
+ * for itself. The answer is that it costs one line until it is asked for.
+ *
+ * So: a paragraph that *explains* is a disclosure, and a paragraph that
+ * *reports* is not. How to read a table, what a regulation says, what the
+ * radar is and is not - those fold away behind a summary naming what is
+ * inside. What is running, how many rounds are left, which timekeeper the
+ * sheet came from, what the Clerk decided - those are the page, and they stay
+ * on it.
+ *
+ * `key` is what the browser remembers the reader's answer under, so the one
+ * who wants the words gets them on every visit and the one who does not is
+ * never asked twice. It is the same bargain as the column chooser: the page
+ * has no way of telling which reader it has, so the choice is theirs and it
+ * sticks.
+ */
+const EXPLAIN_STORE = 'caterham.explain';
+let EXPLAIN_OPEN = null;
+
+/** The keys the reader has opened, read back once and kept. */
+function explainOpen() {
+  if (EXPLAIN_OPEN) return EXPLAIN_OPEN;
+  let held = null;
+  try { held = localStorage.getItem(EXPLAIN_STORE); } catch (e) { held = null; }
+  EXPLAIN_OPEN = new Set(String(held || '').split(' ').filter(Boolean));
+  return EXPLAIN_OPEN;
+}
+
+function explainRemember(key, open) {
+  const held = explainOpen();
+  if (open) held.add(key); else held.delete(key);
+  try { localStorage.setItem(EXPLAIN_STORE, [...held].join(' ')); } catch (e) { /* private */ }
+}
+
+/* One listener for every disclosure on the page, now and later. `toggle` does
+   not bubble, so this is a capturing listener rather than a delegated one -
+   which is the whole point: the live tab writes its explanations as a string
+   into `innerHTML` a second at a time, and there is nothing to hang a listener
+   on afterwards that would still be there on the next tick. */
+addEventListener('toggle', e => {
+  const det = e.target;
+  if (det instanceof HTMLElement && det.dataset && det.dataset.explain)
+    explainRemember(det.dataset.explain, det.open);
+}, true);
+
+/**
+ * One line the reader can open, as markup. `summary` names what is behind it -
+ * what it explains, rather than the word "more" - and `html` or `text` is the
+ * prose: one string, or several.
+ *
+ * A paragraph per string, because two subjects run into one block of text is
+ * the wall this exists to take off the page.
+ */
+function explainMarkup({ key, summary, html, text }) {
+  const parts = [].concat(html != null ? html : text).filter(x => x != null && x !== '');
+  if (!parts.length) return '';
+  return `<details class="explain" data-explain="${esc(key)}"`
+    + `${explainOpen().has(key) ? ' open' : ''}>`
+    + `<summary>${esc(summary)}</summary>`
+    + `<div class="explain-body">`
+    + parts.map(x => `<p>${html != null ? x : esc(x)}</p>`).join('')
+    + '</div></details>';
+}
+
+/** The same thing as an element, for the tabs that build their page rather than
+    write it. An empty fragment where there was nothing to say, so a caller can
+    append it without asking. */
+function explain(spec) {
+  const markup = explainMarkup(spec);
+  if (!markup) return document.createDocumentFragment();
+  const box = el('div');
+  box.innerHTML = markup;
+  return box.firstChild;
 }
 /* ----------------------------------------------------------- masthead */
 /** How far this series' table has been checked against Caterham's own. */
@@ -1110,14 +1203,23 @@ function deductions() {
   const costly = D.decisions.filter(d => d.deduction).length;
   pen.innerHTML = '<h3 class="disp" style="margin:26px 0 8px;font-size:18px;text-transform:uppercase;'
     + 'letter-spacing:.04em">The judicial record</h3>'
+    // The two counts - how many decisions there were, and how many of them cost
+    // points - are the record reporting on itself, so they stay on the page.
+    // What a licence point costs is the regulation, and folds away.
     + `<p class="sub">Every decision on this championship`
     + ` ${grads() ? "in the club's published table" : 'the meeting noticeboards published'} —`
     + ` <b>${D.decisions.length}</b> of them, of which <b>${costly}</b> cost`
-    + ` championship points. A penalty carrying Motorsport UK licence points costs`
-    + ` three times that number off the season total`
-    + ` (<span class="reg">${D.penaltyReg}</span>), which a drop score cannot cancel.`
-    + (D.behaviour ? ' Most of them carry Behaviour Warning Points as well, below.' : '')
-    + '</p>';
+    + ` championship points.</p>`;
+  pen.append(explain({
+    key: 'standings.judicial',
+    summary: 'What a penalty costs',
+    html: [`A penalty carrying Motorsport UK licence points costs three times that number `
+      + `off the season total (<span class="reg">${D.penaltyReg}</span>), which a drop score `
+      + `cannot cancel. The points a driver earned on track are left whole; the deduction is `
+      + `collected in the Pen column of the table above and taken off the total there.`,
+      D.behaviour ? 'Most of these decisions carry Behaviour Warning Points as well, which '
+        + 'are the register below rather than a championship deduction.' : ''],
+  }));
   pen.append(dataTable({
     table: 'judicial',
     cols,
@@ -1189,24 +1291,31 @@ function behaviourPoints() {
   const wrap = el('div');
   wrap.innerHTML = '<h3 class="disp" style="margin:26px 0 8px;font-size:18px;'
     + 'text-transform:uppercase;letter-spacing:.04em">Behaviour Warning Points</h3>'
-    + `<p class="sub">Reg <span class="reg">4.3</span>. A verbal warning or a time or grid`
-    + ` penalty is worth one, a written reprimand two, and an NCR`
-    + ` ${b.offences.map(o => `<span class="mono ncr">${esc(o)}</span>`).join(' or ')}`
-    + ` offence two whatever the penalty was — those two being a collision and`
-    + ` conduct. Exclusion from the event is six. Each point lapses`
-    + ` once the driver has taken part in <b>${b.window}</b> further races.`
-    + ` At <b>3</b> points a driver is dropped ten places on the next grid, at <b>5</b>`
-    + ` ten more, at <b>7</b> their registration is suspended.`
-    // Reg 4.3.4 is where the rulebooks differ again: the Academy's five-point
-    // case bites a round earlier than everyone else's, as a deduction as well
-    // as a grid penalty, and this paragraph would otherwise describe a rule
-    // the register beside it does not follow.
-    + (b.penultimate_five
-        ? ` Five reached in the <em>penultimate</em> round of the Academy's year is`
-          + ` both: ten places on the final grid and a ten-place points deduction`
-          + ` with it.` : '')
-    + ` Caterham keep this register and publish none of it, so this is rebuilt`
-    + ` from the sheets above and is not the official one.</p>`;
+    // Where this table comes from is a fact about the table and stays on the
+    // page. Reg 4.3 itself is four sentences of rulebook, and a reader who has
+    // met it once does not need it again over every visit.
+    + `<p class="sub">Reg <span class="reg">4.3</span> applied to the decisions above.`
+    + ` Caterham keep this register and publish none of it, so this is not the official`
+    + ` one.</p>`;
+  wrap.append(explain({
+    key: 'standings.bwp',
+    summary: 'What a point is worth, and what it costs',
+    html: [`A verbal warning or a time or grid penalty is worth one, a written reprimand`
+      + ` two, and an NCR`
+      + ` ${b.offences.map(o => `<span class="mono ncr">${esc(o)}</span>`).join(' or ')}`
+      + ` offence two whatever the penalty was — those two being a collision and conduct.`
+      + ` Exclusion from the event is six. Each point lapses once the driver has taken part`
+      + ` in <b>${b.window}</b> further races.`,
+      `At <b>3</b> points a driver is dropped ten places on the next grid, at <b>5</b> ten`
+      + ` more, at <b>7</b> their registration is suspended.`
+      // Reg 4.3.4 is where the rulebooks differ again: the Academy's five-point
+      // case bites a round earlier than everyone else's, as a deduction as well
+      // as a grid penalty, and this paragraph would otherwise describe a rule
+      // the register beside it does not follow.
+      + (b.penultimate_five
+          ? ` Five reached in the <em>penultimate</em> round of the Academy's year is both:`
+            + ` ten places on the final grid and a ten-place points deduction with it.` : '')],
+  }));
   wrap.append(dataTable({
     table: 'judicial',
     rows: b.drivers,
@@ -1261,42 +1370,45 @@ function standings() {
   // The round whose column is being filled in from the feed, while it is.
   const liveEv = D.liveQual ? D.events.find(e => e.key === D.liveQual.event) : null;
   const liveRd = liveEv ? liveEv.rounds.find(r => !runSet.has(r)) : null;
-  // How to read the table, kept until after it: somebody who wants the numbers
+  // How to read the table, folded away under it. Somebody who wants the numbers
   // should not have to scroll a paragraph to reach them, and somebody who wants
-  // the paragraph knows where the bottom of a page is.
-  const howToRead = Object.assign(el('p', 'lede'),
-    { textContent: `Ranked on ${rankBy === 'net' ? 'Net, the total after the drop scores, which is '
-        + 'what decides the championship - click Total to rank it on the season total instead'
-        : 'Total, the season total before any round is dropped - click Net to rank it on what '
-        + 'decides the championship'}. `
-      + `Points scored in every race. An underlined score took the fastest lap of that `
-      + `race, worth the extra point inside the number. A round marked in `
-      + `red carried a championship penalty, but the points the driver earned on track are left `
-      + `whole - the deduction is collected in the Pen column and taken off the total. `
-      + `${D.roundsRun.length} of ${D.roundsTotal} races have been run; the remaining columns are `
-      + `hatched, and carry a driver's qualifying position where that meeting has qualified `
-      + `and not yet raced`
-      + (liveRd ? ` — or is qualifying now: the positions in the Round ${liveRd} column `
-          + `are the timekeepers' feed as it stands, and move with it` : '')
-      + `. Hover any cell for the finishing position behind the number.`
-      + (REMAINING > 0
-         ? ` Min and Max are the two ends of the season from here: where a driver ends up `
+  // the paragraph should not have to read it again on every visit - so it is one
+  // line at the foot of the tab, and the browser remembers which of the two
+  // this reader is.
+  const howToRead = explain({
+    key: 'standings.read',
+    summary: 'How to read this table',
+    html: [
+      `Ranked on ${rankBy === 'net' ? 'Net, the total after the drop scores, which is '
+        + 'what decides the championship — click Total to rank it on the season total instead'
+        : 'Total, the season total before any round is dropped — click Net to rank it on what '
+        + 'decides the championship'}. Points scored in every race.`,
+      `An underlined score took the fastest lap of that race, worth the extra point inside `
+      + `the number. A round marked in red carried a championship penalty, but the points the `
+      + `driver earned on track are left whole — the deduction is collected in the Pen column `
+      + `and taken off the total. Hover any cell for the finishing position behind the number.`,
+      `The hatched columns are the rounds still to run, and carry a driver's qualifying `
+      + `position where that meeting has qualified and not yet raced.`,
+      REMAINING > 0
+         ? `Min and Max are the two ends of the season from here: where a driver ends up `
            + `scoring nothing more, and where they end up winning everything left, fastest `
            + `lap point included. Both are after drop scores, and both are projected over `
-           + `the rounds this table counts - so Min sits above Net rather than below it, `
+           + `the rounds this table counts — so Min sits above Net rather than below it, `
            + `because a round still to run is a zero the drops can take instead of a real `
            + `result.`
            + (D.live ? ` The race running now is counted in them as it is counted in Total `
-             + `and Net: as it stands. The title run-in is the other question - it puts a `
+             + `and Net: as it stands. The title run-in is the other question — it puts a `
              + `race nobody has finished back among the ones still to be won, so its floor `
              + `allows for losing the lot and its ceiling for taking the win and the `
              + `fastest lap point off the car leading it.` : '')
-         : '')
-      + (classed.length
-         ? ` ${D.short} awards a title in ${classed.join(' and ')}, so the table is split into `
-           + `those classes - the points are unchanged, only the positions are counted within `
+         : '',
+      classed.length
+         ? `${esc(D.short)} awards a title in ${classed.map(esc).join(' and ')}, so the table is split into `
+           + `those classes — the points are unchanged, only the positions are counted within `
            + `the class.`
-         : '') });
+         : '',
+    ],
+  });
 
   if (groups) {
     groups.forEach(g => {
@@ -1321,6 +1433,15 @@ function standings() {
     p.append(champTable(order.concat(D.table.filter(t => !t.registered)), false, overall));
   }
 
+  // How far the season has got, and which column is moving as it is read: both
+  // change with the data, so by this page's own rule they report rather than
+  // explain and belong on it. What a hatched column *means* is the explanation
+  // at the foot of the tab, and the legend below says it in a mark.
+  const where = Object.assign(el('p', 'sub'), { textContent:
+    `${D.roundsRun.length} of ${D.roundsTotal} races have been run.`
+    + (liveRd ? ` Round ${liveRd} is qualifying now: the positions in its column are the `
+        + `timekeepers' feed as it stands, and move with it.` : '') });
+
   const lg = el('div', 'legend');
   lg.innerHTML =
     '<span><b class="mono" style="text-decoration:underline;text-decoration-color:var(--fl);'
@@ -1331,7 +1452,7 @@ function standings() {
        ['var(--sunk)', 'Round not yet run — P3 where qualifying is already known']]
       .map(([c, t]) => `<span><i class="sw" style="background:${c}"></i>${t}</span>`).join('')
     + '<span><i class="sw" style="background:var(--surface)"></i>· = did not enter</span>';
-  p.append(lg);
+  p.append(where, lg);
 
   const pen = deductions();
   if (pen) { p.append(pen); linkRegs(pen); }
@@ -1341,8 +1462,6 @@ function standings() {
     'Running total after each race for the top six. Gross points — drop scores are not applied.' }));
   p.append(chart());
 
-  p.append(Object.assign(el('h2'), { textContent: 'Reading the table' }));
-  howToRead.style.margin = '0';
   p.append(howToRead);
 }
 
@@ -1931,10 +2050,16 @@ let wantedRaceFor = null;
 function races() {
   const p = $('#p-races'); p.innerHTML = '';
   p.append(Object.assign(el('p', 'lede'), { textContent:
-    'Full classification for every race run so far, with the championship points each result was '
-    + 'worth. Guest entries are shown greyed — they take no points and the drivers behind them '
-    + 'move up a place for scoring. Where the timing company published a lap chart, the race is '
-    + 'drawn lap by lap above it: click any point of it to play the broadcast from that moment.' }));
+    'Full classification for every race run so far, with the championship points each result '
+    + 'was worth.' }));
+  p.append(explain({
+    key: 'races.read',
+    summary: 'How to read a classification',
+    text: ['Guest entries are shown greyed — they take no points and the drivers behind them '
+      + 'move up a place for scoring.',
+      'Where the timing company published a lap chart, the race is drawn lap by lap above the '
+      + 'classification: click any point of it to play the broadcast from that moment.'],
+  }));
   const host = el('div');
   const latest = D.races[D.races.length - 1];
   const pick = picker({
@@ -2159,15 +2284,26 @@ function qualField(q) {
 
 function qualifying() {
   const p = $('#p-qualifying'); p.innerHTML = '';
+  // What is here is the page reporting on itself and stays; how the charts are
+  // drawn is an explanation, and a reader meets it once.
   p.append(Object.assign(el('p', 'lede'), { textContent:
     'Every qualifying session of the season, and — where the meeting’s book '
-    + 'published the analysis behind it — every lap that went into it. The first chart '
-    + 'holds the whole field: a line per car through its five quickest laps, quickest '
-    + 'first, so a car that found one lap and a car that could do it all session read '
-    + 'differently. Pick a car, on the chart or in the table, for its own session lap by '
-    + 'lap and sector by sector.'
+    + 'published the analysis behind it — every lap that went into it.'
     + (D.liveQual ? ' A session that is running is here too, from the timekeepers’ '
         + 'feed, and moves as the laps land.' : '') }));
+  p.append(explain({
+    key: 'qualifying.read',
+    summary: 'How the charts are drawn',
+    text: ['The first chart holds the whole field: a line per car through its five quickest '
+      + 'laps, quickest first, so a car that found one lap and a car that could do it all '
+      + 'session read differently.',
+      'The quickest lap is at the top rather than zero at the bottom, and the axis stops '
+      + 'at a cut-off the bar under the chart sets — a line that leaves the bottom of the '
+      + 'chart was slower than that. On a session the feed is still writing that is the '
+      + 'quickest lap this page has seen, which is not necessarily the one on pole.',
+      'Hover for a car, click for its session lap by lap and sector by sector; click a '
+      + 'column to rank the table below by that lap.'],
+  }));
 
   const sessions = D.qualifying || [];
   if (!sessions.length) {
@@ -2460,15 +2596,17 @@ function qualFieldChart(rows, cols, picked, onPick, refresh, live) {
     r.addEventListener('click', () => { qualRank = Number(r.dataset.col); refresh(); });
   });
 
+  // What the axis is doing right now, beside the buttons that set it: the
+  // cut-off is a control, and how many cars it has just taken off the chart is
+  // the answer to pressing it. Why the axis is that way round, and what can be
+  // clicked, is the explanation at the top of the tab.
   const bar = el('div', 'qbar');
   const note = el('span');
-  note.innerHTML = (live ? 'The quickest lap this page has seen' : 'Pole')
-    + ' is at the top rather than zero at the bottom, and the axis stops at '
+  note.innerHTML = (live ? 'Quickest lap seen' : 'Pole') + ' at the top; the axis stops at '
     + (qualCut ? `<b>${qualCut}%</b> of it` : 'the slowest lap drawn')
-    + ' — a line that leaves the bottom of the chart was slower than that. '
-    + (over ? `${over} car${over > 1 ? 's are' : ' is'} off the chart altogether at this cut-off. ` : '')
-    + 'Hover for a car, click for its session; click a column to rank the table '
-    + 'below by that lap.';
+    + '.'
+    + (over ? ` ${over} car${over > 1 ? 's are' : ' is'} off the chart altogether at this `
+        + 'cut-off.' : '');
   // The chart's own columns are the control a reader finds; these are the one
   // that is always there and big enough for a thumb.
   const ranks = el('div', 'cuts');
@@ -2589,34 +2727,53 @@ function qualTable(q, rows, picked, onPick, base) {
   out.append(sc);
   const legend = classLegend(used, base);
   if (legend) { const l = el('div'); l.innerHTML = legend; out.append(l.firstChild); }
-  if (laps) out.append(Object.assign(el('p', 'sub'), { textContent:
-    (rank ? `Ranked on each car’s ${QUAL_PLACE[rank].toLowerCase()}-best counting lap, `
+  // What the sheet is - a feed rather than a print - is worth saying on the
+  // page. What the columns mean is worth saying once, to whoever asks.
+  if (q.live) out.append(Object.assign(el('p', 'sub'), { textContent: qualLiveSays(q) }));
+  if (laps || q.live) out.append(explain({
+    key: 'qualifying.columns',
+    summary: laps ? 'What these columns mean' : 'How the feed’s laps are counted',
+    text: [...(q.live ? qualLiveHow() : []),
+      laps && rank ? `Ranked on each car’s ${QUAL_PLACE[rank].toLowerCase()}-best counting lap, `
         + 'which is the column the chart has selected, not a published order — Qual is '
         + 'where the car actually qualified. Cars with fewer counting laps than that '
-        + 'follow, in the order they were classified. '
-      : '')
-    + 'Laps is every lap the car was timed over; counting is how many of them were laps '
-    + 'it is credited with — an out-lap carries the time spent in the pits with it, '
-    + 'and a lap the car came into the pits on or that was disallowed is not one either. '
-    + (q.live ? qualLiveSays(q) : '')
-    + 'Click a row for that car’s session.' }));
-  else if (q.live) out.append(Object.assign(el('p', 'sub'), { textContent: qualLiveSays(q) }));
+        + 'follow, in the order they were classified.'
+      : '',
+      laps ? 'Laps is every lap the car was timed over; counting is how many of them were laps '
+        + 'it is credited with — an out-lap carries the time spent in the pits with it, '
+        + 'and a lap the car came into the pits on or that was disallowed is not one either.'
+      : '',
+      laps ? 'Click a row for that car’s session.' : ''],
+  }));
   return out;
 }
 
-/** What is different about a sheet the feed is writing, said once under it. */
+/**
+ * What a sheet the feed is writing is, said once under it.
+ *
+ * Which of the two it is, and whether it is still moving, is what a reader has
+ * to know before they read a single row of it, so it is on the page. How the
+ * feed's laps are told apart from a printed sheet's is `qualLiveHow` below,
+ * which is the same fact at a depth nobody needs twice.
+ */
 function qualLiveSays(q) {
   const seen = q.seen || 0, all = (q.entries || []).length;
   return 'This sheet is the timekeepers’ feed as it stands, not their print: the order '
     + 'and every car’s best are the feed’s and are complete, and the laps behind them '
     + 'are the ones this page has seen since it connected'
     + (seen && seen < all ? ` — ${seen} of the ${all} cars so far` : '')
-    + '. A car’s best can be a lap set before that, in which case it is ranked on it '
-    + 'and the chart cannot draw it. An in-lap and an out-lap are told from the pit '
-    + 'lane’s own loops rather than from a sheet’s marks, and the last sector is what '
-    + 'is left of the lap once the splits are taken off. '
-    + (q.ended ? 'The session is over; the print replaces this when it is published. '
-       : 'It moves as the laps land. ');
+    + '. '
+    + (q.ended ? 'The session is over; the print replaces this when it is published.'
+       : 'It moves as the laps land.');
+}
+
+/** The same sheet, at the depth that answers a question rather than raising one. */
+function qualLiveHow() {
+  return ['A car’s best can be a lap set before this page connected, in which case it is '
+    + 'ranked on that lap and the chart cannot draw it.',
+    'An in-lap and an out-lap are told from the pit lane’s own loops rather than from a '
+    + 'sheet’s marks, and the last sector is what is left of the lap once the splits are '
+    + 'taken off.'];
 }
 
 /** One car's session: what it was timed over, and what each lap was made of. */
@@ -2847,10 +3004,15 @@ function calendar() {
   const p = $('#p-calendar'); p.innerHTML = '';
   p.append(Object.assign(el('p', 'lede'), { textContent:
     `${D.events.length} meetings, ${D.roundsTotal} races. Every round the regulations list is `
-    + 'shown whether or not its meeting has run. Scheduled session times come from the meeting '
-    + 'timetable, where one has been published; actual start times are those printed on the '
-    + 'classification sheets. Each meeting carries the organising club’s page for it, and the '
-    + 'stream, timetable, timing and noticeboard that page publishes.' }));
+    + 'shown whether or not its meeting has run.' }));
+  p.append(explain({
+    key: 'calendar.read',
+    summary: 'Where these times come from',
+    text: ['Scheduled session times come from the meeting timetable, where one has been '
+      + 'published; actual start times are those printed on the classification sheets.',
+      'Each meeting carries the organising club’s page for it, and the stream, timetable, '
+      + 'timing and noticeboard that page publishes.'],
+  }));
   const g = el('div', 'grid');
   // Last meeting first. The season is read from where it has got to - the one
   // that has just run and the one that is next - and a list in calendar order
@@ -3038,11 +3200,9 @@ function radar() {
   RADAR.loadedTv = '';
 
   p.append(Object.assign(el('p', 'lede'), { textContent:
-    'Rain and cloud over the circuit, a week ahead, on meteoblue’s own map — with wind, '
-    + 'temperature, sunshine and the extreme forecast behind the same picker — and under '
-    + 'it the radar over that circuit, playing. It opens on the meeting that is running, '
-    + 'or on the one that is next, and any other meeting on the calendar can be looked at '
-    + 'instead.' }));
+    'Rain and cloud over the circuit, a week ahead, on meteoblue’s own map, and under it '
+    + 'the radar over that circuit, playing. It opens on the meeting that is running, or '
+    + 'on the one that is next.' }));
 
   const start = radarMeeting(D);
   if (!start) {
@@ -3069,24 +3229,33 @@ function radar() {
   const tv = el('div', 'radartv');
   const tvnote = el('p', 'radartvnote');
 
+  // Who drew these is a credit and is owed on the page. What the map's own
+  // controls do, and what the difference between a forecast and a radar is
+  // worth to somebody deciding what to pack, are both worth saying - but not
+  // over the map, every time, to a reader who came to look at the rain.
   const legend = el('p', 'radarsrc');
   legend.innerHTML = 'Map and radar by <a href="https://www.meteoblue.com/"'
-    + ' target="_blank" rel="noopener">meteoblue</a>, both centred on the circuit.'
-    + ' The map’s own controls sit on it — the panel at the top right chooses which map'
-    + ' and zooms it, the bar along the foot steps through the days and hours, and on a'
-    + ' narrow screen that panel folds into the button in the corner. The radar below it'
-    + ' runs on its own, a frame every quarter of an hour.';
+    + ' target="_blank" rel="noopener">meteoblue</a>, both centred on the circuit.';
 
-  const note = el('div', 'note');
-  note.innerHTML = '<b>The map is a forecast; the radar under it is not.</b> Everything '
-    + 'on the map is what a weather model expects, and nothing on it was measured at the '
-    + 'circuit — the further into the week its bar goes, the less it is worth. The radar '
-    + 'below is the opposite kind of fact: rain that has already fallen, seen from the '
-    + 'ground up, a frame every quarter of an hour. '
-    + '<b>And rain is not a wet track:</b> a circuit stays wet long after the shower has '
-    + 'gone through, and dries at its own rate afterwards. What the conditions actually '
-    + 'were on the day is on the classification sheet, which is the only record of it on '
-    + 'this site.';
+  const note = explain({
+    key: 'radar.read',
+    summary: 'What this is showing, and what it is not',
+    html: ['<b>The map is a forecast; the radar under it is not.</b> Everything '
+      + 'on the map is what a weather model expects, and nothing on it was measured at the '
+      + 'circuit — the further into the week its bar goes, the less it is worth. The radar '
+      + 'below is the opposite kind of fact: rain that has already fallen, seen from the '
+      + 'ground up, a frame every quarter of an hour.',
+      '<b>And rain is not a wet track:</b> a circuit stays wet long after the shower has '
+      + 'gone through, and dries at its own rate afterwards. What the conditions actually '
+      + 'were on the day is on the classification sheet, which is the only record of it on '
+      + 'this site.',
+      'The map’s own controls sit on it — the panel at the top right chooses which map, '
+      + 'including wind, temperature, sunshine and the extreme forecast, and zooms it; the '
+      + 'bar along the foot steps through the days and hours; and on a narrow screen that '
+      + 'panel folds into the button in the corner. The radar below it runs on its own.',
+      'The tab opens on the meeting that is running, or on the one that is next, and the '
+      + 'buttons above the map point both of them at any other meeting on the calendar.'],
+  });
 
   p.append(pick.node, head, box, tv, tvnote, legend, note);
   RADAR.els = { head, box, tv, tvnote, at: null };
@@ -3361,18 +3530,18 @@ function runin() {
   // were: nobody has scored it yet.
   const open = D.live ? 1 : 0;
   const togo = REMAINING + open;
+  // Where the season has got to is the answer the tab exists to give, so it is
+  // the first thing on it. What a candle is made of is the method behind that
+  // answer, and it folds away under the chart it describes.
   p.append(Object.assign(el('p', 'lede'), { textContent:
     `${togo} race${togo === 1 ? '' : 's'} left, worth a theoretical maximum of `
     + `${togo * maxRace()} points`
     + (open ? ` — the one running now among them, since it can still be won and can `
         + `still be scored nothing in` : '')
-    + `. Each candle is one driver's possible finishing total once the ${D.dropScores} drop `
-    + `score${D.dropScores === 1 ? '' : 's'} are applied — so points banked now are not all `
-    + `bankable at the end.`
+    + '.'
     + (split
-       ? ` ${D.short} awards a title in ${classed.map(g => g.name).join(' and ')}, so each class `
-         + `is projected against its own drivers: the points are unchanged, but a driver only `
-         + `has to beat the class they are in.`
+       ? ` ${D.short} awards a title in ${classed.map(g => g.name).join(' and ')}, so each `
+         + `class is projected against its own drivers.`
        : '') }));
 
   // Where the races left are, by meeting rather than by round - and a meeting
@@ -3400,6 +3569,8 @@ function runin() {
   p.append(kpi);
 
   p.append(Object.assign(el('h2'), { textContent: 'Best and worst case, after drop scores' }));
+  // Which part of a candle is which is a key to the drawing, and a drawing
+  // whose key is folded away is a drawing nobody can read - so this stays.
   p.append(Object.assign(el('p', 'sub'), { textContent:
     'Wick: score nothing more (bottom) to win every remaining race with the fastest lap (top). '
     + 'Body: the driver’s own form band — their 25th to 75th percentile race score so far, '
@@ -3446,14 +3617,22 @@ function runin() {
     + `${split ? 'that class’s' : 'title'} floor to beat</span>`;
   p.append(lg);
 
-  p.append(Object.assign(el('p', 'sub'), { textContent:
-    'Only one driver can take the win and the fastest lap in any race, so the top of every wick '
-    + 'is a ceiling no two drivers can reach together. Championship penalties already applied are '
-    + 'baked in; future ones obviously are not.'
-    + (split
-       ? ' A class ceiling assumes the win as well, which a driver from the other class may take '
-         + 'instead — the points are shared out across the whole grid.'
-       : '') }));
+  p.append(explain({
+    key: 'runin.how',
+    summary: 'What these projections assume',
+    text: [`Each candle is one driver's possible finishing total once the ${D.dropScores} drop `
+      + `score${D.dropScores === 1 ? '' : 's'} are applied — so points banked now are not all `
+      + 'bankable at the end.',
+      'Only one driver can take the win and the fastest lap in any race, so the top of every '
+      + 'wick is a ceiling no two drivers can reach together. Championship penalties already '
+      + 'applied are baked in; future ones obviously are not.',
+      split
+       ? 'A class is projected against its own drivers — the points are unchanged, but a '
+         + 'driver only has to beat the class they are in. A class ceiling assumes the win as '
+         + 'well, which a driver from the other class may take instead: the points are shared '
+         + 'out across the whole grid.'
+       : ''],
+  }));
 }
 
 function candles(m, bestFloor, titleWord = 'title') {
@@ -5880,29 +6059,35 @@ function livePanel(base, v, p) {
     body += order.html;
     if (live && base.dropScores) {
       const n = base.dropScores;
-      body += `<details class="tv"><summary>What Pts and Net mean</summary>`
-        + `<p class="sub" style="margin:8px 0 0"><b>Pts</b> is what the place is worth `
-        + `under <span class="reg">1.6.1</span>, with the fastest lap point in it. `
-        + `<b>Net</b> is what it adds to the season total: ${n === 1 ? 'the lowest score is'
-          : `the lowest ${n} scores are`} dropped at the end of the year `
-        + `(<span class="reg">${grads() ? '1.6.2a' : '1.6.2'}</span>), so a driver with `
-        + `nothing poor left to discard keeps less of a good round than the number beside it `
-        + `suggests — and none of it at all where this round is the one being dropped. `
-        + `Hover any of them for which it is.</p></details>`;
+      body += explainMarkup({
+        key: 'live.pts',
+        summary: 'What Pts and Net mean',
+        html: [`<b>Pts</b> is what the place is worth under <span class="reg">1.6.1</span>, `
+          + `with the fastest lap point in it.`,
+          `<b>Net</b> is what it adds to the season total: ${n === 1 ? 'the lowest score is'
+            : `the lowest ${n} scores are`} dropped at the end of the year `
+          + `(<span class="reg">${grads() ? '1.6.2a' : '1.6.2'}</span>), so a driver with `
+          + `nothing poor left to discard keeps less of a good round than the number beside `
+          + `it suggests — and none of it at all where this round is the one being dropped. `
+          + `Hover any of them for which it is.`],
+      });
     }
     if (v.scored && v.scored.scored.size) {
       body += '<h2>The championship, if it ends like this</h2>'
         + (impact = liveImpact(base, v, live)).html
-        + `<details class="tv"><summary>How this is worked out</summary>`
-        + `<p class="sub" style="margin:8px 0 0">Round ${v.scored.round} scored under `
-        + `<span class="reg">1.6.1</span> from the order above, with the fastest lap point `
-        + `and the drop scores applied. Min and Max carry it to the end of the season: where `
-        + `each driver ends up if this race finishes as it stands and they score nothing after `
-        + `it, and where they end up if it finishes as it stands and they win everything left. `
-        + `Both count this race exactly as Total and Net do, so Min is never below the Net `
-        + `beside it. The title run-in asks the other question, of a race still to be won. `
-        + `Provisional in every sense — the race is still running, and the classification is `
-        + `the stewards' to write.</p></details>`;
+        + explainMarkup({
+          key: 'live.impact',
+          summary: 'How this is worked out',
+          html: [`Round ${v.scored.round} scored under <span class="reg">1.6.1</span> from the `
+            + `order above, with the fastest lap point and the drop scores applied.`,
+            `Min and Max carry it to the end of the season: where each driver ends up if this `
+            + `race finishes as it stands and they score nothing after it, and where they end `
+            + `up if it finishes as it stands and they win everything left. Both count this `
+            + `race exactly as Total and Net do, so Min is never below the Net beside it. The `
+            + `title run-in asks the other question, of a race still to be won.`,
+            `Provisional in every sense — the race is still running, and the classification `
+            + `is the stewards' to write.`],
+        });
     }
     if (LIVE.rc.length) {
       body += '<h2>Race control</h2><div class="notes">'
@@ -6763,10 +6948,16 @@ function socials() {
   const p = $('#p-socials'); p.innerHTML = '';
   const data = ALL.socials;
   p.append(Object.assign(el('p', 'lede'), { textContent:
-    'What the paddock and the circuits published. The pictures are served by '
-    + 'Instagram and X from the posts themselves — nothing is copied here, so '
-    + 'every one of these is somebody else’s photograph, shown the way they '
-    + 'published it and credited to the account that posted it.' }));
+    'What the paddock and the circuits published.' }));
+  p.append(explain({
+    key: 'socials.how',
+    summary: 'Whose pictures these are',
+    text: ['The pictures are served by Instagram and X from the posts themselves — nothing '
+      + 'is copied here, so every one of these is somebody else’s photograph, shown the way '
+      + 'they published it and credited to the account that posted it.',
+      'Both platforms put an account’s feed behind a login, which is why the posts below '
+      + 'are a list somebody kept rather than a feed being read.'],
+  }));
 
   if (!data || (!(data.accounts || []).length && !(data.posts || []).length)) {
     p.append(Object.assign(el('p', 'sub'), { textContent:
@@ -6784,9 +6975,8 @@ function socials() {
   if (!posts.length) { newsSection(p); return; }
   p.append(Object.assign(el('h4', 'enduro-h'), { textContent: 'Posts worth keeping' }));
   p.append(Object.assign(el('p', 'sub'), { textContent:
-    'Both platforms put an account’s feed behind a login, so this is a list '
-    + 'somebody kept rather than a feed being read — it does not update on its '
-    + 'own. Posts about the championship being read are marked.' }));
+    'This is a list somebody kept rather than a feed being read, so it does not update on '
+    + 'its own. Posts about the championship being read are marked.' }));
 
   const grid = el('div', 'socialgrid');
   posts.forEach(x => grid.append(socialCard(x)));

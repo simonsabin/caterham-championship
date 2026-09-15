@@ -1,0 +1,1125 @@
+:root{
+  --paper:#F1F3F0; --surface:#FFFFFF; --surface-2:#E8ECE7; --sunk:#E2E8E3;
+  --ink:#111C18; --ink-2:#3B4C45; --ink-3:#54655E;
+  --line:#D3DAD5; --line-2:#BDC7C0;
+  --racing:#0F5738; --racing-ink:#0F5738; --racing-soft:#DCE9E1;
+  --band:#0F5738; --band-ink:#FFFFFF; --band-off:#5B6C65; --band-off-ink:#FFFFFF;
+  --tip-bg:#FFFFFF; --tip-ink:#3B4C45; --tip-strong:#111C18; --tip-line:#BDC7C0;
+  --flag:#E0AE00; --flag-soft:#F8ECC4; --flag-ink:#7A5E00;
+  --fl:#6B2FA0;
+  --alarm:#AE3220; --alarm-soft:#F6DED9; --tag-warn:#8E2718; --tag-warn-ink:#FFFFFF;
+  --s1:#117A56; --s2:#2F5CD6; --s3:#D24118; --s4:#8A46C4; --s5:#A98400; --s6:#0089A8;
+  --grid:#DFE5E0;
+  --shadow:0 1px 2px rgba(17,28,24,.06), 0 8px 24px -12px rgba(17,28,24,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#0D1512; --surface:#16211D; --surface-2:#1D2925; --sunk:#111B17;
+    --ink:#E9EFEB; --ink-2:#AFBEB7; --ink-3:#8D9D96;
+    --line:#28352F; --line-2:#35453E;
+    --racing:#4FBF8B; --racing-ink:#7FD3AB; --racing-soft:#183026;
+    --band:#1E4535; --band-ink:#D6EBE0; --band-off:#2A3A34; --band-off-ink:#B4C3BC;
+    --tip-bg:#24312C; --tip-ink:#C6D3CD; --tip-strong:#FFFFFF; --tip-line:#3B4C45;
+    --flag:#E5B93B; --flag-soft:#38300F; --flag-ink:#F0CE68;
+    --fl:#C2A0EA;
+    --alarm:#E4795E; --alarm-soft:#3A1E17; --tag-warn:#5C241A; --tag-warn-ink:#F5C7BC;
+    --s1:#2A9C74; --s2:#6E8FE0; --s3:#E0603A; --s4:#A874D8; --s5:#B08F1C; --s6:#1FA4BE;
+    --grid:#243029;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
+  }
+}
+
+*{box-sizing:border-box}
+/* How much of the top of the window the menus are holding. Set from script as
+   they wrap and unwrap; the value here is only what the first paint uses. */
+:root{--topbar-h:92px}
+/* Anything scrolled to lands below the menus rather than behind them. */
+*{scroll-margin-top:calc(var(--topbar-h) + 10px)}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.disp{font-family:"Barlow Condensed","Arial Narrow",Arial,sans-serif;font-weight:600;letter-spacing:.01em;text-wrap:balance}
+.mono,td.num,th.num{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+a{color:var(--racing-ink)}
+:focus-visible{outline:2px solid var(--racing); outline-offset:2px; border-radius:3px}
+
+.wrap{max-width:1360px;margin:0 auto;padding:0 clamp(14px,3vw,32px)}
+
+/* ---- masthead ---------------------------------------------------------- */
+.startline{height:6px;background:
+  repeating-linear-gradient(90deg,var(--racing) 0 14px,transparent 14px 28px);}
+header.mast{background:var(--surface);border-bottom:1px solid var(--line)}
+.mast-in{display:flex;flex-wrap:wrap;gap:18px 28px;align-items:flex-end;padding:22px 0 16px}
+.eyebrow{font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;letter-spacing:.16em;
+  text-transform:uppercase;font-size:13px;color:var(--racing-ink);margin:0 0 2px}
+h1{margin:0;font-size:clamp(30px,4.4vw,46px);line-height:.98;text-transform:uppercase}
+h1 em{font-style:normal;color:var(--racing-ink)}
+.mast-stats{display:flex;gap:26px;margin-left:auto;flex-wrap:wrap}
+/* The same five figures, standing on their own page rather than in a masthead. */
+.mast-stats.standalone{margin:0 0 4px;gap:18px 30px}
+.stat{min-width:88px}
+.stat .k{font-family:"Barlow Condensed",Arial,sans-serif;font-size:12px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink-3)}
+.stat .v{font-family:"IBM Plex Mono",monospace;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat .v small{font-size:13px;color:var(--ink-3);font-weight:400}
+
+.blurb{margin:8px 0 0;font-size:13.5px;color:var(--ink-2);max-width:52ch}
+/* The menu the whole page hangs off. It comes before the masthead because the
+   championship is chosen before anything about it is read. */
+/* The championship, the season and the pages of it are how you get anywhere,
+   so they stay at the top of the window rather than at the top of the page. */
+.topbar{position:sticky;top:0;z-index:50}
+.appbar{background:var(--surface-2);border-bottom:1px solid var(--line)}
+.seriesbar{display:flex;gap:6px;overflow-x:auto;padding:9px 0}
+.seriesbar button{appearance:none;cursor:pointer;white-space:nowrap;
+  font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;font-size:15px;
+  letter-spacing:.07em;text-transform:uppercase;
+  background:var(--surface);color:var(--ink-2);
+  border:1px solid var(--line-2);border-radius:3px;padding:5px 14px}
+.seriesbar button:hover{border-color:var(--racing);color:var(--ink)}
+.seriesbar button[aria-pressed="true"]{background:var(--band);border-color:var(--band);
+  color:var(--band-ink)}
+/* On a phone the strip of championships does not fit across the top, and it is
+   the one control that is wanted from anywhere on the page - so there it is a
+   button in the corner nearest the thumb, with the strip stacked above it. On
+   anything wider it stays what it is and this button does not exist. */
+.seriesfab{display:none}
+/* Season chooser. Hidden while there is only one season, so it costs nothing
+   until a second year exists. Deliberately quieter than the series bar - the
+   year is picked once, the series is switched constantly. */
+.yearbar{display:flex;gap:6px;overflow-x:auto;padding:9px 0 0}
+.yearbar[hidden]{display:none}
+.yearbar button{appearance:none;cursor:pointer;white-space:nowrap;
+  font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;font-size:13px;
+  letter-spacing:.08em;font-variant-numeric:tabular-nums;
+  background:none;color:var(--ink-3);
+  border:1px solid transparent;border-radius:3px;padding:3px 10px}
+.yearbar button:hover{color:var(--ink);border-color:var(--line-2)}
+.yearbar button[aria-pressed="true"]{color:var(--ink);border-color:var(--racing)}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);background:var(--surface)}
+nav.tabs[hidden]{display:none}
+nav.tabs button{
+  appearance:none;background:none;border:0;border-bottom:3px solid transparent;
+  font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;font-size:17px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);
+  padding:12px 16px 9px;cursor:pointer;white-space:nowrap}
+nav.tabs button:hover{color:var(--ink)}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--racing)}
+
+.note{margin:14px 0 0;padding:10px 14px;border-radius:0 3px 3px 0;font-size:13px;
+  line-height:1.5;border-left:3px solid var(--racing);background:var(--surface);
+  border-top:1px solid var(--line);border-right:1px solid var(--line);
+  border-bottom:1px solid var(--line);color:var(--ink-2)}
+.note.warn{border-left-color:var(--alarm);background:var(--alarm-soft)}
+.note b{color:var(--ink)}
+.note ul{margin:6px 0 0;padding-left:18px}
+.note li{margin:2px 0}
+.note details{margin-top:6px}
+.note details summary{cursor:pointer}
+.note .mono{font-variant-numeric:tabular-nums}
+.note .tag{font-family:"Barlow Condensed",Arial,sans-serif;font-size:11.5px;
+  letter-spacing:.1em;text-transform:uppercase;padding:1px 6px;border-radius:2px;
+  margin-right:8px;background:var(--band);color:var(--band-ink)}
+.note.warn .tag{background:var(--tag-warn);color:var(--tag-warn-ink)}
+
+main{padding:26px 0 64px}
+.panel{display:none}
+.panel.on{display:block}
+.lede{color:var(--ink-2);max-width:66ch;margin:0 0 18px}
+h2{font-size:23px;margin:34px 0 10px;text-transform:uppercase;letter-spacing:.03em}
+h2:first-child{margin-top:0}
+.sub{font-size:13px;color:var(--ink-3);margin:-6px 0 14px}
+
+/* ---- tables ------------------------------------------------------------ */
+/* The box scrolls, rather than growing to whatever depth the table is: that
+   is what a sticky head needs to stay at the top of. Its height is set from
+   script, in rows - see capTable. */
+.scroller{overflow:auto;
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:4px;box-shadow:var(--shadow)}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+th,td{padding:5px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+thead th{background:var(--surface-2);position:sticky;top:0;z-index:3;
+  font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;font-size:12.5px;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+thead tr.band th{background:var(--band);color:var(--band-ink);text-align:center;font-size:11.5px;
+  letter-spacing:.1em;border-bottom:1px solid var(--band);top:0;z-index:4}
+thead tr.band th.future{background:var(--band-off);color:var(--band-off-ink)}
+thead tr.band th.stick1,thead tr.band th.stick2{background:var(--surface-2);color:var(--ink-2)}
+/* The two columns the standings can be ranked on. The one in force is marked;
+   the other looks like what it is, a control that changes the order. */
+thead th.rankable{cursor:pointer;user-select:none}
+thead th.rankable:hover,thead th.rankable:focus-visible{color:var(--ink);text-decoration:underline dotted currentColor}
+thead th.ranked{color:var(--ink);box-shadow:inset 0 -2px 0 var(--flag-ink)}
+thead tr.cols th{top:var(--cols-top,26px);z-index:3}
+tbody tr:hover td{background:var(--surface-2)}
+td.num,th.num{text-align:center}
+
+/* sticky driver identity columns */
+.stick1{position:sticky;left:0;z-index:2;background:var(--surface);width:44px}
+.stick2{position:sticky;left:44px;z-index:2;background:var(--surface);min-width:150px;
+  border-right:1px solid var(--line-2)}
+thead .stick1,thead .stick2{z-index:5;background:var(--surface-2)}
+tbody tr:hover .stick1,tbody tr:hover .stick2{background:var(--surface-2)}
+
+td.pt{text-align:center;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;
+  cursor:default}
+/* the championship grid is 21 rounds wide, so it gets its own tighter metrics */
+table.champ th,table.champ td{padding:5px 3px}
+table.champ .stick1{width:28px;padding-left:2px;padding-right:2px}
+table.champ .stick2{width:146px;min-width:146px;left:28px;padding-left:6px}
+table.champ td.pt,table.champ tr.cols th{width:27px;min-width:27px}
+table.champ td.tot,table.champ td.num{width:36px}
+table.champ .chip{font-size:10px;padding:0 4px;letter-spacing:.06em}
+table.champ .rowhead{gap:5px}
+table.champ .rowhead b{overflow:hidden;text-overflow:ellipsis}
+table.champ thead tr.cols th{font-size:11px;letter-spacing:.02em}
+/* The judicial record. Every other table on the site is a grid of numbers, and
+   this one is not: a decision is a row of facts and a sentence saying what the
+   Clerk decided, and the sentence is the part a reader came for. So it gets a
+   row of its own under the facts, wrapping where nothing else here wraps, and
+   the two are held together by taking the rule off the row above it. */
+/* A result the Clerk looked at. The classification says where a car finished
+   and not that its finish was argued over, so the row is boxed - drawn on the
+   cells, because a table with separated borders will not draw one on the row. */
+tr.judged td{box-shadow:inset 0 1px 0 var(--alarm),inset 0 -1px 0 var(--alarm)}
+tr.judged td:first-child{box-shadow:inset 1px 0 0 var(--alarm),
+  inset 0 1px 0 var(--alarm),inset 0 -1px 0 var(--alarm)}
+tr.judged td:last-child{box-shadow:inset -1px 0 0 var(--alarm),
+  inset 0 1px 0 var(--alarm),inset 0 -1px 0 var(--alarm)}
+tr.judged{cursor:default}
+
+/* ---- behaviour warning points, as a row of points ---------------------- */
+/* Whole numbers with edges that bite, so cells rather than a bar: the question
+   is never "how full" but "how many before the next line". The cells are
+   separated by a gap in the surface rather than by a border - ink that is not
+   data - and the thresholds are marked on the cell that reaches them. */
+.bwp{display:flex;gap:2px;align-items:stretch;height:14px;width:100%;min-width:132px}
+.bwp i{flex:1 1 0;background:var(--sunk);border-radius:1px}
+.bwp i:first-child{border-radius:3px 1px 1px 3px}
+.bwp i:last-child{border-radius:1px 3px 3px 1px}
+.bwp i.on{background:var(--racing)}
+.bwp i.edge{box-shadow:inset -2px 0 0 var(--ink-3)}
+.bwp i.edge:last-child{box-shadow:none}
+.bwp-head{min-width:150px;vertical-align:top}
+.bwp-axis{position:relative;display:block;height:12px;margin-top:2px;
+  font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--ink-3);
+  letter-spacing:0;text-transform:none;font-weight:400}
+.bwp-axis span{position:absolute;transform:translateX(-50%)}
+
+/* The Pen cell is a control - it shows that driver's decisions - so it takes
+   focus, and focus has to be visible on it like on any other. */
+td[role="button"]:focus-visible{outline:2px solid var(--racing);outline-offset:-2px}
+table.judicial tr.said td{border-bottom:none}
+table.judicial tr.why td{white-space:normal;padding:0 8px 7px}
+/* The facts scroll sideways on a phone; the sentence about them must not have
+   to. It sticks to the left edge of the scrolling box and wraps inside it,
+   the same trick the championship grid uses to keep a driver's name in view. */
+table.judicial tr.why td>div{position:sticky;left:8px;max-width:min(62ch,86vw);
+  color:var(--ink-2);font-size:12.5px;line-height:1.45}
+/* A Motorsport UK article, which is a different rulebook from the championship
+   regulations `.reg` links into - so it is marked as an article without
+   pretending to be a link to one. */
+.ncr{font-size:11.5px;color:var(--ink-2)}
+
+td.pt.win{background:var(--flag-soft);color:var(--flag-ink);font-weight:600}
+td.pt.fl{text-decoration:underline;text-decoration-color:var(--fl);
+  text-decoration-thickness:2px;text-underline-offset:3px;font-weight:600}
+td.pt.pen{color:var(--alarm);font-weight:600;background:var(--alarm-soft)}
+td.pt.none{color:var(--ink-3)}
+td.pt.future{background:repeating-linear-gradient(135deg,transparent 0 5px,var(--sunk) 5px 10px)}
+/* A round still to be run whose qualifying is published: where they start from,
+   quiet enough not to be mistaken for a score. */
+td.pt.future.qual{color:var(--ink-3);font-size:10px;letter-spacing:-.02em}
+td[style*="cursor: pointer"]{cursor:pointer}
+td[style*="cursor: pointer"]:hover{text-decoration:underline}
+td.tot{text-align:center;font-family:"IBM Plex Mono",monospace;font-weight:600;background:var(--sunk)}
+/* Both ends of the projection: a number about a season that has not happened,
+   and quieter than the ones about the season that has. */
+td.proj{color:var(--ink-3)}
+tr.guest td{color:var(--ink-3);font-style:italic}
+tr.guest .stick2{font-style:italic}
+.rowhead{display:flex;align-items:baseline;gap:7px}
+.rowhead b{font-weight:600}
+.rowhead .name-init{display:none}
+.chip{font-family:"Barlow Condensed",Arial,sans-serif;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;padding:1px 5px;border-radius:2px;border:1px solid var(--line-2);
+  color:var(--ink-3)}
+/* A class, as a shape and a colour. Shape as well, because a colour on its own
+   is no use to somebody who cannot see that colour. */
+.cmark{display:inline-block;width:9px;height:9px;flex:none;background:var(--s1);
+  border-radius:50%;vertical-align:0}
+.cmark.two{background:var(--s2);border-radius:2px}
+.cmark.three{background:var(--s3);border-radius:1px;transform:rotate(45deg)}
+.cmark.four{background:var(--s5);border-radius:50%;box-shadow:inset 0 0 0 2px var(--surface)}
+.cmark.other{background:none;border:1.5px solid var(--ink-3);border-radius:2px}
+.legend.classlegend{margin-top:10px;gap:8px 16px;font-size:12.5px}
+.legend.classlegend span{gap:6px}
+
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;margin:12px 0 0;font-size:12.5px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:13px;height:13px;border-radius:2px;border:1px solid var(--line-2);display:inline-block}
+
+/* ---- chart ------------------------------------------------------------- */
+.chartbox{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+  box-shadow:var(--shadow);padding:16px 16px 8px;margin-top:14px}
+.chartbox svg{width:100%;height:auto;display:block;overflow:visible}
+.ax{font-family:"IBM Plex Mono",monospace;font-size:10px;fill:var(--ink-3)}
+.gl{stroke:var(--grid);stroke-width:1}
+.serieslab{font-family:"Barlow Condensed",Arial,sans-serif;font-size:12.5px;font-weight:600}
+.chart-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:6px;font-size:12.5px;color:var(--ink-2)}
+.chart-legend span{display:inline-flex;align-items:center;gap:7px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+/* ---- candles ----------------------------------------------------------- */
+.candlebox{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+  box-shadow:var(--shadow);padding:14px 6px 8px;overflow-x:auto}
+.candlebox svg{display:block}
+.candlebox text.xlab{font-family:"Barlow Condensed",Arial,sans-serif;font-size:12px;fill:var(--ink-2)}
+.candlebox text.xlab.out{fill:var(--ink-3)}
+.refline{stroke:var(--ink-3);stroke-width:1;stroke-dasharray:4 4}
+.reftext{font-family:"IBM Plex Mono",monospace;font-size:10px;fill:var(--ink-3)}
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin:0 0 16px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+  padding:11px 14px;box-shadow:var(--shadow)}
+.kpi .k{font-family:"Barlow Condensed",Arial,sans-serif;font-size:12px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink-3)}
+.kpi .v{font-family:"IBM Plex Mono",monospace;font-size:21px;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi .n{font-size:12.5px;color:var(--ink-2)}
+/* One line the reader can open, and four things behind it: the prose that
+   explains a table (.explain), the same figures as a table (.tv), a weekend's
+   decisions on a card (.jud) and the enduro's qualifying sheet
+   (.enduro-qual). The gesture is the same, so the line looks the same
+   wherever it is; only what is under it and how loudly it asks differ. */
+details.explain,details.tv{margin-top:14px}
+details.explain>summary,details.tv>summary,details.jud>summary,
+.enduro-qual>summary{
+  cursor:pointer;list-style:none;font-family:"Barlow Condensed",Arial,sans-serif;
+  font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);
+  padding:6px 0;display:flex;align-items:baseline;gap:8px}
+details.explain>summary::-webkit-details-marker,
+details.tv>summary::-webkit-details-marker,
+details.jud>summary::-webkit-details-marker,
+.enduro-qual>summary::-webkit-details-marker{display:none}
+/* The caret is drawn rather than left to the browser, because the marker a
+   browser draws sits on the first line of a wrapped summary in one engine and
+   beside the middle of it in another. */
+details.explain>summary::before,details.tv>summary::before,
+details.jud>summary::before,.enduro-qual>summary::before{content:"";flex:none;width:0;height:0;
+  border:5px solid transparent;border-left-color:var(--line-2);
+  transform:translateY(1px);transition:transform .12s ease}
+details.explain[open]>summary::before,details.tv[open]>summary::before,
+details.jud[open]>summary::before,.enduro-qual[open]>summary::before{
+  transform:translateY(1px) rotate(90deg)}
+details.explain>summary:hover,details.tv>summary:hover,details.jud>summary:hover,
+.enduro-qual>summary:hover{color:var(--ink)}
+details.explain>summary:hover::before,details.tv>summary:hover::before,
+details.jud>summary:hover::before,.enduro-qual>summary:hover::before{
+  border-left-color:var(--racing)}
+/* The words themselves, once asked for: the same measure as a lede, indented
+   to the summary's text so the block reads as one thing rather than two. */
+.explain-body{max-width:66ch;margin:2px 0 0 18px;font-size:13.5px;
+  line-height:1.55;color:var(--ink-2)}
+.explain-body p{margin:0 0 8px}
+.explain-body p:last-child{margin:0}
+.explain-body b{color:var(--ink)}
+tr.outrow td{color:var(--ink-3)}
+
+/* ---- cards ------------------------------------------------------------- */
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(330px,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+  box-shadow:var(--shadow);overflow:hidden}
+.card.future{opacity:.9;border-style:dashed}
+.card-h{display:flex;align-items:baseline;gap:10px;padding:11px 14px;background:var(--band);color:var(--band-ink)}
+.card.future .card-h{background:var(--band-off);color:var(--band-off-ink)}
+.card-h .rnd{font-family:"IBM Plex Mono",monospace;font-size:12px;opacity:.85}
+.card-h h3{margin:0;font-size:19px;text-transform:uppercase;letter-spacing:.03em;color:inherit}
+.card-h .when{margin-left:auto;font-size:12.5px;opacity:.9;font-family:"IBM Plex Mono",monospace}
+.card-b{padding:10px 14px 14px}
+.ses{display:grid;grid-template-columns:auto 1fr auto;gap:3px 12px;font-size:13px;align-items:baseline}
+.ses .t{font-family:"IBM Plex Mono",monospace;color:var(--ink-2)}
+.ses .n{color:var(--ink)}
+.ses .r{color:var(--ink-3);font-family:"IBM Plex Mono",monospace;font-size:12px;text-align:right}
+.meta{margin-top:10px;font-size:12.5px;color:var(--ink-3);border-top:1px dotted var(--line-2);padding-top:8px}
+.meta a{color:var(--racing-ink)}
+/* What the Clerk did over a weekend, folded away: ten decisions will not fit
+   on a card and the count of them will, so the summary carries the count and
+   opening it carries the rest. */
+details.jud{margin-top:8px;font-size:12.5px}
+details.jud>summary{font-size:14px;letter-spacing:.05em;padding:2px 0}
+details.jud p{margin:7px 0 0;color:var(--ink-2);line-height:1.45}
+details.jud a{color:var(--racing-ink)}
+.rnd-link{font-family:"IBM Plex Mono",monospace;font-size:11.5px}
+
+/* ---- race picker ------------------------------------------------------- */
+.picker{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}
+.picker-buttons{display:flex;flex-wrap:wrap;gap:5px}
+.picker-select{display:none;appearance:none;background:var(--surface);color:var(--ink);
+  border:1px solid var(--line-2);border-radius:3px;padding:10px 12px;
+  font-family:"IBM Plex Mono",monospace;font-size:13px;line-height:1.3}
+.picker button{appearance:none;cursor:pointer;background:var(--surface);border:1px solid var(--line-2);
+  color:var(--ink-2);border-radius:3px;padding:5px 10px;font-size:13px;
+  font-family:"IBM Plex Mono",monospace}
+.picker button:hover{border-color:var(--racing);color:var(--ink)}
+.picker button[aria-pressed="true"]{background:var(--band);border-color:var(--band);color:var(--band-ink)}
+.racehead{display:flex;flex-wrap:wrap;gap:6px 22px;align-items:baseline;margin-bottom:10px}
+.racehead h3{margin:0;font-size:22px;text-transform:uppercase}
+.racehead .f{font-size:13px;color:var(--ink-2)}
+.racehead .f b{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
+/* What the organising club published for the meeting: the stream, the
+   timetable, the timing company's results and the noticeboard the officials
+   post decisions to. None of it is on a classification sheet, and all of it
+   belongs to the meeting rather than to one race, so it sits on the meeting's
+   calendar card. */
+.evlinks{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:9px 0 0}
+.evlinks a{display:inline-block;border:1px solid var(--line-2);border-radius:3px;padding:4px 9px;
+  font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-2);text-decoration:none}
+.evlinks a:hover{border-color:var(--racing);color:var(--racing-ink)}
+.evlinks a.page{color:var(--ink);border-color:var(--line)}
+/* .sub is written to tuck under a heading, so it pulls itself up six pixels;
+   a line that follows a row of links instead has to be pushed back down. */
+.evlinks + .sub{margin-top:14px}
+.notes{margin:12px 0 0;padding:10px 13px;background:var(--surface-2);border-left:3px solid var(--flag);
+  font-size:12.5px;color:var(--ink-2);border-radius:0 3px 3px 0}
+.notes p{margin:0 0 4px}
+.notes p:last-child{margin:0}
+tr.dnf td{color:var(--ink-3)}
+tr.win td{background:var(--flag-soft)}
+tr.win:hover td{background:var(--flag-soft)}
+tr.highlight td{background:var(--flag-soft);animation:flash 0.6s ease-in-out 2}
+@keyframes flash{0%,100%{background:var(--flag-soft)}50%{background:var(--flag)}}
+
+/* ---- race replay: the lap chart, and the video it plays against -------- */
+/* The chart, then the video under it at the full width of the page: a race is
+   wide and a broadcast of it is worth more than a thumbnail. */
+.replay{display:flex;flex-direction:column;gap:14px;margin:14px 0 4px}
+.lapbox{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+  box-shadow:var(--shadow);padding:12px 12px 6px;overflow-x:auto}
+.lapbox svg{display:block;min-width:640px}
+.lapbar{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;justify-content:space-between;
+  margin:6px 2px 0;font-size:12px;color:var(--ink-3)}
+.lapbar .src{font-family:"IBM Plex Mono",monospace;color:var(--ink-3)}
+.lapbar label{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  font-family:"Barlow Condensed",Arial,sans-serif;font-size:13px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.lapbar label:hover{color:var(--ink)}
+.lc-line{fill:none;stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round;opacity:.85}
+.lc-line.dim{opacity:.13}
+.lc-line.on{stroke-width:3.4;opacity:1}
+.lc-lab{font-family:"IBM Plex Mono",monospace;font-size:10.5px;cursor:pointer}
+.lc-lab.dim{opacity:.3}
+.lc-head{font-family:"Barlow Condensed",Arial,sans-serif;font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;fill:var(--ink-3)}
+.lc-hit{fill:transparent;cursor:crosshair}
+.lc-flag{fill:var(--flag-soft)}
+.lc-flag.red{fill:var(--alarm-soft)}
+.lc-flag-edge{stroke:var(--flag);stroke-width:1;stroke-dasharray:2 3}
+.lc-flag.red + .lc-flag-edge{stroke:var(--alarm)}
+.lc-flag-lab{font-family:"Barlow Condensed",Arial,sans-serif;font-size:11px;
+  letter-spacing:.09em;text-transform:uppercase;fill:var(--flag-ink)}
+.lc-flag-lab.red{fill:var(--alarm)}
+.lc-play{stroke:var(--alarm);stroke-width:1.5}
+.lc-cross{stroke:var(--ink-3);stroke-width:1;stroke-dasharray:3 3}
+.watch{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+  box-shadow:var(--shadow);padding:12px}
+.watch h4{margin:0 0 8px;font-family:"Barlow Condensed",Arial,sans-serif;font-size:15px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:600}
+.vid{position:relative;aspect-ratio:16/9;background:#000;border-radius:3px;overflow:hidden}
+.vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.vid button{position:absolute;inset:0;width:100%;border:0;cursor:pointer;color:#F1F3F0;
+  background:linear-gradient(160deg,#1c2a24,#0b120f);
+  font-family:"Barlow Condensed",Arial,sans-serif;font-size:16px;letter-spacing:.08em;
+  text-transform:uppercase;display:flex;flex-direction:column;gap:6px;
+  align-items:center;justify-content:center;padding:14px;text-align:center}
+.vid button:hover{color:#fff}
+.vid button .yt{font-size:44px;line-height:1}
+.vid button small{font-family:"IBM Plex Sans",Arial,sans-serif;font-size:13px;
+  letter-spacing:0;text-transform:none;opacity:.75;max-width:52ch}
+.watch .sync{margin:8px 0 0;font-size:12px;color:var(--ink-3)}
+.watch .sync b{font-family:"IBM Plex Mono",monospace;color:var(--ink-2);font-weight:600}
+.watch .sync a{color:var(--racing-ink)}
+
+/* ---- qualifying -------------------------------------------------------- */
+/* Two charts and a table, in the boxes everything else on this page is in. The
+   first holds the whole field and is read across; the second holds one car and
+   is read down, a row per thing that was timed. */
+.qbox{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+  box-shadow:var(--shadow);padding:12px 14px 8px;margin:14px 0 0;overflow-x:auto}
+.qbox svg{display:block;min-width:560px;width:100%;height:auto}
+.qbar{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:8px;
+  font-size:12.5px;color:var(--ink-3);line-height:1.45}
+.qbar .controls{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin-left:auto}
+.qbar .cuts{display:flex;gap:4px;align-items:center;flex:none}
+.qbar .cuts .k{font-family:"Barlow Condensed",Arial,sans-serif;font-size:11.5px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.qbar .cuts button{appearance:none;cursor:pointer;background:var(--surface);
+  border:1px solid var(--line-2);color:var(--ink-2);border-radius:3px;padding:3px 8px;
+  font-family:"IBM Plex Mono",monospace;font-size:12px}
+.qbar .cuts button:hover{border-color:var(--racing);color:var(--ink)}
+.qbar .cuts button[aria-pressed="true"]{background:var(--band);border-color:var(--band);
+  color:var(--band-ink)}
+/* One car's line among thirty. Nothing is emphasised until something is, and
+   then everything else steps back rather than disappearing. */
+.q-line{fill:none;stroke-width:1.6;opacity:.85}
+.q-line.dim{opacity:.2}
+.q-line.on{stroke-width:3.2;opacity:1}
+.q-dot{stroke:var(--surface);stroke-width:1}
+.q-dot.dim{opacity:.16}
+.q-hit{fill:transparent;cursor:pointer}
+.q-xlab{font-family:"Barlow Condensed",Arial,sans-serif;font-size:12.5px;
+  letter-spacing:.06em;text-transform:uppercase;fill:var(--ink-3);pointer-events:none}
+/* The column the table under the chart is ranked on, and the target for
+   changing it: the band behind the lines, the name under them. */
+.q-xlab.on{fill:var(--racing-ink);font-weight:700}
+.q-colband{fill:var(--surface-2)}
+.q-col{fill:transparent;cursor:pointer}
+.q-col:hover ~ .q-xlab{fill:var(--ink)}
+.q-name{font-family:"Barlow Condensed",Arial,sans-serif;font-size:13px;font-weight:600}
+/* The head of one row of the car's own chart: what was timed, and the best of it. */
+.q-row-k{font-family:"Barlow Condensed",Arial,sans-serif;font-size:12.5px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;fill:var(--ink-2)}
+.q-row-v{font-family:"IBM Plex Mono",monospace;font-size:10.5px;fill:var(--ink-3)}
+.q-mark{fill:var(--fl)}
+.q-sep{stroke:var(--line);stroke-width:1}
+/* A lap that does not count, shaded down the whole chart so the reason a line
+   has a hole in it is visible on every row of it at once. */
+.q-void{fill:var(--surface-2)}
+.q-void-lab{font-family:"Barlow Condensed",Arial,sans-serif;font-size:10px;
+  letter-spacing:.04em;text-transform:uppercase;fill:var(--ink-3)}
+.qhead{display:flex;flex-wrap:wrap;gap:6px 20px;align-items:baseline;margin:16px 0 0}
+.qhead h4{margin:0;font-size:18px;text-transform:uppercase;letter-spacing:.02em}
+.qhead .f{font-size:13px;color:var(--ink-2)}
+.qhead .f b{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
+.qhead .swatch{width:11px;height:11px;border-radius:50%;display:inline-block;
+  margin-right:2px;vertical-align:baseline}
+table.qtab tbody tr{cursor:pointer}
+table.qtab tbody tr.pick td{background:var(--racing-soft)}
+table.qtab tbody tr.pick:hover td{background:var(--racing-soft)}
+table.qtab td.void{color:var(--ink-3)}
+td.qmark{color:var(--fl);font-weight:600}
+
+/* ---- rules ------------------------------------------------------------- */
+.cols2{display:grid;gap:26px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start}
+.prose p{margin:0 0 12px;color:var(--ink-2);max-width:62ch}
+.prose h3{margin:20px 0 6px;font-size:18px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink)}
+.prose h3:first-child{margin-top:0}
+.prose ul{margin:0 0 12px;padding-left:18px;color:var(--ink-2);max-width:62ch}
+.prose li{margin-bottom:5px}
+.reg{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--racing-ink);
+  background:var(--racing-soft);padding:1px 5px;border-radius:2px;
+  text-decoration:none;border-bottom:1px solid transparent;white-space:nowrap}
+a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var(--surface-2)}
+.doclink{display:inline-flex;align-items:baseline;gap:8px;margin:0 0 16px;
+  padding:9px 13px;background:var(--surface);border:1px solid var(--line);
+  border-left:3px solid var(--racing);border-radius:0 3px 3px 0;box-shadow:var(--shadow);
+  font-size:13.5px;text-decoration:none;color:var(--ink)}
+.doclink:hover{border-left-color:var(--flag)}
+.doclink b{font-weight:600}
+.doclink span{color:var(--ink-3);font-family:"IBM Plex Mono",monospace;font-size:12px}
+
+/* ---- live timing ------------------------------------------------------- */
+.livehead{position:relative;display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;
+  background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--racing);
+  border-radius:0 4px 4px 0;box-shadow:var(--shadow);padding:12px 16px;margin-bottom:14px}
+/* One row: the meeting, what is on at it, and the clock. The meeting is the
+   only part that can be any length, so it is the only part that gives - the
+   pill and the clock are never squeezed or wrapped. */
+.livehead .who{display:flex;align-items:center;gap:10px;min-width:0;
+  font-family:"Barlow Condensed",Arial,sans-serif;font-size:20px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.03em;line-height:1.1}
+.livehead .who .ev{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* The session, beside the meeting it belongs to rather than in a heading of its
+   own repeating both. */
+.livehead .who .sess{flex:none;padding:1px 8px;border-radius:2px;
+  background:var(--band);color:var(--band-ink);font-size:15px;letter-spacing:.06em}
+.livehead .who small{display:block;font-family:"IBM Plex Sans",Arial,sans-serif;font-size:12.5px;
+  font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink-3)}
+/* The clock, in the flag's own colour. A race is run on flags and the one
+   showing is the first thing anyone wants off a timing screen, so rather than
+   spell it out in a pill of its own it colours the number everyone is already
+   looking at: green running, yellow slowing, red stopped, chequered done. The
+   colour is not the only way it is said - the tooltip names it. */
+.livehead .clock{font-family:"IBM Plex Mono",monospace;font-size:15px;font-weight:600;
+  font-variant-numeric:tabular-nums;flex:none;letter-spacing:-.01em;text-transform:none;
+  padding:2px 10px;border-radius:3px;border:1px solid var(--line-2);
+  background:var(--surface-2);color:var(--ink-2)}
+.livehead .clock.green{background:var(--racing);color:#fff;border-color:var(--racing)}
+.livehead .clock.yellow,.livehead .clock.fcy{background:var(--flag);color:#241B00;
+  border-color:var(--flag)}
+.livehead .clock.red{background:var(--alarm);color:#fff;border-color:var(--alarm)}
+.livehead .clock.finish{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+/* Counting down to a session rather than through one: dashed, because the time
+   is the timetable's and the timetable is not the timekeepers. */
+.livehead .clock.soon{border-style:dashed;color:var(--ink-2)}
+.livehead .who .sess.next{background:var(--surface-2);color:var(--ink-2);
+  border:1px solid var(--line-2)}
+.livehead .right{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.flagpill{font-family:"Barlow Condensed",Arial,sans-serif;font-size:13px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;padding:2px 10px;border-radius:2px;
+  background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line-2)}
+.conn{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-3)}
+.conn i{width:9px;height:9px;border-radius:50%;background:var(--ink-3);display:inline-block}
+.conn.on i{background:var(--racing);animation:pulse 2s ease-in-out infinite}
+.conn.warn i{background:var(--flag)}
+.conn.off i{background:var(--line-2)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.livebtn{appearance:none;cursor:pointer;background:var(--band);color:var(--band-ink);
+  border:1px solid var(--band);border-radius:3px;padding:6px 14px;
+  font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;font-size:14px;
+  letter-spacing:.08em;text-transform:uppercase}
+.livebtn:hover{background:var(--racing);border-color:var(--racing);color:#fff}
+.livebtn.quiet{background:var(--surface);color:var(--ink-2);border-color:var(--line-2)}
+.livebtn.quiet:hover{color:var(--ink);border-color:var(--racing);background:var(--surface)}
+.livebar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:0 0 14px}
+.livebar label{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;
+  color:var(--ink-2)}
+/* The one control on the standings: whether the race being run counts in it. */
+.countin{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;
+  color:var(--ink-2);background:var(--surface);border:1px solid var(--line);
+  border-left:3px solid var(--flag);border-radius:0 3px 3px 0;padding:8px 12px;
+  margin:12px 0 0}
+.countin b{color:var(--ink)}
+/* One button, and everything it does behind it. Used twice on this tab: for
+   the handles on the race, and for the columns of the table. */
+.fakes{position:relative}
+.fakes summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;
+  gap:8px;padding:5px 12px;border:1px solid var(--line-2);border-radius:3px;
+  background:var(--surface);color:var(--ink-2);
+  font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;font-size:14px;
+  letter-spacing:.08em;text-transform:uppercase}
+.fakes summary::-webkit-details-marker{display:none}
+.fakes summary:hover{color:var(--ink);border-color:var(--racing)}
+.fakes .bars{width:14px;height:10px;flex:none;
+  background:linear-gradient(currentColor 0 2px,transparent 2px 4px,currentColor 4px 6px,
+    transparent 6px 8px,currentColor 8px 10px)}
+.fakes .fakemenu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;
+  display:flex;flex-direction:column;gap:6px;padding:10px;min-width:190px;
+  background:var(--surface);border:1px solid var(--line-2);border-radius:4px;
+  box-shadow:var(--shadow)}
+.fakes .fakemenu .livebtn{width:100%;text-align:left;text-decoration:none;
+  display:block}
+/* The column chooser, above the table it governs. */
+.livehead .acts{display:inline-flex;gap:4px;align-items:center}
+/* Wide enough and the whole box is one line, so the buttons end up at the right
+   of it on their own. Narrow, and the box wraps: the buttons stay up with the
+   meeting and the clock, and the connection status takes the line below. */
+@media (max-width:767px){
+  .livehead .who{order:1;flex:1 1 auto;min-width:0}
+  .livehead .acts{order:2;margin-left:auto}
+  .livehead .right{order:3;flex-basis:100%;margin-left:0}
+}
+.fakes.icon summary{padding:4px 6px;gap:0}
+.fakes.icon .cogicon{width:16px;height:16px;display:block}
+.fakes.icon .bars{width:16px;height:11px}
+.fakes .fakemenu label{display:flex;align-items:center;gap:9px;cursor:pointer;
+  font-size:13px;color:var(--ink-2);white-space:nowrap}
+.fakes .fakemenu label:hover{color:var(--ink)}
+/* The fastest lap of the session, in the colour a timing screen has always used
+   for the best anybody has gone. */
+table.livetab td.fl{color:var(--fl);font-weight:600}
+/* A heading that is a picture: the size of the words beside it, and the colour
+   of them, so a row of headings still reads as one row. */
+.hicon{width:13px;height:13px;vertical-align:-2px;fill:currentColor;opacity:.75}
+table.livetab td.pts{font-family:"IBM Plex Mono",monospace;text-align:center;font-weight:600;
+  background:var(--sunk)}
+/* A name is as wide as a name; the column it sits in is not. The championship
+   table has always clipped them to a fixed width and the running order does the
+   same, so that the columns that carry numbers keep their place. */
+table.livetab td[data-c="driver"],table.deltatab td[data-c="driver"]{
+  max-width:150px;overflow:hidden}
+table.livetab td[data-c="driver"] b,table.deltatab td[data-c="driver"] b{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+table.livetab .rowhead,table.deltatab .rowhead{gap:5px;min-width:0}
+table.livetab .chip{font-size:10px;padding:0 4px;letter-spacing:.05em}
+
+/* On a phone the table is wider than the screen whatever is done to it, so what
+   it holds is what a driver would want first: where everyone is, what the last
+   lap was, and what it is worth. The rest is a drag to the right too far. */
+@media (max-width:767px){
+  /* A running order is as wide as its columns and no wider. The blanket floor
+     under every table in a scroller is what was keeping this one at 720 pixels
+     however many columns were taken out of it, so the space went into the name
+     column and a clipped name sat in the middle of it looking like a fault. */
+  .scroller table.livetab,.scroller table.deltatab,.scroller table.results,
+  .scroller table.ttab{min-width:0}
+
+  /* max-width on a cell is advisory in an auto-laid-out table, so the name
+     itself is what gets bounded, and the class chip goes: on a phone the name
+     column is for telling drivers apart, not for classifying them. */
+  table.livetab td[data-c="driver"] b{max-width:92px}
+  table.deltatab td[data-c="driver"] b{max-width:104px}
+  table.livetab .chip[data-k="cls"]{display:none}
+  table.deltatab [data-c="before"]{display:none}
+  table.livetab,table.deltatab{font-size:12px}
+  /* A timing table is columns of short numbers: the room between them is room
+     the screen has not got. */
+  table.livetab th,table.livetab td,
+  table.deltatab th,table.deltatab td,
+  table.results th,table.results td{padding:3px 4px}
+
+  /* The head of the tab, which is a banner rather than the thing being read.
+     Everything in it goes one size down and the meeting's small print is cut to
+     the line it fits on. */
+  .livehead{padding:10px 12px;gap:6px 10px;margin-bottom:10px}
+  .livehead .who{font-size:16px;gap:7px}
+  .livehead .acts{gap:4px}
+  .livehead .who small{font-size:11.5px;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;max-width:100%;display:block}
+  .livehead .clock{font-size:14px;padding:1px 7px}
+  .livehead .right{gap:6px 10px}
+  .livebar{gap:6px 10px;margin-bottom:10px}
+  .livehead .fakes summary{padding:4px 10px;font-size:13px}
+  /* Narrow enough and the button has wrapped off the right-hand edge, so the
+     menu hangs off the box rather than off the button. */
+  .livehead .fakes{position:static}
+  .livehead .fakes .fakemenu{right:12px;top:calc(100% + 4px)}
+  /* The notes above the tabs are context, not the thing being read. */
+  .note{padding:8px 11px;font-size:12.5px;margin-top:10px}
+  .note .tag{font-size:11px;margin-right:6px}
+  .livebtn{padding:5px 10px;font-size:13px}
+  .flagpill{font-size:12px;padding:1px 8px}
+}
+
+/* Sector splits, in the colours a timing screen has always used them in. */
+table.livetab td.split{color:var(--ink-3)}
+table.livetab td.split.pbest{color:var(--racing-ink);font-weight:600}
+table.livetab td.split.sbest{color:var(--fl);font-weight:600}
+/* What the round scores, and what it is worth after the drop scores: the second
+   is the one that decides anything, so it is the one that is coloured. */
+table.livetab td.pts.net{background:var(--racing-soft);color:var(--racing-ink)}
+table.livetab td.pts.net.none{background:var(--surface);color:var(--ink-3);font-weight:400}
+table.livetab tr.gone td.pts.net,table.livetab tr.pit td.pts.net{background:var(--surface)}
+table.livetab tr.pit td{color:var(--ink-2);background:var(--flag-soft)}
+/* A car that has not crossed the line yet: shown where it starts from, and
+   quiet enough that it does not read as timing. */
+table.livetab tr.ongrid td{color:var(--ink-3)}
+table.livetab tr.ongrid td.pts,table.livetab tr.ongrid td.pts.net{opacity:.65}
+table.livetab tr.ongrid small{letter-spacing:.06em;text-transform:uppercase;font-size:9.5px}
+table.livetab tr.gone td{color:var(--ink-3);text-decoration:line-through;
+  text-decoration-color:var(--line-2)}
+table.livetab .up{color:var(--racing-ink);font-weight:600}
+table.livetab .down{color:var(--alarm);font-weight:600}
+.deltatab td.mv{font-family:"IBM Plex Mono",monospace;text-align:center}
+.livenote{margin:14px 0 0;padding:10px 14px;border-radius:0 3px 3px 0;font-size:13px;
+  border-left:3px solid var(--flag);background:var(--flag-soft);color:var(--flag-ink)}
+.livenote b{color:inherit}
+.livenote a{color:inherit}
+/* A session that is running now, on the tab and in the qualifying picker. */
+.livedot{display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--alarm);margin-left:7px;vertical-align:middle;animation:pulse 2s ease-in-out infinite}
+/* The feed's sheet rather than the print, in the head of a qualifying session:
+   the same tag the note under the tabs uses, so it reads as the same thing. */
+.racehead .livetag{font-family:"Barlow Condensed",Arial,sans-serif;font-size:11.5px;
+  letter-spacing:.1em;text-transform:uppercase;padding:1px 6px;border-radius:2px;
+  background:var(--band);color:var(--band-ink)}
+.racehead .livetag.done{background:var(--surface-2);color:var(--ink-2);
+  border:1px solid var(--line-2)}
+/* ---- the live view ------------------------------------------------------- */
+/* Live is the last choice in the championship strip and is not a championship:
+   it is the meeting, whatever is on at it, whoever's session that is. Set apart
+   from the series by the room before it, and it carries the dot while a session
+   is actually running. */
+.seriesbar button.live{margin-left:auto;border-color:var(--line-2)}
+.seriesbar button.live[aria-pressed="true"]{background:var(--band);border-color:var(--band);
+  color:var(--band-ink)}
+.seriesbar button.live .livedot{margin-left:6px}
+.livefab{display:none}
+/* The second row while Live is chosen: one button per meeting, the dates under
+   the name so that a meeting weeks away reads as one. */
+#liveEvents button{display:inline-flex;flex-direction:column;align-items:flex-start;
+  gap:1px;padding-top:8px;padding-bottom:7px;line-height:1.05}
+#liveEvents button small{font-family:"IBM Plex Mono",monospace;font-size:11px;
+  letter-spacing:0;text-transform:none;font-weight:400;color:var(--ink-3)}
+#liveEvents button[aria-selected="true"] small{color:var(--ink-2)}
+/* The championships racing at the meeting, as chips that go to each one's own
+   live tab. */
+.evchips{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;margin-left:4px}
+.evchips a{text-decoration:none;color:var(--ink-2)}
+.evchips a:hover{color:var(--racing-ink);border-color:var(--racing)}
+.evchips a.on{background:var(--racing-soft);color:var(--racing-ink);border-color:var(--racing-soft)}
+/* The day's timetable, every championship at the meeting in one list. A row is
+   what is on now, what is next, or what has run, and says which. */
+table.ttab tr.dayrow td{background:var(--surface-2);color:var(--ink-2);
+  font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;font-size:12.5px;
+  letter-spacing:.08em;text-transform:uppercase;padding-top:4px;padding-bottom:4px}
+table.ttab tr.done td{color:var(--ink-3)}
+table.ttab tr.now td{background:var(--racing-soft)}
+table.ttab tr.now:hover td{background:var(--racing-soft)}
+table.ttab tr.next td{background:var(--flag-soft)}
+table.ttab tr.next:hover td{background:var(--flag-soft)}
+table.ttab td.st{color:var(--ink-3);font-size:12px;white-space:nowrap}
+table.ttab tr.now td.st{color:var(--racing-ink);font-weight:600}
+table.ttab tr.next td.st{color:var(--flag-ink);font-weight:600}
+/* Where a meeting has more than one stream - a day each, or the club's and
+   Caterham's own - the others are a row of buttons under the player. */
+.watch .sources{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0 0}
+.watch .sources button,.watch .sources a{appearance:none;cursor:pointer;background:var(--surface);
+  border:1px solid var(--line-2);color:var(--ink-2);border-radius:3px;padding:4px 9px;
+  font-family:"IBM Plex Mono",monospace;font-size:12px;text-decoration:none;
+  display:inline-flex;align-items:center}
+.watch .sources button:hover,.watch .sources a:hover{border-color:var(--racing);color:var(--ink)}
+.watch .sources button[aria-pressed="true"]{background:var(--band);border-color:var(--band);
+  color:var(--band-ink)}
+/* On the live view the player sits above the timing rather than beside a chart,
+   so on a wide screen it is held to about half the window's height and centred:
+   full width would put the running order a screen and a half down. */
+#leStream .vid{width:min(100%,calc(min(60vh,560px) * 16 / 9));margin:0 auto}
+.watch .vid a.out{position:absolute;inset:0;display:flex;flex-direction:column;gap:6px;
+  align-items:center;justify-content:center;padding:14px;text-align:center;
+  color:#F1F3F0;text-decoration:none;background:linear-gradient(160deg,#1c2a24,#0b120f);
+  font-family:"Barlow Condensed",Arial,sans-serif;font-size:16px;letter-spacing:.08em;
+  text-transform:uppercase}
+.watch .vid a.out small{font-family:"IBM Plex Sans",Arial,sans-serif;font-size:13px;
+  letter-spacing:0;text-transform:none;opacity:.75;max-width:52ch}
+/* The meeting page: the stream and the timing down the main column, the
+   timetable beside them on a wide screen, where it stays in view as the running
+   order scrolls under it; on a phone there is one column, and the timetable
+   goes to the foot so the stream and the timing come first. The parts keep the
+   same order in the document either way - the grid places them. */
+#p-liveevent.on{display:grid;gap:14px 22px;align-items:start;
+  grid-template-columns:minmax(0,1fr) minmax(300px,360px);
+  grid-template-areas:"head head" "stream times" "live times" "extra times"}
+#leHead{grid-area:head}
+#leStream{grid-area:stream}
+#leLive{grid-area:live;min-width:0}
+#leExtra{grid-area:extra;min-width:0}
+#leTimes{grid-area:times;min-width:0;position:sticky;top:calc(var(--topbar-h) + 10px);
+  max-height:calc(100vh - var(--topbar-h) - 20px);overflow:auto}
+#leTimes h2{margin-top:0}
+/* A side column is narrow: the cells close up, and the timetable's own name for
+   a race ("Race 4") goes, since the round is the name that matters here. */
+@media (min-width:768px){
+  #leTimes table.ttab th,#leTimes table.ttab td{padding:4px 6px}
+  #leTimes table.ttab td small{display:none}
+}
+#leTimes:empty,#leStream:empty,#leExtra:empty{display:none}
+#leHead .radarhead{margin-bottom:0}
+#leHead .evlinks{margin-top:10px}
+@media (max-width:767px){
+  #p-liveevent.on{grid-template-columns:minmax(0,1fr);gap:12px;
+    grid-template-areas:"head" "stream" "live" "extra" "times"}
+  #leTimes{position:static;max-height:none;overflow:visible}
+}
+/* The tables of the other championships sharing a qualifying session, under
+   the one being scored. */
+.leq{margin-top:22px}
+.leq h2{margin-top:0}
+/* ---- responsive --------------------------------------------------------- */
+@media (max-width:767px){
+  body{font-size:14px}
+  .wrap{padding:0 12px}
+  .mast-in{flex-direction:column;align-items:flex-start;gap:12px}
+  h1{font-size:clamp(24px,9vw,34px)}
+  .blurb{font-size:13px;max-width:none}
+  .mast-stats{margin-left:0;width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+  .stat{min-width:0}
+  .stat .v{font-size:17px}
+  .seriesbar button,.yearbar button,nav.tabs button,.picker button,.picker-select,.evlinks a,details.tv>summary,details.explain>summary,.qbar .cuts button{
+    min-height:44px;
+    display:inline-flex;
+    align-items:center;
+  }
+  .picker{display:block}
+  .picker-buttons{display:none}
+  .picker-select{display:block;width:100%}
+  /* The appbar is the strip's home on a wide screen; on a phone the strip
+     leaves it for the corner, and unless there is a season to choose there is
+     nothing left in it - so it keeps its place in the document, which is what
+     holds the strip, and stops drawing a line across the top of the page. */
+  .appbar:has(.yearbar[hidden]){border-bottom:0}
+  .seriesfab{position:fixed;left:12px;bottom:12px;z-index:61;
+    display:inline-flex;align-items:center;gap:9px;cursor:pointer;appearance:none;
+    padding:11px 16px;border-radius:26px;
+    background:var(--band);color:var(--band-ink);border:1px solid var(--band);
+    box-shadow:0 3px 14px rgba(0,0,0,.28);
+    font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;font-size:15px;
+    letter-spacing:.07em;text-transform:uppercase}
+  .seriesfab .bars{width:15px;height:11px;flex:none;
+    background:linear-gradient(currentColor 0 2px,transparent 2px 4.5px,
+      currentColor 4.5px 6.5px,transparent 6.5px 9px,currentColor 9px 11px)}
+  .seriesbar{position:fixed;left:12px;bottom:64px;z-index:60;
+    display:none;flex-direction:column;gap:6px;padding:8px;
+    width:min(230px,calc(100vw - 24px));max-height:60vh;overflow-y:auto;
+    background:var(--surface);border:1px solid var(--line-2);border-radius:8px;
+    box-shadow:0 6px 22px rgba(0,0,0,.3)}
+  .seriesbar.open{display:flex}
+  .seriesbar button{padding:8px 12px;width:100%;justify-content:flex-start}
+  /* Nothing at the foot of the page should sit under the button. */
+  footer{padding-bottom:76px}
+  /* Live, in the other corner. The strip is a list in a pop-up here, and a
+     control wanted from anywhere on the page should not be inside one. */
+  .seriesbar button.live{display:none}
+  .livefab{position:fixed;right:12px;bottom:12px;z-index:61;
+    display:inline-flex;align-items:center;gap:7px;cursor:pointer;appearance:none;
+    padding:11px 16px;border-radius:26px;
+    background:var(--band);color:var(--band-ink);border:1px solid var(--band);
+    box-shadow:0 3px 14px rgba(0,0,0,.28);
+    font-family:"Barlow Condensed",Arial,sans-serif;font-weight:600;font-size:15px;
+    letter-spacing:.07em;text-transform:uppercase;min-height:44px}
+  .livefab[aria-pressed="true"]{background:var(--surface);color:var(--ink);
+    border-color:var(--band-ink)}
+  .livefab .livedot{margin-left:0}
+  #liveEvents button{padding-top:6px;padding-bottom:5px}
+  .yearbar button{padding:8px 10px}
+  nav.tabs button{font-size:14px;padding:10px 12px 7px}
+  main{padding:16px 0 40px}
+  h2{font-size:20px;margin:24px 0 8px}
+  .grid{grid-template-columns:1fr}
+
+  .scroller{overflow:auto;-webkit-overflow-scrolling:touch}
+  .scroller table{min-width:720px}
+  .scroller table.champ{min-width:980px}
+  th,td{padding:4px 5px}
+  /* The head stays at the top of its box here too - the table is deeper than
+     a phone screen, so it is the case that needs it most. What stops being
+     sticky on a phone is the driver columns on the left, and only for the
+     tables that do not need them; those are turned back on below. */
+  .stick1,.stick2{
+    position:static;
+    left:auto;
+    z-index:auto;
+  }
+  thead .stick1,thead .stick2{position:sticky;left:auto;z-index:5}
+  .stick2,thead .stick2{border-right:0}
+  table.champ .stick1,table.champ .stick2,
+  table.livetab .stick1,table.livetab .stick2,
+  table.deltatab .stick1,table.deltatab .stick2,
+  table.results .stick1,table.results .stick2{position:sticky}
+  table.champ .stick1,table.livetab .stick1,table.deltatab .stick1,
+  table.results .stick1{
+    left:0;width:28px;min-width:28px;z-index:6;background:var(--surface)}
+  table.champ .stick2,table.livetab .stick2,table.deltatab .stick2,
+  table.results .stick2{
+    left:28px;min-width:100px;width:100px;z-index:6;background:var(--surface);
+    border-right:1px solid var(--line-2)}
+  table.champ thead .stick1,table.champ thead .stick2,
+  table.livetab thead .stick1,table.livetab thead .stick2,
+  table.deltatab thead .stick1,table.deltatab thead .stick2,
+  table.results thead .stick1,table.results thead .stick2{
+    background:var(--surface-2);z-index:7}
+  .chip-meta{display:none}
+  table.champ .rowhead{gap:4px}
+  .rowhead .name-full{display:none}
+  .rowhead .name-init{display:inline}
+  table.champ .chip.carno{padding:0 3px;font-size:10px}
+
+  .chartbox,.candlebox,.lapbox,.watch{padding:10px}
+  .lapbox svg{min-width:520px}
+  .chart-legend,.legend{gap:6px 12px;font-size:12px}
+
+  .vid button{font-size:14px}
+  .vid button .yt{font-size:36px}
+  .vid button small{font-size:12px}
+
+  #tip{max-width:min(280px,calc(100vw - 16px))}
+}
+
+@media (hover:none){
+  tbody tr:hover td,tbody tr:hover .stick1,tbody tr:hover .stick2{background:inherit}
+}
+
+@media (min-width:768px){
+  .seriesbar button,.yearbar button,.picker button,.evlinks a{min-height:36px}
+  .picker-select{display:none}
+}
+
+@media (min-width:1024px){
+  nav.tabs button{font-size:16px}
+}
+
+@media (min-width:1360px){
+  .wrap{padding:0 32px}
+}
+
+/* ---- radar ------------------------------------------------------------- */
+/* Somebody else's map, given the box everything else on this site sits in: the
+   border, the shadow, and a head above it saying what is being looked at. The
+   live view's meeting head (.evhead) is the same box - a name, a line under it
+   and a pill saying when - so it shares these rules rather than copying them.
+   The page cannot restyle what is inside an iframe and does not try - a weather map
+   recoloured to match a website is a lie about the weather - so the frame is
+   where ours stops and theirs starts, and it is drawn to look like that. */
+.radarhead,.evhead{position:relative;display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;
+  background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--racing);
+  border-radius:0 4px 4px 0;box-shadow:var(--shadow);padding:12px 16px;margin-bottom:14px}
+.radarhead .who,.evhead .who{display:flex;align-items:center;gap:10px;min-width:0;
+  font-family:"Barlow Condensed",Arial,sans-serif;font-size:20px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.03em;line-height:1.1}
+.radarhead .who .ev,.evhead .who .ev{min-width:0}
+/* The circuit's name is one line and is cut with an ellipsis if it has to be;
+   the line under it is a sentence and wraps like one. Running the two together
+   under a single nowrap is what chopped a date in half on a phone. */
+.radarhead .who .ev .nm,.evhead .who .ev .nm{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.radarhead .who .when,.evhead .who .when{flex:none;padding:1px 8px;border-radius:2px;
+  background:var(--band);color:var(--band-ink);font-size:15px;letter-spacing:.06em}
+.radarhead .who .when.future,.evhead .who .when.future{background:var(--band-off);color:var(--band-off-ink)}
+.radarhead .who small,.evhead .who small{display:block;font-family:"IBM Plex Sans",Arial,sans-serif;font-size:12.5px;
+  font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink-3);white-space:normal}
+
+/* Tall enough for the map and for the days and hours meteoblue lay under it:
+   cut that short and the one control that makes it a forecast is the one the
+   reader cannot reach. */
+.radarmap{position:relative;overflow:hidden;background:var(--sunk);
+  border:1px solid var(--line);border-radius:4px;box-shadow:var(--shadow);
+  height:clamp(380px,68vh,660px)}
+.radarmap iframe{display:block;width:100%;height:100%;border:0}
+.radarmap .fail{position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;
+  gap:10px;align-items:center;justify-content:center;text-align:center;padding:20px;
+  background:var(--surface);color:var(--ink-2);font-size:13.5px}
+
+/* The screen under the map. 16:9 and nothing else: a meteoTV is drawn for a
+   television on a wall, and letterboxing it into some other shape wastes the
+   half of it that is the picture. */
+.radartv{margin-top:12px;overflow:hidden;background:var(--sunk);
+  border:1px solid var(--line);border-radius:4px;box-shadow:var(--shadow);
+  aspect-ratio:16/9;max-height:74vh}
+.radartv[hidden]{display:none}
+.radartv iframe{display:block;width:100%;height:100%;border:0}
+/* Only drawn for a circuit that has no meteoTV of its own. */
+.radartvnote{margin:10px 0 0;font-size:12.5px;color:var(--ink-3);max-width:66ch;
+  border-left:3px solid var(--line-2);padding-left:11px}
+.radartvnote[hidden]{display:none}
+
+/* Whose map it is, and where its own controls are - said once, under it, rather
+   than as a label over the thing it is describing. */
+.radarsrc{margin:8px 0 0;font-size:12.5px;color:var(--ink-3);max-width:66ch}
+.radarsrc a{color:var(--racing-ink)}
+
+@media (max-width:767px){
+  .radarhead,.evhead{padding:10px 12px;gap:6px 10px;margin-bottom:10px}
+  /* The meeting is the only part of the head that can be any length, so it is
+     the only part that gives; the chip is never squeezed. */
+  .radarhead .who,.evhead .who{font-size:16px;gap:7px;flex:1 1 auto;min-width:0}
+  .radarmap{height:clamp(340px,60vh,520px);border-radius:3px}
+  .radartv{border-radius:3px;margin-top:10px}
+}
+
+/* ---- enduro ------------------------------------------------------------ */
+/* A three-hour race is entered by a team, not a driver, so the cell that a
+   sprint classification gives to one name here holds the entry and the two or
+   three people who shared it - the team on top, the drivers under it. */
+.enduro-h{font-family:"Barlow Condensed",Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.06em;font-size:17px;margin:22px 0 8px}
+.crew{display:flex;align-items:baseline;gap:6px}
+.crewnames{display:block;font-size:12px;color:var(--ink-3);margin-top:1px}
+/* A driver is written the way every other table writes one, which makes the
+   name shorten on a phone in step with the rest of the page - but that shape
+   is a flex box built to be a row on its own, and two or three of them in one
+   cell have to sit beside each other rather than stack. */
+.crewnames .rowhead{display:inline-flex}
+.crewnames .rowhead b{font-weight:400}
+.crewsep{color:var(--line-2);margin:0 4px}
+table.enduro td.crewcell{line-height:1.3;padding-top:5px;padding-bottom:5px}
+.chip.hero{border-color:var(--flag);color:var(--flag-ink);background:var(--flag-soft)}
+/* The cars of the championship being read. The strip along the top still
+   chooses a series on this tab; it just marks rows instead of filtering them,
+   because the race is all three series at once and hiding two of them would
+   leave a classification whose positions skip. */
+table.enduro tr.ours td.stick1{box-shadow:inset 3px 0 0 var(--racing)}
+table.enduro tr.ours td{background:var(--racing-soft)}
+table.enduro tr.ours:hover td{background:var(--racing-soft)}
+table.enduro tr.win.ours td{background:var(--flag-soft)}
+
+.podiums{display:flex;flex-wrap:wrap;gap:12px;margin:14px 0 4px}
+.podium{flex:1 1 190px;min-width:180px;background:var(--surface-2);border-radius:3px;
+  padding:9px 12px 10px}
+.podium .k{font-family:"Barlow Condensed",Arial,sans-serif;font-size:12px;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
+.podium ol{margin:0;padding-left:18px;font-size:13px}
+.podium li{margin-bottom:4px}
+.podium li:last-child{margin:0}
+.podium .pno{font-family:"IBM Plex Mono",monospace;color:var(--ink-3);font-size:12px}
+.podium .pwho{display:block;font-size:11.5px;color:var(--ink-3)}
+
+.enduro-qual{margin-top:18px}
+.enduro-qual>summary{font-size:17px;color:var(--racing-ink)}
+
+@media (max-width:767px){
+  /* The drivers drop under the team on a narrow screen whatever happens, so
+     the gap between them is what goes rather than the names themselves. */
+  .podiums{gap:8px}
+  .podium{flex-basis:100%}
+  .crewnames{font-size:11.5px}
+}
+
+/* ---- socials ----------------------------------------------------------- */
+/* The one tab whose content is somebody else's and comes from somebody else's
+   server. Both platforms' embeds bring their own styling and their own width,
+   so what is styled here is the frame around them - the card that says what a
+   post is before the embed arrives, and still says it if it never does. */
+.accounts{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  margin:0 0 4px}
+.account{display:block;padding:9px 12px;background:var(--surface-2);border-radius:3px;
+  border-left:3px solid var(--line-2);text-decoration:none;color:var(--ink)}
+.account:hover{background:var(--sunk)}
+.account.mine{border-left-color:var(--racing)}
+.account b{display:block;font-family:"IBM Plex Mono",monospace;font-size:13.5px;
+  font-weight:600;margin:2px 0 3px}
+.account .what{display:block;font-size:12px;color:var(--ink-3);line-height:1.4}
+.plat{font-family:"Barlow Condensed",Arial,sans-serif;font-size:11px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-3)}
+.plat.instagram{color:var(--s4)}
+.plat.x{color:var(--ink-2)}
+
+.socialgrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  margin-top:12px;align-items:start}
+.socialcard{background:var(--surface-2);border-radius:3px;padding:11px 13px 13px;
+  border-left:3px solid var(--line-2);min-width:0}
+.socialcard.mine{border-left-color:var(--racing)}
+.sc-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.sc-head b{font-size:15px;font-weight:600;flex:1 1 auto;min-width:0}
+.sc-head .who{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3)}
+.sc-note{margin:6px 0 0;font-size:12.5px;color:var(--ink-2);line-height:1.45}
+/* Which meeting the post is of, in the band a card head already uses. */
+.sc-meet{flex:none;font-family:"Barlow Condensed",Arial,sans-serif;font-size:11.5px;
+  letter-spacing:.08em;text-transform:uppercase;padding:1px 7px;border-radius:2px;
+  background:var(--band);color:var(--band-ink);cursor:help}
+/* Who the post names. A driver the standings know is marked; one they do not is
+   still printed, because the post still names them. */
+.sc-drivers{display:flex;flex-wrap:wrap;gap:4px 5px;margin:7px 0 0}
+.sc-driver{font-family:"IBM Plex Mono",monospace;font-size:11px;padding:1px 6px;
+  border-radius:2px;border:1px solid var(--line-2);color:var(--ink-3);cursor:help}
+.sc-driver.known{border-color:var(--racing);color:var(--racing-ink);
+  background:var(--racing-soft)}
+/* Whatever the platform puts here has to stay inside the card on a phone, and
+   an embed that never loads leaves only its fallback link, which should not
+   be holding open an empty box the height of a photograph. */
+.sc-embed{margin-top:10px;min-width:0;overflow-x:auto}
+.sc-embed blockquote{margin:0;font-size:13px}
+.sc-embed iframe{max-width:100%!important;min-width:0!important}
+.sc-embed .instagram-media{min-width:0!important;border-radius:3px!important}
+
+/* ---- found rather than kept -------------------------------------------- */
+/* A news card carries no embed and asks nobody for anything, so it packs
+   tighter than a post and the grid can be narrower. */
+.newsgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  margin-top:12px;align-items:start}
+.newscard{background:var(--surface-2);border-radius:3px;padding:10px 13px 12px;
+  border-left:3px solid var(--line-2);min-width:0}
+.newscard.mine{border-left-color:var(--racing)}
+.plat.news{color:var(--ink-2)}
+.nc-title{display:block;margin:5px 0 0;font-size:13.5px;line-height:1.4;
+  font-weight:600;color:var(--ink);text-decoration:none}
+.nc-title:hover{text-decoration:underline}
+/* A machine kept this item, so it shows its working rather than asking to be
+   believed. Quiet by default - it is for the reader who doubts a card. */
+.nc-why{display:inline-block;margin-top:8px;font-family:"Barlow Condensed",Arial,sans-serif;
+  font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-3);border-bottom:1px dotted var(--line-2);cursor:help}
+
+@media (max-width:767px){
+  .accounts,.socialgrid,.newsgrid{grid-template-columns:1fr}
+}
+
+/* ---- tooltip ----------------------------------------------------------- */
+#tip{position:fixed;z-index:60;pointer-events:none;opacity:0;transition:opacity .09s;
+  background:var(--tip-bg);color:var(--tip-ink);border:1px solid var(--tip-line);
+  font-size:12.5px;line-height:1.45;
+  padding:7px 10px;border-radius:3px;max-width:280px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+#tip b{color:var(--tip-strong)}
+#tip .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+footer{border-top:1px solid var(--line);padding:18px 0 40px;color:var(--ink-3);font-size:12.5px}
+footer a{color:var(--racing-ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
