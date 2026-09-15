@@ -682,8 +682,13 @@ function showTab(id) {
   });
   $('#p-liveevent').classList.toggle('on', live);
   hideTip();
-  // Anything the points moved on while it was out of sight is caught up here.
-  if (LIVE_STALE[id]) { keepScroll($('#p-' + id), LIVE_TABS[id]); LIVE_STALE[id] = false; }
+  // Anything that went out of date while this tab was out of sight is caught up
+  // here - but only if the tab is now actually being shown. While Live is
+  // chosen none of them is, and drawing one then would be the whole of the work
+  // with none of the point.
+  if (LIVE_STALE[id] && $('#p-' + id).classList.contains('on')) {
+    drawTab(id, LIVE_STALE[id]);
+  }
   if (id === 'live' && !live) liveEnter();
   if (id === 'socials' && !live) socialsShow();
   radarShow(!live && id === 'radar');
@@ -1398,6 +1403,10 @@ function about() {
     + `<p class="sub">Where the numbers come from and what is provisional about them: `
     + `<a href="#${SEASON.year}/${D.key}/faq">FAQ</a>.</p>`;
   linkRegs(p);
+  // The note about a session that is running belongs in this panel, and is
+  // written from the feed - which has no reason to say anything between one car
+  // and the next. The panel has just been rebuilt, so it is put back now.
+  liveNoteNow();
 }
 
 /** The questions the page raises, answered once. */
@@ -1909,8 +1918,15 @@ let showRace = () => {};
    In the split build a championship's races arrive after the page does, so a
    link straight to `#2026/seven-uk/races/13` reaches `applyHash` while this
    tab is still an empty panel and `showRace` is still the stub above. The
-   round is kept here instead, and the tab takes it when it draws. */
+   round is kept here instead, and the tab takes it when it draws.
+
+   Which championship's round it is, is kept with it. A tab is drawn when it is
+   shown, and what is on screen while that file is on its way is the
+   championship being left - whose round 13 is not the round 13 that was asked
+   for. So a draw for anybody else leaves the round where it is, and the
+   championship that was named takes it when its own draw comes. */
 let wantedRace = null;
+let wantedRaceFor = null;
 
 function races() {
   const p = $('#p-races'); p.innerHTML = '';
@@ -1946,8 +1962,9 @@ function races() {
   // Whatever the address asked for while the races were still on their way -
   // and if it asked for a round this championship does not have, the tab keeps
   // the newest race and the address is rewritten without it.
-  const asked = wantedRace;
-  wantedRace = null;
+  const mine = wantedRaceFor == null || wantedRaceFor === D.key;
+  const asked = mine ? wantedRace : null;
+  if (mine) { wantedRace = null; wantedRaceFor = null; }
   if (asked == null || !showRace(asked)) {
     pick.show(latest, false);
     if (asked != null && currentTab === 'races') writeHash();
@@ -6096,7 +6113,13 @@ function liveQualNote(base, v) {
 
 /** The line under the tabs, on every tab, when a live round is being counted. */
 function liveNote(base, v) {
+  // The box is part of the About panel, which is drawn when it is shown rather
+  // than kept up to date behind the reader's back. So there is nothing to write
+  // to until that panel has been built once, and nothing worth writing after
+  // that while it is put away: about() rebuilds it, note and all, when it is
+  // next shown. Either way this is the feed talking to a page nobody is on.
   const box = $('#liveNote');
+  if (!box || !box.closest('.panel.on')) return;
   if (!(D && (D.live || D.liveQual))) { box.innerHTML = ''; box.className = ''; return; }
   if (!D.live) { liveQualLine(box, base, v); return; }
   const s = D.live;
@@ -6153,6 +6176,23 @@ function liveQualLine(box, base, v) {
     + `<a href="#${yr}/${D.key}/live">the live timing</a>`;
 }
 
+/**
+ * The live note, for a panel that has just been built.
+ *
+ * What is running is written into the About panel by liveDraw, off the back of
+ * something arriving on the feed. A panel built between two of those - which is
+ * every panel now, since each is drawn when it is shown - would carry an empty
+ * note until the next car crossed the line, so about() fills it from here.
+ */
+function liveNoteNow() {
+  const base = SEASON && SEASON.series.find(s => s.key === (D || {}).key);
+  if (!base) return;
+  // liveDress leaves behind the view it dressed, and both the feed and a change
+  // of championship go through it, so it is current unless it is another's.
+  const v = LIVE.view && LIVE.view.forKey === base.key ? LIVE.view : liveView(base);
+  liveNote(base, v);
+}
+
 /** A dot on the tab while a session of this series is actually running. */
 function liveDot(v) {
   const b = tabBtn.live;
@@ -6198,21 +6238,59 @@ function liveTick() {
   if (sig !== LIVE.sig) { LIVE.sig = sig; liveRefresh(); } else liveDraw();
 }
 
-/* Tabs whose contents the points have moved on from. */
+/* Every tab that is drawn from the championship, and how to draw it.
+ *
+ * A championship has a dozen pages and a reader is on one of them. Drawing the
+ * other eleven costs the same whether or not anybody is looking, so none of
+ * them is drawn until it is shown - which is what makes a race day affordable,
+ * where the points move under all of them every time a car crosses the line,
+ * and what stops the live view rebuilding a whole championship it is not
+ * showing each time the meeting moves to another one's session.
+ *
+ * The Live tab is not here: its panel is drawn by liveDraw() from the feed
+ * rather than from the table, and it is the one page that has to keep up
+ * whether or not the points have moved.
+ */
 const LIVE_STALE = {};
-const LIVE_TABS = { standings: () => standings(), runin: () => runin(),
-                    qualifying: () => qualifying() };
+const LIVE_TABS = {
+  about: () => about(), standings: () => standings(), radar: () => radar(),
+  races: () => races(), qualifying: () => qualifying(), enduro: () => enduro(),
+  runin: () => runin(), calendar: () => calendar(), rules: () => rules(),
+  socials: () => socials(), faq: () => faq(),
+};
 
-/** Rebuild a tab if it is on screen; otherwise remember that it needs it. */
-function liveStale(tab) {
+/* Why a tab is waiting to be drawn, which decides what happens to the reader's
+   place in it. 'live' is the points moving under the same championship's table,
+   where a reader dragged twenty rounds to the right should still be there
+   afterwards; 'series' is a different championship's table arriving in the same
+   panel, where that scroll position means nothing and the top is the place to
+   start. */
+const STALE_LIVE = 'live';
+const STALE_SERIES = 'series';
+
+/** Draw a tab if it is on screen; otherwise remember that it needs it. */
+function liveStale(tab, why = STALE_LIVE) {
   // What is on the screen, rather than what the routing thinks is: a panel can
   // be shown without the address having caught up with it, and a tab that never
   // rebuilds because of that bookkeeping is worse than one that rebuilds twice.
   const panel = $('#p-' + tab);
-  if (panel && panel.classList.contains('on')) {
-    keepScroll(panel, LIVE_TABS[tab]);
-    LIVE_STALE[tab] = false;
-  } else LIVE_STALE[tab] = true;
+  // A championship having changed under a panel outranks the points having
+  // moved in it, and a panel can be waiting on both: the feed goes on ticking
+  // while a reader is on some other tab. Whatever is in that panel is the
+  // previous championship's either way, so the scroll position it was left at
+  // means nothing, and a live refresh must not take that reason back off.
+  const want = LIVE_STALE[tab] === STALE_SERIES ? STALE_SERIES : why;
+  if (panel && panel.classList.contains('on')) drawTab(tab, want);
+  else LIVE_STALE[tab] = want;
+}
+
+/** Draw one tab now, keeping the reader's place where that is the right thing. */
+function drawTab(tab, why) {
+  const render = LIVE_TABS[tab];
+  if (!render) return;
+  if (why === STALE_LIVE) keepScroll($('#p-' + tab), render);
+  else render();
+  LIVE_STALE[tab] = false;
 }
 
 /**
@@ -7603,10 +7681,10 @@ function liveRefresh() {
   runSet = new Set(D.roundsRun);
   scoring = D.table.filter(t => t.registered);
   REMAINING = D.roundsTotal - D.roundsRun.length;
-  about();                     // where the championship stands has moved
   // Only what is being looked at. The others are marked and rebuilt when they
   // are next shown, which saves the work and, more to the point, stops a table
   // being pulled out from under somebody who is reading it on another tab.
+  liveStale('about');          // where the championship stands has moved
   liveStale('standings'); liveStale('runin');
   // The Qualifying tab holds the session being qualified, so it moves with
   // the feed while there is one - and once more when it ends, to take the
@@ -7728,11 +7806,12 @@ function selectSeries(key) {
   [...seriesBar.children].forEach(b =>
     b.setAttribute('aria-pressed', MODE !== 'live' && b.dataset.key === D.key));
   $('#seriesFabNow').textContent = base.short;
-  about(); standings(); races(); qualifying(); enduro(); runin(); calendar();
-  radar(); rules(); socials(); faq();
-  // The cards were rebuilt with the series, so the embeds in them are
-  // blockquotes again until the platforms are told to look.
-  socialsScan();
+  // Every page of this championship is now a page of the one before it, so
+  // every one of them is marked - and the showTab below draws the single one
+  // being looked at. Drawing all twelve here was most of the cost of choosing a
+  // championship, and all of the cost when the live view changed which
+  // championship it was scoring, where not one of the twelve is on the screen.
+  Object.keys(LIVE_TABS).forEach(t => { LIVE_STALE[t] = STALE_SERIES; });
   // Not liveDraw: a race that is running belongs to the standings and the title
   // run-in as much as to the Live tab, so the feed is opened for the series
   // being shown whatever tab that series is being looked at on.
@@ -7908,12 +7987,17 @@ function applyHash() {
   // Left for the races tab to pick up when it draws, which in the split build
   // is after this runs: a championship's races arrive with its body.
   wantedRace = tab === 'races' ? at : null;
+  wantedRaceFor = tab === 'races' ? key : null;
   if (live != null) { showLive(live, year); return; }
   if (MODE === 'live') leaveLive();
+  // Before the championship is chosen rather than after it: choosing one ends
+  // by drawing whichever tab is current, and if that is still the tab being
+  // left, the page draws one it is about to replace and then draws the real
+  // one. The address has already said which tab this is.
+  currentTab = tab;
   // selectSeason picks the series too, so only one of these should run
   if (!SEASON || SEASON.year !== year) selectSeason(year, key);
   else if (!D || D.key !== key) selectSeries(key);
-  currentTab = tab;
   showTab(tab);
   // Only once the championship in the address is the one on the screen. Until
   // then `showRace` belongs to the one being left, whose round 3 is not the
@@ -7921,7 +8005,7 @@ function applyHash() {
   // races tab takes it when it draws.
   if (wantedRace != null && D && D.key === key) {
     const want = wantedRace;
-    wantedRace = null;
+    wantedRace = null; wantedRaceFor = null;
     // A round that is not in this championship leaves the tab on whichever race
     // it was already showing, and comes back out of the address.
     if (!showRace(want)) writeHash();
