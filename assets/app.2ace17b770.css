@@ -573,6 +573,7 @@ a.reg:hover,a.reg:focus-visible{border-bottom-color:var(--racing);background:var
 .livebtn.quiet{background:var(--surface);color:var(--ink-2);border-color:var(--line-2)}
 .livebtn.quiet:hover{color:var(--ink);border-color:var(--racing);background:var(--surface)}
 .livebar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:0 0 14px}
+.livebar .evlinks{margin:0}
 .livebar label{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;
   color:var(--ink-2)}
 /* The one control on the standings: whether the race being run counts in it. */

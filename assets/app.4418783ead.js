@@ -383,6 +383,17 @@ function officialResults(key) {
   return p;
 }
 
+/**
+ * The same page as a chip for a row of links: [text, address, class, tooltip],
+ * or null for a meeting nobody has filed an address for yet.
+ */
+function timekeeperChip(ev) {
+  const t = ev && ev.timing;
+  if (!t || !t.url) return null;
+  return [`${t.by} event page`, t.url, 'tk',
+          `Every sheet of this meeting, as ${t.by} publish it`];
+}
+
 /* ------------------------------------------------------------- tooltip */
 const tip = $('#tip');
 let tipTarget = null;
@@ -763,8 +774,7 @@ function champStats() {
 /* Short labels: the bar has to fit across a phone, and the id rather than the
    label is what a link carries, so these can be as brief as they read. */
 const TABS = [['about', 'About'], ['standings', 'Standings'], ['live', 'Live'],
-              ['radar', 'Radar'], ['races', 'Races'], ['qualifying', 'Qualifying'],
-              ['calendar', 'Calendar'], ['rules', 'Points'],
+              ['radar', 'Radar'], ['races', 'Races'], ['rules', 'Points'],
               ['socials', 'Socials'], ['faq', 'FAQ']];
 const tabsEl = $('#tabs');
 const tabBtn = {};
@@ -1025,13 +1035,13 @@ function champTable(rows, split, posOf, overall) {
       + 'text-decoration:underline dotted currentColor';
     btn.title = run ? 'Go to race results' : 'Go to calendar';
     btn.addEventListener('click', () => {
-      currentTab = run ? 'races' : 'calendar';
+      currentTab = run ? 'races' : 'about';
       showTab(currentTab);
       writeHash();
       if (run) {
         const pb = $(`#p-races .picker-buttons [data-round="${r}"]`);
         if (pb) pb.click();
-      }
+      } else showCalendar();
     });
     th.append(btn);
     cols.append(th);
@@ -1523,8 +1533,7 @@ function about() {
     + `. ${D.registrations} drivers are registered for the full season`
     + (D.dropScores ? `, and the lowest ${D.dropScores === 1 ? 'score is'
         : D.dropScores + ' scores are'} dropped from each of their totals` : '')
-    + `. <a href="#${SEASON.year}/${D.key}/calendar">Calendar</a> · `
-    + `<a href="#${SEASON.year}/${D.key}/standings">Standings</a> · `
+    + `. The calendar is below. <a href="#${SEASON.year}/${D.key}/standings">Standings</a> · `
     + `<a href="#${SEASON.year}/${D.key}/rules">How the points work</a>.</p>`
     + (D.regsUrl ? `<p>Scored from this series’ own ${SEASON.year} regulations, `
         + `<a href="${esc(D.regsUrl)}" target="_blank" rel="noopener">published here</a> — `
@@ -1532,8 +1541,17 @@ function about() {
     + '</div>'
     + officialPages()
     + `<p class="sub">Where the numbers come from and what is provisional about them: `
-    + `<a href="#${SEASON.year}/${D.key}/faq">FAQ</a>.</p>`;
+    + `<a href="#${SEASON.year}/${D.key}/faq">FAQ</a>.</p>`
+    + '<h2 id="calendarHead">Calendar</h2><div id="aboutCalendar"></div>';
   linkRegs(p);
+  calendar();
+  // Arrived on an address for the calendar tab there used to be: show it, and
+  // put the address it moved to in place of that one, without a step back to it.
+  if (wantCalendar && wantCalendar === calendarFor()
+      && $('#p-about').classList.contains('on')) {
+    showCalendar();
+    writeHash(true);
+  }
   // The note about a session that is running belongs in this panel, and is
   // written from the feed - which has no reason to say anything between one car
   // and the next. The panel has just been rebuilt, so it is put back now.
@@ -1571,7 +1589,7 @@ function faq() {
     + '<p><b>Qualifying, while it runs.</b> The sheet a qualifying session produces — the '
     + 'grid — is written from the feed as the session goes, and goes where the printed one '
     + 'will: the hatched column of the standings, the <a href="#'
-    + `${SEASON.year}/${D.key}/qualifying">Qualifying</a> page with the dot on it, and the `
+    + `${SEASON.year}/${D.key}/races/q">Races</a> page, with the dot on it, and the `
     + 'grid the live view lays the race out from. The order and every car’s best are the '
     + 'feed’s and complete; the laps behind them are the ones this page has seen since it '
     + 'connected, and it says so. The timekeepers’ own sheet replaces it once it is '
@@ -2041,8 +2059,16 @@ function watchPanel(r, onTime) {
    Asked for, not shown: opening the tab shows the newest race without anybody
    having chosen it, and "the races tab" is the address for that. The round
    joins the address once a reader has picked one, or arrived on a link that
-   named one, because then it is their choice and not just today's. */
+   named one, because then it is their choice and not just today's.
+
+   Qualifying is one of these sessions too - it is the same meeting an hour
+   earlier, read off the same kind of sheet - so its address is the meeting's
+   qualifying, `q-<meeting>`, in the place a round number would be. The choice
+   is held per championship, because the tab is rebuilt while a session is
+   being qualified and a rebuild should leave the reader where they were. */
 let raceRound = null;
+let raceRoundFor = null;
+let raceOnQual = false;
 let showRace = () => {};
 /* A round asked for by an address the tab was not ready to answer.
 
@@ -2059,11 +2085,34 @@ let showRace = () => {};
 let wantedRace = null;
 let wantedRaceFor = null;
 
+/** The address a session has on this tab: its round, or its meeting's qualifying. */
+const sessionKey = s => s.r ? String(s.r.round) : `q-${s.q.event}`;
+
+/**
+ * Every session of the season this championship has a sheet for, in the order
+ * they ran: each meeting's qualifying, then its races.
+ */
+function raceSessions() {
+  const quals = D.qualifying || [];
+  const out = [], seen = new Set();
+  D.events.forEach(e => {
+    quals.filter(q => q.event === e.key).forEach(q => { out.push({ q }); seen.add(q); });
+    D.races.filter(r => r.event === e.key).forEach(r => { out.push({ r }); seen.add(r); });
+  });
+  // Anything filed under no meeting on this calendar still has a place.
+  quals.filter(q => !seen.has(q)).forEach(q => out.push({ q }));
+  D.races.filter(r => !seen.has(r)).forEach(r => out.push({ r }));
+  return out;
+}
+
 function races() {
   const p = $('#p-races'); p.innerHTML = '';
   p.append(Object.assign(el('p', 'lede'), { textContent:
-    'Full classification for every race run so far, with the championship points each result '
-    + 'was worth.' }));
+    'Every session of the season so far — qualifying and the races — with the championship '
+    + 'points each race result was worth, and every lap of qualifying where the meeting’s '
+    + 'book published the analysis behind it.'
+    + (D.liveQual ? ' A qualifying session that is running is here too, from the '
+        + 'timekeepers’ feed, and moves as the laps land.' : '') }));
   p.append(explain({
     key: 'races.read',
     summary: 'How to read a classification',
@@ -2072,40 +2121,77 @@ function races() {
       'Where the timing company published a lap chart, the race is drawn lap by lap above the '
       + 'classification: click any point of it to play the broadcast from that moment.'],
   }));
+  p.append(explain({
+    key: 'qualifying.read',
+    summary: 'How the qualifying charts are drawn',
+    text: ['The first chart holds the whole field: a line per car through its five quickest '
+      + 'laps, quickest first, so a car that found one lap and a car that could do it all '
+      + 'session read differently.',
+      'The quickest lap is at the top rather than zero at the bottom, and the axis stops '
+      + 'at a cut-off the bar under the chart sets — a line that leaves the bottom of the '
+      + 'chart was slower than that. On a session the feed is still writing that is the '
+      + 'quickest lap this page has seen, which is not necessarily the one on pole.',
+      'Hover for a car, click for its session lap by lap and sector by sector; click a '
+      + 'column to rank the table below by that lap.'],
+  }));
+  const sessions = raceSessions();
+  if (!sessions.length) {
+    p.append(Object.assign(el('p', 'sub'), { textContent:
+      'No session of this championship has been published yet.' }));
+    showRace = () => false;
+    return;
+  }
   const host = el('div');
-  const latest = D.races[D.races.length - 1];
+  // The newest session - unless one is being qualified right now, which is the
+  // one anybody opening this tab without a choice of their own is after.
+  const latest = sessions.find(s => s.q && s.q.live && !s.q.ended)
+    || sessions[sessions.length - 1];
+  const where = name => name.split(' ')[0];
+  const label = s => s.r ? `R${s.r.round} · ${where(s.r.eventName)}`
+    : `Q · ${where(s.q.eventName)}`;
   const pick = picker({
-    // Newest first: the race that has just run is the one being looked for.
-    items: [...D.races].reverse(),
-    value: r => r.round,
-    text: r => `R${r.round} · ${r.eventName.split(' ')[0]}`,
-    label: 'Select race',
+    // Newest first: the session that has just run is the one being looked for.
+    items: [...sessions].reverse(),
+    value: sessionKey,
+    text: label,
+    // The select has no room for a dot, so there it is said in a word.
+    option: s => label(s) + (s.q && s.q.live ? ' · live' : ''),
+    // The dot the Live tab wears while a session runs, on the session itself.
+    adorn: s => (s.q && s.q.live && !s.q.ended ? el('span', 'livedot') : null),
+    label: 'Select session',
     // The standings reach a race by this attribute, and so do the tests.
     attr: 'round',
-    onPick: (r, chosen) => {
-      renderRace(host, r);
-      raceRound = chosen ? r.round : null;
+    onPick: (s, chosen) => {
+      raceOnQual = !!s.q;
+      if (s.r) renderRace(host, s.r);
+      else { stopVideo(); renderQual(host, s.q); }
+      raceRound = chosen ? sessionKey(s) : null;
+      raceRoundFor = D.key;
       if (chosen && currentTab === 'races') writeHash();
     },
   });
-  // Arriving on a link that names a race is a choice too - it just does not
-  // need writing back into the address it came out of.
-  showRace = round => {
-    const r = D.races.find(x => x.round === Number(round));
-    if (r) pick.show(r, true);
-    return !!r;
+  // Arriving on a link that names a session is a choice too - it just does not
+  // need writing back into the address it came out of. `q` alone is the newest
+  // qualifying, which is where an address for the old Qualifying tab lands.
+  showRace = key => {
+    const k = String(key);
+    const s = k === 'q' ? [...sessions].reverse().find(x => x.q)
+      : sessions.find(x => sessionKey(x) === k);
+    if (s) pick.show(s, true);
+    return !!s;
   };
   p.append(pick.node, host);
   // Whatever the address asked for while the races were still on their way -
-  // and if it asked for a round this championship does not have, the tab keeps
-  // the newest race and the address is rewritten without it.
+  // and if it asked for a session this championship does not have, the tab
+  // keeps the newest and the address is rewritten without it. Failing that,
+  // the session this reader was already on, for a tab rebuilt under them.
   const mine = wantedRaceFor == null || wantedRaceFor === D.key;
   const asked = mine ? wantedRace : null;
   if (mine) { wantedRace = null; wantedRaceFor = null; }
-  if (asked == null || !showRace(asked)) {
-    pick.show(latest, false);
-    if (asked != null && currentTab === 'races') writeHash();
-  }
+  const held = raceRoundFor === D.key ? raceRound : null;
+  if (asked != null && showRace(asked)) return;
+  if (held == null || !showRace(held)) pick.show(latest, false);
+  if (asked != null && currentTab === 'races') writeHash();
 }
 
 function renderRace(host, r) {
@@ -2263,12 +2349,12 @@ let qualCut = 110;
    the question the column itself is drawing. */
 let qualRank = 0;
 
-/* Which session is being read and which car in it, kept here rather than in
-   the render: while a session is running the tab is rebuilt every time a lap
+/* Which car is being read in each session, kept here rather than in the
+   render: while a session is running the Races tab is rebuilt every time a lap
    lands, and a rebuild that put the reader back on pole every ninety seconds
    would be a tab nobody could read. Keyed by series and session, so a car
-   picked in one is not looked for in another. */
-let qualPicked = null;
+   picked in one is not looked for in another. (Which session is being read is
+   the Races tab's own choice, `raceRound`.) */
 const QUAL_CAR = {};
 
 /** Seconds as a lap time: 1:37.826 over a minute, 47.826 under one. */
@@ -2292,65 +2378,6 @@ function qualField(q) {
     .filter(r => r.best.length)
     .sort((a, b) => secsOf(a.best[0].time) - secsOf(b.best[0].time))
     .map((r, i) => Object.assign(r, { colour: carColour(i) }));
-}
-
-function qualifying() {
-  const p = $('#p-qualifying'); p.innerHTML = '';
-  // What is here is the page reporting on itself and stays; how the charts are
-  // drawn is an explanation, and a reader meets it once.
-  p.append(Object.assign(el('p', 'lede'), { textContent:
-    'Every qualifying session of the season, and — where the meeting’s book '
-    + 'published the analysis behind it — every lap that went into it.'
-    + (D.liveQual ? ' A session that is running is here too, from the timekeepers’ '
-        + 'feed, and moves as the laps land.' : '') }));
-  p.append(explain({
-    key: 'qualifying.read',
-    summary: 'How the charts are drawn',
-    text: ['The first chart holds the whole field: a line per car through its five quickest '
-      + 'laps, quickest first, so a car that found one lap and a car that could do it all '
-      + 'session read differently.',
-      'The quickest lap is at the top rather than zero at the bottom, and the axis stops '
-      + 'at a cut-off the bar under the chart sets — a line that leaves the bottom of the '
-      + 'chart was slower than that. On a session the feed is still writing that is the '
-      + 'quickest lap this page has seen, which is not necessarily the one on pole.',
-      'Hover for a car, click for its session lap by lap and sector by sector; click a '
-      + 'column to rank the table below by that lap.'],
-  }));
-
-  const sessions = D.qualifying || [];
-  if (!sessions.length) {
-    p.append(Object.assign(el('p', 'sub'), { textContent:
-      'No qualifying session of this championship has been published yet.' }));
-    return;
-  }
-  const host = el('div');
-  const latest = sessions[sessions.length - 1];
-  const sessionText = q => {
-    const ev = D.events.find(e => e.key === q.event);
-    return `${ev ? 'R' + ev.rounds[0] : 'Q'} · ${q.eventName.split(' ')[0]}`;
-  };
-  const pick = picker({
-    items: [...sessions].reverse(),
-    value: q => q.event,
-    text: sessionText,
-    // The select has no room for a dot, so there it is said in a word.
-    option: q => sessionText(q) + (q.live ? ' · live' : ''),
-    // The dot the Live tab wears while a session runs, on the session itself.
-    adorn: q => (q.live && !q.ended ? el('span', 'livedot') : null),
-    label: 'Select qualifying session',
-    attr: 'ev',
-    // A reader's choice is remembered; the tab's own default is not, so that
-    // a session which starts running is shown to anyone who has not chosen.
-    onPick: (q, chosen) => {
-      if (chosen) qualPicked = `${D.key}/${q.event}`;
-      renderQual(host, q);
-    },
-  });
-  p.append(pick.node, host);
-  // The session the reader was on, if it is still here; the newest otherwise -
-  // which, while one is running, is the one running. Not a fresh choice: it is
-  // the one already made, or none, and neither should overwrite what is held.
-  pick.show(sessions.find(q => `${D.key}/${q.event}` === qualPicked) || latest, false);
 }
 
 function renderQual(host, q) {
@@ -2979,9 +3006,18 @@ const LINK_NAME = { video: 'Video', timetable: 'Timetable',
  * wording, which is the only thing that tells them apart.
  */
 function eventLinks(ev) {
-  const club = siteName(ev.url);
-  const links = ev.links || [];
-  const chips = [[`${club ? club + ' ' : ''}event page`, ev.url, 'page', ev.meeting || '']];
+  const chips = [];
+  if (ev.url) {
+    const club = siteName(ev.url);
+    chips.push([`${club ? club + ' ' : ''}event page`, ev.url, 'page', ev.meeting || '']);
+  }
+  // The timekeeper's own page for the meeting - TSL's event page for a British
+  // round - named for who it belongs to. The club's results link is very often
+  // that same page under a vaguer name, and is then left out rather than
+  // offered twice.
+  const tk = timekeeperChip(ev);
+  if (tk) chips.push(tk);
+  const links = (ev.links || []).filter(x => !tk || x.url !== tk[1]);
   links.forEach(x => chips.push([
     links.filter(y => y.kind === x.kind).length > 1 ? x.label : (LINK_NAME[x.kind] || x.label),
     x.url, '', x.label]));
@@ -3004,19 +3040,61 @@ function meetingSessions(e, t) {
   const rows = [];
   const qual = t.actual.find(x => x.race_in_event === 0);
   const qualSched = t.scheduled.find(s => s.kind === 'qualifying');
-  if (qual || qualSched) rows.push({ name: 'Qualifying', s: qualSched, a: qual });
+  if (qual || qualSched) rows.push({ name: 'Qualifying', qual: true, s: qualSched, a: qual });
   const raced = t.scheduled.filter(s => s.kind === 'race');
   e.rounds.forEach((n, i) => rows.push({
-    name: `Round ${n}`, s: raced[i],
+    name: `Round ${n}`, round: n, s: raced[i],
     a: t.actual.find(x => x.race_in_event === i + 1) }));
   return rows;
 }
 
+/* An address that asked for the calendar, waiting for About to be drawn - and
+   for which championship, as "<year>/<series>". In the split build that
+   championship's file lands after the address is read, and until it does the
+   About on screen is the one being left: its calendar is not the one asked
+   for, and an address written from it would name the wrong championship. So
+   the request waits here, and about() takes it when the right one draws. */
+let wantCalendar = null;
+
+/** Which championship is on screen, in the form wantCalendar is kept in. */
+const calendarFor = () => (SEASON && D ? `${SEASON.year}/${D.key}` : null);
+
+/**
+ * Bring the calendar on the About page into view, once the page is on screen -
+ * the calendar of `want`, the championship on screen unless an address named
+ * another.
+ */
+function showCalendar(want = calendarFor()) {
+  if (!want || want !== calendarFor() || !$('#calendarHead')) {
+    wantCalendar = want;
+    return;
+  }
+  wantCalendar = null;
+  setTimeout(() => {
+    const h = $('#calendarHead');
+    if (h) h.scrollIntoView({ block: 'start' });
+  });
+}
+
+/** The address of one race on the Races tab. */
+const raceHref = n => `#${SEASON.year}/${D.key}/races/${n}`;
+/** The address of a meeting's qualifying, which is a session on the Races tab too. */
+const qualHref = ev => raceHref(`q-${ev}`);
+
+/**
+ * The season's meetings, drawn into the About page.
+ *
+ * It was a tab of its own, which made the one page that says what a
+ * championship is send the reader somewhere else to find out when it races.
+ * Each round that has run is a link to its classification on the Races tab.
+ */
 function calendar() {
-  const p = $('#p-calendar'); p.innerHTML = '';
-  p.append(Object.assign(el('p', 'lede'), { textContent:
+  const p = $('#aboutCalendar');
+  if (!p) return;
+  p.innerHTML = '';
+  p.append(Object.assign(el('p', 'sub'), { textContent:
     `${D.events.length} meetings, ${D.roundsTotal} races. Every round the regulations list is `
-    + 'shown whether or not its meeting has run.' }));
+    + 'shown whether or not its meeting has run; each session that has opens its result.' }));
   p.append(explain({
     key: 'calendar.read',
     summary: 'Where these times come from',
@@ -3025,6 +3103,7 @@ function calendar() {
       'Each meeting carries the organising club’s page for it, and the stream, timetable, '
       + 'timing and noticeboard that page publishes.'],
   }));
+  const ran = new Set(D.races.map(r => r.round));
   const g = el('div', 'grid');
   // Last meeting first. The season is read from where it has got to - the one
   // that has just run and the one that is next - and a list in calendar order
@@ -3039,15 +3118,22 @@ function calendar() {
       + `<h3>${esc(e.name)}</h3><span class="when">${esc(e.dates)}</span></div>`;
     const b = el('div', 'card-b');
     const ses = el('div', 'ses');
-    meetingSessions(e, t).forEach(({ name, s, a }) => {
+    const qualified = (D.qualifying || []).some(q => q.event === e.key);
+    meetingSessions(e, t).forEach(({ name, qual, round, s, a }) => {
+      const href = qual ? (qualified ? qualHref(e.key) : null)
+        : round != null && ran.has(round) ? raceHref(round) : null;
+      const label = href
+        ? `<a href="${href}" title="Go to ${qual ? 'qualifying' : 'race'} results">${esc(name)}</a>`
+        : esc(name);
       ses.innerHTML += `<span class="t">${s ? esc(s.start) + (s.end ? '–' + esc(s.end) : '') : '—'}</span>`
-        + `<span class="n">${esc(name)}${s && s.day ? ' <span style="color:var(--ink-3)">· '
+        + `<span class="n">${label}${s && s.day ? ' <span style="color:var(--ink-3)">· '
           + esc(dayWord(s.day)) + '</span>' : ''}</span>`
         + `<span class="r">${a && a.start ? 'ran ' + esc(a.start) : (done ? '' : 'scheduled')}</span>`;
     });
     b.append(ses);
     const winners = D.races.filter(r => r.event === e.key)
-      .map(r => `R${r.round} ${esc(r.entries[0] ? r.entries[0].driver : '')}`);
+      .map(r => `<a class="rnd-link" href="${raceHref(r.round)}">R${r.round}</a> `
+        + esc(r.entries[0] ? r.entries[0].driver : ''));
     const m = el('div', 'meta');
     m.innerHTML = (winners.length ? `<b>Winners:</b> ${winners.join(' · ')}<br>` : '')
       + esc(e.meeting);
@@ -3064,11 +3150,11 @@ function calendar() {
         + `${judged.some(d => d.deduction)
             ? ` · ${judged.filter(d => d.deduction).length} deduction`
               + `${judged.filter(d => d.deduction).length === 1 ? '' : 's'}` : ''}</summary>`
-        + judged.map(d => '<p><a class="rnd-link" href="#' + SEASON.year + '/' + D.key
-          + `/races/${d.round}">R${d.round}</a> ${decisionLine(d)}</p>`).join('');
+        + judged.map(d => `<p><a class="rnd-link" href="${raceHref(d.round)}">R${d.round}</a> `
+          + `${decisionLine(d)}</p>`).join('');
       b.append(det);
     }
-    if (e.url) b.append(eventLinks(e));
+    if (e.url || e.timing) b.append(eventLinks(e));
     c.append(b); g.append(c);
   });
   p.append(g);
@@ -3861,7 +3947,7 @@ let LIVE_FAKE = LIVE_DEMO !== null;
 /* `?demo&qual` runs the demonstration as a qualifying session rather than a
    race: fifteen minutes of out-laps, flying laps and a stop, reported the way
    the feed reports them, so the sheet the feed writes - the provisional grid in
-   the standings, the session on the Qualifying tab - can be watched filling in
+   the standings, the session on the Races tab - can be watched filling in
    on a day nobody is qualifying. */
 let LIVE_DEMO_QUAL = new URLSearchParams(location.search).has('qual');
 const RS = '\u001e';   // SignalR ends every frame with a record separator
@@ -4019,7 +4105,7 @@ function liveSector(car, msg) {
  *
  * The feed says a lap is complete and what it took, and nothing more about it
  * afterwards. A page that wants a car's session lap by lap - which is what the
- * Qualifying tab draws - has to keep each one as it lands, so this does: the
+ * Races tab draws - has to keep each one as it lands, so this does: the
  * lap, the time, and the splits the car put in on the way round. The last
  * sector is never sent as a split, because the line is where it ends, so it is
  * what is left of the lap once the others are taken off it.
@@ -5107,13 +5193,13 @@ function liveDress(base) {
   LIVE.view = v;
   let d = (LIVE.applied && v.scored && v.scored.scored.size) ? withLive(base, v.scored) : base;
   // Qualifying, while it runs: the sheet the feed is writing goes where the
-  // print will go, so the standings' hatched columns, the Qualifying tab and
+  // print will go, so the standings' hatched columns, the Races tab and
   // the grid for the race all read it the same way they will read the print.
   const sheet = liveQualSheet(base, v);
   if (sheet) LIVE.qualHeld = { series: base.key, sheet };
   // And once the feed has moved on to the race, the last state of that sheet
   // stays where it was put until the print arrives: a page open since the
-  // morning is the one page that has it, and the Qualifying tab losing it
+  // morning is the one page that has it, and the Races tab losing it
   // while the standings still read it would be the page disagreeing with
   // itself. Held rather than running, so it is marked as over.
   const held = !sheet && LIVE.qualHeld && LIVE.qualHeld.series === base.key
@@ -6051,7 +6137,7 @@ function livePanel(base, v, p) {
                     'Qualify a made-up field in this page, in real time, to show '
                     + 'what this page does while a grid is being set: a quarter '
                     + 'of an hour of it, with the sheet it writes filling in on '
-                    + 'the Qualifying tab and in the standings as the laps land. '
+                    + 'the Races tab and in the standings as the laps land. '
                     + 'Nothing is timed and none of the numbers are real.'));
   }
   const fakes = '<details class="fakes icon"><summary aria-label="What this tab can do"'
@@ -6088,6 +6174,10 @@ function livePanel(base, v, p) {
     : 'No meeting';
 
   const bar = [];
+  // The timekeeper's own page for the meeting - TSL's, for a British round -
+  // where the sheets of every session land once they are published.
+  const tk = !LIVE_FAKE && timekeeperChip(meet.event);
+  if (tk) bar.push(`<span class="evlinks">${chipRow([tk])}</span>`);
   if (LIVE.seededAt) {
     bar.push(`<span style="font-size:12.5px;color:var(--ink-3)">Snapshot taken `
       + `${liveAgo(LIVE.seededAt)}${liveOn() ? ', and live since' : ''}</span>`);
@@ -6378,7 +6468,7 @@ function liveRows2(into, sel, made) {
  *
  * The order above is the grid as it stands; what a reader cannot see from the
  * table is that it has already gone where the print goes - the hatched column
- * of the standings and the Qualifying tab - and who is on pole is the one
+ * of the standings and the Races tab - and who is on pole is the one
  * number on a qualifying screen worth saying in words.
  */
 function liveQualNote(base, v) {
@@ -6395,7 +6485,7 @@ function liveQualNote(base, v) {
     + `${done ? ' as the flag left it' : ' as it stands'}, and it is already where `
     + `the print will go: ${rd ? `the Round ${rd} column of the ` : 'the '}`
     + `<a href="#${yr}/${base.key}/standings">Standings</a>, and lap by lap on the `
-    + `<a href="#${yr}/${base.key}/qualifying">Qualifying</a> tab. The timekeepers' `
+    + `<a href="#${yr}/${base.key}/races/q-${esc(sheet.event)}">Races</a> tab. The timekeepers' `
     + `sheet replaces it when it is published.`;
 }
 
@@ -6449,7 +6539,7 @@ function liveQualLine(box, base, v) {
   if (innerWidth < 768) {
     box.innerHTML = `${tag}<b>Qualifying</b> at ${esc(where)}`
       + `${q.ended ? ' has just finished' : ' is running'}: the grid it sets is in the `
-      + `standings and on the <a href="#${yr}/${D.key}/qualifying">Qualifying</a> tab as `
+      + `standings and on the <a href="#${yr}/${D.key}/races/q-${esc(q.event)}">Races</a> tab as `
       + 'it stands.';
     return;
   }
@@ -6459,7 +6549,7 @@ function liveQualLine(box, base, v) {
     + `${connected ? 'it stands' : `the snapshot taken ${liveAgo(LIVE.seededAt)} left it`}: `
     + `${rd ? `in the Round ${rd} column of the ` : 'in the '}`
     + `<a href="#${yr}/${D.key}/standings">standings</a>, and lap by lap on the `
-    + `<a href="#${yr}/${D.key}/qualifying">Qualifying</a> tab. It scores nothing, and `
+    + `<a href="#${yr}/${D.key}/races/q-${esc(q.event)}">Races</a> tab. It scores nothing, and `
     + `it is provisional: the sheet is the timekeepers' to print. · `
     + `<a href="#${yr}/${D.key}/live">the live timing</a>`;
 }
@@ -6542,8 +6632,7 @@ function liveTick() {
 const LIVE_STALE = {};
 const LIVE_TABS = {
   about: () => about(), standings: () => standings(), radar: () => radar(),
-  races: () => races(), qualifying: () => qualifying(),
-  calendar: () => calendar(), rules: () => rules(),
+  races: () => races(), rules: () => rules(),
   socials: () => socials(), faq: () => faq(),
 };
 
@@ -7183,13 +7272,14 @@ function liveEvents(season = SEASON) {
       g = { id, feedKey, src, kind: e.kind || '', key: e.key, name: e.name,
             meeting: e.meeting || '', dates: e.dates || '', first: e.first,
             last: e.last || e.first, tz: e.tz || '', url: e.url || '',
-            links: [], series: [] };
+            timing: null, links: [], series: [] };
       groups.set(id, g);
     }
     g.series.push({ base, event: e });
     if (e.first < g.first) g.first = e.first;
     if ((e.last || e.first) > g.last) g.last = e.last || e.first;
     if (!g.url && e.url) g.url = e.url;
+    if (!g.timing && e.timing) g.timing = e.timing;
     (e.links || []).forEach(l => {
       if (!g.links.some(x => x.url === l.url)) g.links.push(l);
     });
@@ -7596,7 +7686,10 @@ function liveEventHead(ev, focus) {
     : ev.kind === 'tsl' ? 'Timed by TSL — the feed opens once they have loaded the meeting'
     : `${TIMEKEEPER_ALL[ev.kind] || 'The timekeepers'} time this meeting and publish no feed`;
   let links = '';
-  if (ev.url) links = eventLinks({ url: ev.url, links: ev.links, meeting: ev.meeting }).outerHTML;
+  if (ev.url || ev.timing) {
+    links = eventLinks({ url: ev.url, links: ev.links, meeting: ev.meeting,
+                         timing: ev.timing }).outerHTML;
+  }
   return `<div class="radarhead evhead"><div class="who"><span class="ev">`
     + `<span class="nm">${esc(ev.name)}</span>`
     + `<small>${esc([ev.meeting, ev.dates].filter(Boolean).join(' · '))} · ${esc(timer)}`
@@ -7789,7 +7882,7 @@ function liveEventExtra(p, ev, focus, v, watching) {
     d.innerHTML = `<h2>${esc(b.short)} — as published</h2>`
       + `<p class="sub" style="margin-top:0">${esc(timerName())}’s classification of this session, `
       + `read by the build${q.start ? ` — ran ${esc(q.start)}${q.finish ? '–' + esc(q.finish) : ''}` : ''}. `
-      + `The <a href="#${SEASON.year}/${b.key}/qualifying">Qualifying</a> page has it lap by lap.</p>`;
+      + `The <a href="#${SEASON.year}/${b.key}/races/q-${esc(q.event)}">Races</a> page has it lap by lap.</p>`;
     d.append(qualTable(q, [], null, null, b));
     node.append(d);
   });
@@ -7992,10 +8085,15 @@ function liveRefresh() {
   // being pulled out from under somebody who is reading it on another tab.
   liveStale('about');          // where the championship stands has moved
   liveStale('standings');      // the title run-in with it, drawn at its head
-  // The Qualifying tab holds the session being qualified, so it moves with
-  // the feed while there is one - and once more when it ends, to take the
-  // feed's sheet down again.
-  if (D.liveQual || LIVE.qualShown) liveStale('qualifying');
+  // The Races tab holds the session being qualified, so it moves with the feed
+  // while there is one - and once more when it ends, to take the feed's sheet
+  // down again. Only while it is showing qualifying, though: a reader on a
+  // race, perhaps with its broadcast playing, is not pulled out of it every
+  // lap, and the tab catches up the next time it is opened.
+  if (D.liveQual || LIVE.qualShown) {
+    if (raceOnQual) liveStale('races');
+    else if (!LIVE_STALE.races) LIVE_STALE.races = STALE_LIVE;
+  }
   LIVE.qualShown = !!D.liveQual;
   liveDraw();
 }
@@ -8264,7 +8362,7 @@ if (ALL.seasons.length > 1) {
    still resolve, against the current season. */
 let currentTab = TABS[0][0];
 
-function writeHash() {
+function writeHash(replace = false) {
   // Nothing has been drawn yet: a championship's file is still on its way, and
   // whatever asked for it writes the address when it lands and the page draws.
   if (!SEASON || (MODE === 'series' && !D)) return;
@@ -8282,7 +8380,9 @@ function writeHash() {
     if (currentTab === 'races' && raceRound != null) parts.push(String(raceRound));
   }
   const want = parts.join('/');
-  if (location.hash.slice(1) !== want) location.hash = want;
+  if (location.hash.slice(1) === want) return;
+  if (replace) history.replaceState(null, '', '#' + want);
+  else location.hash = want;
 }
 
 function readHash() {
@@ -8298,6 +8398,16 @@ function readHash() {
   }
   const season = ALL.seasons.find(s => s.year === year) || ALL.seasons[0];
 
+  // The calendar was a tab before it was part of About: a link to it still
+  // lands on it, on the page it moved to.
+  const cal = parts[0] === 'live' ? -1
+    : parts.findIndex((x, i) => i < 2 && x === 'calendar');
+  if (cal >= 0) parts[cal] = TABS[0][0];
+  // Qualifying was too, and is now a session on Races: a link to it opens the
+  // newest qualifying there.
+  const qi = parts[0] === 'live' ? -1
+    : parts.findIndex((x, i) => i < 2 && x === 'qualifying');
+  if (qi >= 0) parts.splice(qi, 1, 'races', ...(qi === 1 ? ['q'] : []));
   // The run-in was a tab of its own before it moved to the head of the
   // standings, and a link to it still means that.
   const moved = t => (t === 'runin' ? 'standings' : t);
@@ -8316,11 +8426,16 @@ function readHash() {
   const tab = TABS.some(([t]) => t === rawTab) ? rawTab
     : (TABS.some(([t]) => t === rawSeries) ? rawSeries : TABS[0][0]);
   return { year: season.year, key: found ? found.key : season.series[0].key, tab,
-           at: /^\d+$/.test(rawAt || '') ? Number(rawAt) : null, live: null };
+           at: /^\d+$/.test(rawAt || '') ? Number(rawAt)
+             : /^q(-[a-z0-9-]+)?$/.test(rawAt || '') ? rawAt : null, live: null,
+           calendar: cal >= 0 };
 }
 
 function applyHash() {
-  const { year, key, tab, at, live, enduro: special } = readHash();
+  const { year, key, tab, at, live, enduro: special,
+          calendar: toCalendar } = readHash();
+  // A calendar asked for by an earlier address is not wanted by this one.
+  wantCalendar = null;
   // Left for the races tab to pick up when it draws, which in the split build
   // is after this runs: a championship's races arrive with its body.
   wantedRace = tab === 'races' ? at : null;
@@ -8337,6 +8452,12 @@ function applyHash() {
   if (!SEASON || SEASON.year !== year) selectSeason(year, key);
   else if (!D || D.key !== key) selectSeries(key);
   showTab(tab);
+  // Only once the championship in the address is the one on the screen, for
+  // the same reason as the round below: until then, the calendar waits.
+  if (toCalendar) {
+    showCalendar(`${year}/${key}`);
+    if (!wantCalendar) writeHash(true);
+  }
   // Only once the championship in the address is the one on the screen. Until
   // then `showRace` belongs to the one being left, whose round 3 is not the
   // round 3 that was asked for - so the round waits in `wantedRace` and the
