@@ -436,6 +436,7 @@ tr.highlight td{background:var(--flag-soft);animation:flash 0.6s ease-in-out 2}
 .lc-line{fill:none;stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round;opacity:.85}
 .lc-line.dim{opacity:.13}
 .lc-line.on{stroke-width:3.4;opacity:1}
+.lc-res{stroke-dasharray:3 3}
 .lc-lab{font-family:"IBM Plex Mono",monospace;font-size:10.5px;cursor:pointer}
 .lc-lab.dim{opacity:.3}
 .lc-head{font-family:"Barlow Condensed",Arial,sans-serif;font-size:11px;letter-spacing:.1em;

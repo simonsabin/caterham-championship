@@ -1748,6 +1748,17 @@ function chartPoints(c, withInts) {
   return pts;
 }
 
+/** The classification, as a running order: the cars classified, by place.
+
+    The chart's last lap is the order the cars crossed the line, and that is
+    not the result - a time penalty or a disqualification moves a car after
+    the flag. So the chart ends one column later, on the order the stewards
+    left, and a car that was not classified simply has no point there. */
+const resultOrder = r => r.entries
+  .filter(e => e.status === 'classified' && e.pos != null)
+  .sort((a, b) => a.pos - b.pos)
+  .map(e => e.no);
+
 /** Seconds as a clock: 4:07 inside an hour, 2:34:16 beyond one. */
 const hms = s => {
   if (s == null || !isFinite(s)) return '';
@@ -1780,6 +1791,13 @@ function lapChart(r, seek) {
 
   const draw = withInts => {
     const pts = chartPoints(c, withInts);
+    // The laps are the only part of the chart with a clock; the result
+    // column after them has none, so it is never a place to seek to.
+    const laps = pts.length;
+    const result = resultOrder(r);
+    if (result.length) pts.push({ label: 'Result', sub: 'classified, after any penalties',
+                                  t: null, order: result, result: true });
+    const endT = pts[laps - 1].t;
     const seen = [];
     pts.forEach(p => p.order.forEach(no => { if (!seen.includes(no)) seen.push(no); }));
     const first = pts[0].order, last = pts[pts.length - 1].order;
@@ -1818,12 +1836,13 @@ function lapChart(r, seek) {
     const under = t => (c.flags || []).find(f => t != null && t >= f.a && t <= f.b);
 
     let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img"
-        aria-label="Position of every car at the end of each lap">`;
+        aria-label="Position of every car at the end of each lap${
+          result.length ? ', and in the classification' : ''}">`;
 
     /* The flags, behind everything else: a race spends these minutes in a
        queue behind the safety car, and the chart goes flat for a reason. */
     (c.flags || []).forEach(f => {
-      const x1 = xAt(Math.max(0, f.a)), x2 = xAt(Math.min(f.b, pts[pts.length - 1].t));
+      const x1 = xAt(Math.max(0, f.a)), x2 = xAt(Math.min(f.b, endT));
       if (x1 == null || x2 == null || x2 <= x1) return;
       const red = /red/i.test(f.k);
       s += `<rect class="lc-flag${red ? ' red' : ''}" x="${x1.toFixed(1)}" y="${M.t}"`
@@ -1836,21 +1855,34 @@ function lapChart(r, seek) {
     s += `<text class="lc-head" x="${M.l}" y="14" text-anchor="middle">Grid</text>`;
     pts.forEach((p, i) => {
       if (!p.lap || p.lap % every) return;
-      s += `<text class="lc-head" x="${x(i)}" y="14" text-anchor="middle">${p.lap}</text>`;
+      // The result's heading is wider than a lap number, and with the
+      // intermediates in the columns are too close for the last lap's beside it.
+      if (result.length && i === laps - 1 && step < 36) return;
+      s +=`<text class="lc-head" x="${x(i)}" y="14" text-anchor="middle">${p.lap}</text>`;
     });
+    if (result.length)
+      s += `<text class="lc-head" x="${x(laps)}" y="14" text-anchor="middle">Result</text>`;
     for (let pos = 5; pos <= rows; pos += 5)
       s += `<line class="gl" x1="${M.l}" y1="${y(pos)}" x2="${W - M.r}" y2="${y(pos)}"/>`;
 
     cars.forEach((no, idx) => {
-      let d = '', open = false;
-      pts.forEach((p, i) => {
+      let d = '', open = false, end = null;
+      pts.slice(0, laps).forEach((p, i) => {
         const pos = p.order.indexOf(no);
         if (pos < 0) { open = false; return; }
         d += `${open ? 'L' : 'M'}${x(i).toFixed(1)},${y(pos + 1).toFixed(1)}`;
         open = true;
+        end = [x(i), y(pos + 1)];
       });
       if (!d) return;
       s += `<path class="lc-line" data-car="${esc(no)}" d="${d}"`
+         + ` stroke="${carColour(idx)}"/>`;
+      // From wherever the car was last seen on the road to where it was
+      // classified - dashed, because nothing moved on track to put it there.
+      const at = result.indexOf(no);
+      if (at < 0) return;
+      s += `<path class="lc-line lc-res" data-car="${esc(no)}"`
+         + ` d="M${end[0].toFixed(1)},${end[1].toFixed(1)}L${x(laps).toFixed(1)},${y(at + 1).toFixed(1)}"`
          + ` stroke="${carColour(idx)}"/>`;
     });
 
@@ -1894,11 +1926,16 @@ function lapChart(r, seek) {
       highlight(no || null);
       const e = no ? entryOf(no) : null;
       const flag = under(p.t);
+      // On the result column, where the car crossed the line if that was
+      // somewhere else - which is the whole reason the column is there.
+      const line = p.result && no ? pts[laps - 1].order.indexOf(no) + 1 : 0;
       showTip(`<b>${esc(p.label)}</b> ${esc(p.sub)}`
         + (p.t != null ? ` · <b>${hms(p.t)}</b>` : '')
         + (flag ? ` · <b>${esc(flag.k === 'Red' ? 'red flag' : 'safety car')}</b>` : '')
         + '<br>'
         + (no ? `P${pos} — <b>${esc(no)}</b> ${esc(e ? e.driver : '')}` : '&mdash;')
+        + (p.result && no && line !== pos
+          ? `<br>${line ? `crossed the line P${line}` : 'not on the chart’s last lap'}` : '')
         + (seek && p.t != null ? '<br><span style="opacity:.7">click to play from here</span>' : ''),
         ev.clientX, ev.clientY);
     });
@@ -1915,8 +1952,7 @@ function lapChart(r, seek) {
     });
 
     move = t => {
-      const end = pts[pts.length - 1].t;
-      if (t == null || end == null || t < -20 || t > end + 30) {
+      if (t == null || endT == null || t < -20 || t > endT + 30) {
         play.setAttribute('opacity', 0);
         return;
       }
@@ -1935,6 +1971,7 @@ function lapChart(r, seek) {
       + 'that every lap took the same time.'
     : 'Every lap is stamped with the time of day it ended, so a click seeks to that lap.'}${
     (c.flags || []).length ? ' Shaded where the race ran under the safety car or a red flag.' : ''}${
+    resultOrder(r).length ? ' The last column is the classification, after any penalties.' : ''}${
     c.shared ? ' The grid was shared: these are places among the ' + esc(D.short)
              + ' cars, not places on the road.' : ''}
     <span class="src">${esc(c.source)}</span></span>`;
@@ -2114,7 +2151,9 @@ function races() {
     text: ['Guest entries are shown greyed — they take no points and the drivers behind them '
       + 'move up a place for scoring.',
       'Where the timing company published a lap chart, the race is drawn lap by lap above the '
-      + 'classification: click any point of it to play the broadcast from that moment.'],
+      + 'classification: click any point of it to play the broadcast from that moment. Its '
+      + 'last column is the classification itself, after any penalties, so a car the stewards '
+      + 'moved is seen moving there.'],
   }));
   p.append(explain({
     key: 'qualifying.read',
